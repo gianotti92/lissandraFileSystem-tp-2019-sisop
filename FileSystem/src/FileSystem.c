@@ -16,5 +16,6 @@ int main(void) {
 	get_parametros_config();
 	configure_logger();
 	puts("Hello FileSystem!!"); /* prints  */
+	printf("%d", PUERTO_ESCUCHA_CONEXION);
 	return EXIT_SUCCESS;
 }
