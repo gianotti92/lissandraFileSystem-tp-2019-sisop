@@ -10,8 +10,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "config_kernel.h"
 
 int main(void) {
-	puts("!!!Hello KERNEL!!!");
+	get_parametros_config();
+	configure_logger();
+	puts("Hello Kernel!!"); /* prints  */
+	printf("%d", PUERTO_ESCUCHA_CONEXION);
 	return EXIT_SUCCESS;
 }
