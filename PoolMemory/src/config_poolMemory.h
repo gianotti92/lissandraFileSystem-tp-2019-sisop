@@ -19,10 +19,17 @@
 #include <math.h>
 
 t_log * LOGGER;
-int PUERTO_ESCUCHA_CONEXION;
+char* IP_CONFIG_KERNEL;
+
+int PUERTO_CONFIG_KERNEL;
+
+char* IP_CONFIG_POOLMEMORY;
+
+int PUERTO_CONFIG_POOLMEMORY;
 
 //Cargo los parametros desde el archivo config y los libero conforme deje de usarlos
 void get_parametros_config();
 void configure_logger();
+char* IP_CONFIG_MIO;
 
 #endif

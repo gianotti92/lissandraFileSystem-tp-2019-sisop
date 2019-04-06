@@ -20,9 +20,12 @@
 
 t_log * LOGGER;
 int PUERTO_ESCUCHA_CONEXION;
+char* IP_CONFIG_MIO;
 
 //Cargo los parametros desde el archivo config y los libero conforme deje de usarlos
 void get_parametros_config();
 void configure_logger();
+//libera todos los parametros que tenga
+void free_parametros_config();
 
 #endif
