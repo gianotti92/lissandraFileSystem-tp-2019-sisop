@@ -1,21 +1,40 @@
 #Declaro variables
-CC := gcc
+CC := gcc #Compilador
 
-OBJS := poolMemory.o config_poolMemory.o
+CFLAGS := -Wall -Werror -g -std=c99 #Flags para Valgrind
 
-#Generador principal
-all: poolMemory
+FILES := $(TARGET) $(CONFIG) #Nombre de archivos a usar
 
+TARGET := fileSystem #Principal
 
-poolMemory: $(OBJS)
-	$(CC) -o poolMemory $(OBJS) -lcommons -lm 
+CONFIG := config_fileSystem #Secundario
 
-poolMemory.o: poolMemory.c config_poolMemory.h
-	$(CC) -c poolMemory.c
-	
-config_poolMemory.o: config_poolMemory.c config_poolMemory.h
-	$(CC) -c  config_poolMemory.c
-	
+INCLUDES := -lcommons -lpthread #Librerias a linkear
+
+#####################
+#Generador principal#
+#####################
+
+#Borro los archivos que antes estaban
+all: clean $(FILES)
+
+#Build programa
+$(TARGET): $(TARGET).o $(CONFIG).o #Tenemos que poner aca todos los que buildean el programa
+	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o $(CONFIG).o $(INCLUDES)
+
+#######################################
+#Archivos .c que conforman el programa#
+#######################################
+#Hay que hacer un build por cada uno de los archivos y sus dependencias
+
+#Build archivo fileSystem.c	
+$(TARGET).o: $(TARGET).c $(CONFIG).h 
+	$(CC) $(CFLAGS) $(TARGET).c -o $(TARGET) $(INCLUDES)
+
+#Build archivo config_fileSystem.c
+$(CONFIG).o: $(CONFIG).c $(CONFIG).h
+	$(CC) $(CFLAGS) $(CONFIG).c -o $(CONFIG) $(INCLUDES)
+
 #Borrar todo
 clean:
-	rm poolMemory $(OBJS)
+	rm -f $(FILES)
