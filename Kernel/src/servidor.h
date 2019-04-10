@@ -16,12 +16,32 @@
 #include <signal.h>
 #include <pthread.h>
 #include <commons/config.h>
+#include <commons/collections/queue.h>
 #include "config_kernel.h"
 
 #define BACKLOG 10     // Cuántas conexiones pendientes se mantienen en cola
 
-//#define MYIP "0.0.0.0" para muchas pc (dejar comentado para poder usar localmente)
-//#define MYIP "192.168.0.17"
+#define KERNELL_PORT 8080
+#define PUERTO_POOL_MEM 8081
+#define IP "127.0.0.1"
+
+/* id = 1 responder */
+/* id = 2 recibir */
+
+
+typedef struct{
+    int id;
+    int value;
+}  __attribute__((packed)) TypeOfCommunication;
+
+typedef struct{
+    int socketServidor;
+    struct sockaddr_in cliente;
+    unsigned int tamanoDireccion;
+}  __attribute__((packed)) DatosCliente;
+
+
+void atender_cliente(void * args);
 
 void levantar_servidor_kernel();
 

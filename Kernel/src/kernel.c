@@ -17,7 +17,6 @@ int main(void) {
 	get_parametros_config();
 	configure_logger();
 	puts("Hello Kernel!!"); /* prints  */
-	pthread_t hiloStatus;
 	levantar_servidor_kernel();
 	return EXIT_SUCCESS;
 }
