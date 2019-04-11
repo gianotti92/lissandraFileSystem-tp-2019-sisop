@@ -27,5 +27,6 @@ void get_parametros_config();
 void configure_logger();
 //libera todos los parametros que tenga
 void free_parametros_config();
+void exit_gracefully(int exit_code);
 
 #endif

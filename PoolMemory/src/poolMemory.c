@@ -1,13 +1,3 @@
-/*
- ============================================================================
- Name        : PoolMemory.c
- Author      : 
- Version     :
- Copyright   : 
- Description : Hello World in C, Ansi-style
- ============================================================================
- */
-
 #include "config_poolMemory.h"
 #include "cliente.h"
 
@@ -36,7 +26,7 @@ int main(void) {
 	if (bind(socketPoolMemory, (struct sockaddr *) &serverPoolMemoryAddres,
 			sizeof(struct sockaddr)) == -1) {
 		perror("Fallo el bind");
-		return EXIT_FAILURE;
+		exit_gracefully(EXIT_FAILURE);
 	}
 
 	puts("Estoy escuchando...");
@@ -61,7 +51,7 @@ int main(void) {
 	int bytesRecibidos = recv(socketKernell, saludoDesdeKernell, 99, 0);
 	if (bytesRecibidos <= 0) {
 		perror("Error al recibir informacion.");
-		return EXIT_FAILURE;
+		exit_gracefully(EXIT_FAILURE);
 	}
 
 	saludoDesdeKernell[bytesRecibidos] = '\0';
@@ -70,7 +60,5 @@ int main(void) {
 
 	free(saludoDesdeKernell);
 
-	exit(0);
-
-	return EXIT_SUCCESS;
+	exit_gracefully(EXIT_SUCCESS);
 }

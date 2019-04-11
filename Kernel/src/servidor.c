@@ -14,6 +14,7 @@ void levantar_servidor_kernel() {
 	socketKernell = socket(AF_INET, SOCK_STREAM, 0);
 	if (socketKernell <= -1) {
 		perror("No se pudo crear el socket servidor");
+		exit_gracefully(EXIT_SUCCESS);
 	}
 
 	kernelAddres.sin_family = AF_INET;
@@ -27,13 +28,14 @@ void levantar_servidor_kernel() {
 	if (bind(socketKernell, (struct sockaddr *) &kernelAddres,
 			sizeof(struct sockaddr)) == -1) {
 		perror("Fallo el bind");
-		exit(1);
+		exit_gracefully(EXIT_FAILURE);
 	}
-	puts("Estoy escuchando...");
 
 	if (listen(socketKernell, 100) == -1) {
 		perror("Fallo en el listen");
+		exit_gracefully(EXIT_FAILURE);
 	}
+	puts("Estoy escuchando...");
 	/*--------------------------*/
 
 	while (1) {
@@ -60,7 +62,7 @@ void levantar_servidor_kernel() {
 		pthread_create(&punteroHilo, NULL, (void*) atender_cliente, NULL);
 	}
 
-	exit(0);
+	exit_gracefully(EXIT_SUCCESS);
 }
 
 void atender_cliente(void* args){
@@ -72,7 +74,7 @@ void atender_cliente(void* args){
 		int bytesRecibidos = recv(socketCliente, buffer, 99, 0 );
 		if(bytesRecibidos <= 0){
 			perror("error al recibir datos");
-			exit(1);
+			exit_gracefully(EXIT_FAILURE);
 		}
 		buffer[bytesRecibidos] = '\0';
 
@@ -89,12 +91,12 @@ void atender_cliente(void* args){
 		socketPoolMem = socket(AF_INET, SOCK_STREAM, 0);
 		if(connect(socketPoolMem, (void *) &direccionServidor, sizeof(direccionServidor)) != 0){
 			perror("Error al conectar con el cliente");
-			exit(1);
+			exit_gracefully(EXIT_FAILURE);
 		}
 
 		if(send(socketPoolMem, buffer, 99, 0) <= 0){
 			perror("Error al enviar querys de la consola");
-			exit(1);
+			exit_gracefully(EXIT_FAILURE);
 		}
 		/*fin*/
 		free(buffer);

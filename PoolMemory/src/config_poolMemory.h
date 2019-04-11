@@ -51,5 +51,6 @@ int PUERTO_CONFIG_POOLMEMORY;
 void get_parametros_config();
 void configure_logger();
 char* IP_CONFIG_MIO;
+void exit_gracefully(int exit_code);
 
 #endif
