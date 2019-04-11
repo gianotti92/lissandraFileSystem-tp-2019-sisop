@@ -38,6 +38,9 @@ void levantar_servidor_kernel() {
 	puts("Estoy escuchando...");
 	/*--------------------------*/
 
+	pthread_t punteroHilo;
+	pthread_create(&punteroHilo, NULL, (void*) atender_cliente, NULL);
+
 	while (1) {
 		/* select() se carga el valor de rfds */
 		FD_ZERO(&rfds);
@@ -57,49 +60,48 @@ void levantar_servidor_kernel() {
 						queue_size(listaConexiones));
 			}
 		}
-
-		pthread_t punteroHilo;
-		pthread_create(&punteroHilo, NULL, (void*) atender_cliente, NULL);
 	}
 
 	exit_gracefully(EXIT_SUCCESS);
 }
 
-void atender_cliente(void* args){
-	if(queue_size(listaConexiones) > 0){
-		char * buffer = malloc(100);
+void atender_cliente(void* args) {
+	while (1) {
+		if (queue_size(listaConexiones) > 0) {
+			char * buffer = malloc(100);
 
-		int socketCliente = queue_peek(listaConexiones);
-		queue_pop(listaConexiones);
-		int bytesRecibidos = recv(socketCliente, buffer, 99, 0 );
-		if(bytesRecibidos <= 0){
-			perror("error al recibir datos");
-			exit_gracefully(EXIT_FAILURE);
+			int socketCliente = queue_peek(listaConexiones);
+			queue_pop(listaConexiones);
+			int bytesRecibidos = recv(socketCliente, buffer, 99, 0);
+			if (bytesRecibidos <= 0) {
+				perror("error al recibir datos");
+				exit_gracefully(EXIT_FAILURE);
+			}
+			buffer[bytesRecibidos] = '\0';
+
+			/*Aca vendrian a estar las query que leemos por consola (definir protocolo de comunicacion)*/
+			printf("lo que recibi del netcat es: %s", buffer);
+
+			/*aca voy a levanatar el socket y enviar al proceso de memoria despues lo extraigo en una funcion aparte*/
+			struct sockaddr_in direccionServidor;
+			direccionServidor.sin_family = AF_INET;
+			direccionServidor.sin_addr.s_addr = inet_addr(IP);
+			direccionServidor.sin_port = htons(PUERTO_POOL_MEM);
+
+			socketPoolMem = socket(AF_INET, SOCK_STREAM, 0);
+			if (connect(socketPoolMem, (void *) &direccionServidor,
+					sizeof(direccionServidor)) != 0) {
+				perror("Error al conectar con el cliente");
+				exit_gracefully(EXIT_FAILURE);
+			}
+
+			if (send(socketPoolMem, buffer, 99, 0) <= 0) {
+				perror("Error al enviar querys de la consola");
+				exit_gracefully(EXIT_FAILURE);
+			}
+			/*fin*/
+			free(buffer);
 		}
-		buffer[bytesRecibidos] = '\0';
-
-		/*Aca vendrian a estar las query que leemos por consola (definir protocolo de comunicacion)*/
-		printf("lo que recibi del netcat es: %s", buffer);
-
-
-		/*aca voy a levanatar el socket y enviar al proceso de memoria despues lo extraigo en una funcion aparte*/
-		struct sockaddr_in direccionServidor;
-		direccionServidor.sin_family = AF_INET;
-		direccionServidor.sin_addr.s_addr = inet_addr(IP);
-		direccionServidor.sin_port = htons(PUERTO_POOL_MEM);
-
-		socketPoolMem = socket(AF_INET, SOCK_STREAM, 0);
-		if(connect(socketPoolMem, (void *) &direccionServidor, sizeof(direccionServidor)) != 0){
-			perror("Error al conectar con el cliente");
-			exit_gracefully(EXIT_FAILURE);
-		}
-
-		if(send(socketPoolMem, buffer, 99, 0) <= 0){
-			perror("Error al enviar querys de la consola");
-			exit_gracefully(EXIT_FAILURE);
-		}
-		/*fin*/
-		free(buffer);
 	}
 }
 
