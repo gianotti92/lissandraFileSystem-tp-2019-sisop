@@ -9,9 +9,11 @@
  */
 
 #include "config_kernel.h"
+#include <time.h>
 
 void leer_consola();
 void parser_lql(char *);
+int cantidad_elementos(char **);
 
 int main(void) {
 	get_parametros_config();
@@ -46,16 +48,27 @@ void leer_consola(){
 }
 
 void parser_lql(char * consulta){
-	//falla cuando escribis una consulta sin todas sus partes, porque hace un puts de un elemento del array que no existe, verificar eso.
+	time_t echo_time;
+	echo_time = time(NULL);
 
-	char** consulta_parseada = string_split(consulta, " "); //agregar timestamp al final
+	if (echo_time == ((time_t)-1)){
+		(void) fprintf(stderr, "Fallo al obtener la hora. \n");
+		 //ERROR: lanzar error por no por leer la hora
+	}
+
+	consulta = string_from_format("%s %ju", consulta, (uintmax_t)echo_time);
+
+	char** consulta_parseada = string_split(consulta, " ");
 
 	if (string_starts_with(consulta_parseada[0], "SELECT")){
 
-		puts("Es un SELECT");
+		//int cant_elem_consulta = cantidad_elementos(consulta_parseada); //no funciona aun
+		//puts(cant_elem_consulta);
+
 		puts(consulta_parseada[0]);//select
 		puts(consulta_parseada[1]);//tabla
 		puts(consulta_parseada[2]);//key
+		puts(consulta_parseada[3]);//timestamp
 	}
 	else if (string_starts_with(consulta_parseada[0], "INSERT")){
 
@@ -109,4 +122,17 @@ void parser_lql(char * consulta){
 	else {
 		puts("ERROR: La consulta debe comenzar con alguno de [SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD MEMORY]");
 	}
+}
+
+
+int cantidad_elementos(char ** array){
+	int i = 0;
+	puts("entre");
+
+	while (array[i] != NULL){
+		i++;
+	}
+
+	return i;
+
 }
