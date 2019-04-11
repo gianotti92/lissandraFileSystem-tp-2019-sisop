@@ -19,7 +19,7 @@ void levantar_servidor_kernel() {
 
 	kernelAddres.sin_family = AF_INET;
 	kernelAddres.sin_addr.s_addr = inet_addr(IP);
-	kernelAddres.sin_port = htons(KERNELL_PORT);
+	kernelAddres.sin_port = htons(PUERTO_KERNELL);
 	memset(&(kernelAddres.sin_zero), '\0', 8);
 
 	setsockopt(socketKernell, SOL_SOCKET, SO_REUSEADDR, &activado,
