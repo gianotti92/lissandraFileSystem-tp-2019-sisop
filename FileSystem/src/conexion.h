@@ -31,9 +31,11 @@
 
 void inicial_servidor();
 int iniciar_socket();
-void cargar_valores_address(struct sockaddr_in *fileSystemAddres);
+void cargar_valores_address(struct sockaddr_in *fileSystemAddres, int puerto);
 void evitar_bloqueo_puerto(int socket);
 void realizar_bind(int socket, struct sockaddr_in *fileSystemAddres);
 void ponerse_a_escuchar(int socket, int cantidadConexiones);
+void recibir_informacion(int socket);
+void enviar_informacion(int socket, struct sockaddr_in *address);
 
 #endif /* CONEXION_H_ */

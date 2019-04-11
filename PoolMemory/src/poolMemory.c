@@ -46,9 +46,7 @@ int main(void) {
 	}
 
 
-	fileSystemAddres.sin_family = AF_INET;
-	fileSystemAddres.sin_addr.s_addr = inet_addr(IP);
-	kernellAddres.sin_port = htons(FILE_SYSTEM_PORT);
+
 
 	/*-------------------------------------------*/
 
@@ -63,6 +61,32 @@ int main(void) {
 	saludoDesdeKernell[bytesRecibidos] = '\0';
 
 	printf("lo que recibi del netcat es: %s", saludoDesdeKernell);
+
+	/*Enviar msj a file system (ABSTRAEME PORFAVOR)*/
+
+	fileSystemAddres.sin_family = AF_INET;
+	fileSystemAddres.sin_addr.s_addr = inet_addr(IP);
+	fileSystemAddres.sin_port = htons(FILE_SYSTEM_PORT);
+
+	int socketFileSystem = socket(AF_INET, SOCK_STREAM, 0);
+
+	if(connect(socketFileSystem, (void *) &fileSystemAddres, sizeof(fileSystemAddres)) != 0){
+		perror("Error al conectar con File System");
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	if(send(socketFileSystem, saludoDesdeKernell, 99, 0) <= 0){
+		perror("Error al enviar querys de la consola");
+		exit_gracefully(EXIT_FAILURE);
+	}
+	/*Fin enviar file system */
+
+
+	/*Recibir mensaje de file system*/
+
+
+
+	/*Fin Recibir mensaje de file system*/
 
 	free(saludoDesdeKernell);
 
