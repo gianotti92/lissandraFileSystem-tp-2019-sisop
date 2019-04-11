@@ -3,11 +3,13 @@ CC := gcc #Compilador
 
 CFLAGS := -Wall -Werror -g -std=c99 #Flags para Valgrind
 
-FILES := $(TARGET) $(CONFIG) #Nombre de archivos a usar
+FILES := $(TARGET) $(CONFIG) $(SERVIDOR)#Nombre de archivos a usar
 
-TARGET := fileSystem #Principal
+TARGET := kernel #Principal
 
-CONFIG := config_fileSystem #Secundario
+CONFIG := config_kernel #Secundario
+
+SERVIDOR := servidor #Secundario
 
 INCLUDES := -lcommons -lpthread #Librerias a linkear
 
@@ -19,8 +21,8 @@ INCLUDES := -lcommons -lpthread #Librerias a linkear
 all: clean $(FILES)
 
 #Build programa
-$(TARGET): $(TARGET).o $(CONFIG).o #Tenemos que poner aca todos los que buildean el programa
-	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o $(CONFIG).o $(INCLUDES)
+$(TARGET): $(TARGET).o $(CONFIG).o $(SERVIDOR).o <#Tenemos que poner aca todos los que buildean el programa
+	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o $(CONFIG).o $(SERVIDOR).o $(INCLUDES)
 
 #######################################
 #Archivos .c que conforman el programa#
@@ -34,6 +36,10 @@ $(TARGET).o: $(TARGET).c $(CONFIG).h
 #Build archivo config_fileSystem.c
 $(CONFIG).o: $(CONFIG).c $(CONFIG).h
 	$(CC) $(CFLAGS) $(CONFIG).c -o $(CONFIG) $(INCLUDES)
+
+#Build archivo servidor.c
+$(SERVIDOR).o: $(SERVIDOR).c $(SERVIDOR).h
+	$(CC) $(CFLAGS) $(SERVIDOR).c -o $(SERVIDOR) $(INCLUDES)
 
 #Borrar todo
 clean:

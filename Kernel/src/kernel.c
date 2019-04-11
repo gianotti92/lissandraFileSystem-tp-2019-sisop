@@ -11,11 +11,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "config_kernel.h"
+#include "servidor.h"
 
 int main(void) {
 	get_parametros_config();
 	configure_logger();
 	puts("Hello Kernel!!"); /* prints  */
-	printf("%d", PUERTO_ESCUCHA_CONEXION);
+	levantar_servidor_kernel();
 	return EXIT_SUCCESS;
 }

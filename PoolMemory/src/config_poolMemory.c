@@ -10,7 +10,13 @@ void get_parametros_config(){
 		exit(1);
 	}
 
-	PUERTO_ESCUCHA_CONEXION = config_get_int_value(config,"PUERTO_ESCUCHA_CONEXION");
+	PUERTO_CONFIG_KERNEL = config_get_int_value(config,"PUERTO_CONFIG_KERNEL");
+	IP_CONFIG_KERNEL = malloc(sizeof(char) * 100);
+	strcpy(IP_CONFIG_KERNEL,config_get_string_value(config, "IP_CONFIG_KERNEL"));
+
+	PUERTO_CONFIG_POOLMEMORY = config_get_int_value(config,"PUERTO_CONFIG_POOLMEMORY");
+	IP_CONFIG_POOLMEMORY = malloc(sizeof(char) * 100);
+	strcpy(IP_CONFIG_POOLMEMORY,config_get_string_value(config, "IP_CONFIG_POOLMEMORY"));
 
 
 
