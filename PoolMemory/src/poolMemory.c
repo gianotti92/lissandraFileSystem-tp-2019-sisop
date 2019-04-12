@@ -6,13 +6,13 @@ int main(void) {
 	configure_logger();
 	puts("Hello PoolMemory!!"); /* prints  */
 
-	struct sockaddr_in serverPoolMemoryAddres, kernellAddres;
+	struct sockaddr_in poolMemoryAddres, kernellAddres, fileSystemAddres;
 	int socketPoolMemory;
 
-	serverPoolMemoryAddres.sin_family = AF_INET;
-	serverPoolMemoryAddres.sin_addr.s_addr = inet_addr(IP);
-	serverPoolMemoryAddres.sin_port = htons(POL_MEM_PORT);
-	memset(&(serverPoolMemoryAddres.sin_zero), '\0', 8);
+	poolMemoryAddres.sin_family = AF_INET;
+	poolMemoryAddres.sin_addr.s_addr = inet_addr(IP);
+	poolMemoryAddres.sin_port = htons(POOL_MEM_PORT);
+	memset(&(poolMemoryAddres.sin_zero), '\0', 8);
 
 	socketPoolMemory = socket(AF_INET, SOCK_STREAM, 0);
 	if (socketPoolMemory <= -1) {
@@ -23,7 +23,7 @@ int main(void) {
 	setsockopt(socketPoolMemory, SOL_SOCKET, SO_REUSEADDR, &activado,
 			sizeof(activado));
 
-	if (bind(socketPoolMemory, (struct sockaddr *) &serverPoolMemoryAddres,
+	if (bind(socketPoolMemory, (struct sockaddr *) &poolMemoryAddres,
 			sizeof(struct sockaddr)) == -1) {
 		perror("Fallo el bind");
 		exit_gracefully(EXIT_FAILURE);
@@ -34,15 +34,19 @@ int main(void) {
 
 	/*-------------------------------------------*/
 
+	unsigned int tamanoDireccion = sizeof(struct sockaddr_in);
+
 	kernellAddres.sin_family = AF_INET;
 	kernellAddres.sin_addr.s_addr = inet_addr(IP);
 	kernellAddres.sin_port = htons(KERNEL_PORT);
-	unsigned int tamanoDireccion = sizeof(struct sockaddr_in);
 	int socketKernell = accept(socketPoolMemory,
 			(struct sockaddr *) &kernellAddres, &tamanoDireccion);
 	if (socketKernell == -1) {
 		perror("Error en el accept");
 	}
+
+
+
 
 	/*-------------------------------------------*/
 
@@ -57,6 +61,32 @@ int main(void) {
 	saludoDesdeKernell[bytesRecibidos] = '\0';
 
 	printf("lo que recibi del netcat es: %s", saludoDesdeKernell);
+
+	/*Enviar msj a file system (ABSTRAEME PORFAVOR)*/
+
+	fileSystemAddres.sin_family = AF_INET;
+	fileSystemAddres.sin_addr.s_addr = inet_addr(IP);
+	fileSystemAddres.sin_port = htons(FILE_SYSTEM_PORT);
+
+	int socketFileSystem = socket(AF_INET, SOCK_STREAM, 0);
+
+	if(connect(socketFileSystem, (void *) &fileSystemAddres, sizeof(fileSystemAddres)) != 0){
+		perror("Error al conectar con File System");
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	if(send(socketFileSystem, saludoDesdeKernell, 99, 0) <= 0){
+		perror("Error al enviar querys de la consola");
+		exit_gracefully(EXIT_FAILURE);
+	}
+	/*Fin enviar file system */
+
+
+	/*Recibir mensaje de file system*/
+
+
+
+	/*Fin Recibir mensaje de file system*/
 
 	free(saludoDesdeKernell);
 

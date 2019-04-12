@@ -19,8 +19,9 @@
 #include <math.h>
 #include <commons/collections/queue.h>
 
-#define POL_MEM_PORT 8081
+#define POOL_MEM_PORT 8081
 #define KERNEL_PORT 8080
+#define FILE_SYSTEM_PORT 8082
 #define IP "127.0.0.1"
 
 /* id = 1 responder */
