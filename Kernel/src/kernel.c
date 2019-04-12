@@ -14,6 +14,7 @@
 void leer_consola();
 void parser_lql(char *);
 int cantidad_elementos(char **);
+int es_numero(char*);
 
 int main(void) {
 	get_parametros_config();

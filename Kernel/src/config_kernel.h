@@ -18,6 +18,7 @@
 #include <pthread.h>
 #include <commons/string.h>
 #include <math.h>
+#include <time.h>
 
 t_log * LOGGER;
 int PUERTO_ESCUCHA_CONEXION;
@@ -25,5 +26,9 @@ int PUERTO_ESCUCHA_CONEXION;
 //Cargo los parametros desde el archivo config y los libero conforme deje de usarlos
 void get_parametros_config();
 void configure_logger();
+void leer_consola();
+void parser_lql(char *);
+int cantidad_elementos(char **); //dado un array devuelve la cantidad de elementos que contiene.
+int es_numero(char*); //dado un string devuelve 1 si es un numero, 0 en caso contrario.
 
 #endif
