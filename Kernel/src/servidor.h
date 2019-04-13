@@ -29,7 +29,6 @@
 /* id = 1 responder */
 /* id = 2 recibir */
 
-
 typedef struct{
     int id;
     int value;
