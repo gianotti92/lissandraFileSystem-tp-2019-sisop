@@ -42,8 +42,22 @@ typedef struct{
 }  __attribute__((packed)) DatosCliente;
 
 
+/*funciones que DEBERIAN utilizar los procesos*/
+void levantar_servidor(void (*f) (char*));
+void enviarMensaje(char*);
+
+/*funciones hilo handler*/
 void atender_cliente(void (*f) (char*));
 
-void levantar_servidor(void (*f) (char*));
+
+/*funciones abstraccion comportamiento*/
+int iniciar_socket();
+void cargar_valores_address(struct sockaddr_in *fileSystemAddres, char* ip, int port);
+void evitar_bloqueo_puerto(int socket);
+void realizar_bind(int socket, struct sockaddr_in *fileSystemAddres);
+void ponerse_a_escuchar(int socket, int cantidadConexiones);
+void retornarControl();
+
+
 
 #endif

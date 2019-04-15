@@ -12,4 +12,10 @@ int main(void) {
 	configure_logger();
 	levantar_servidor(imprimir); // Le paso la funcion que quiero que ejecute
 	exit_gracefully(EXIT_SUCCESS);
+
+}
+
+void retornarControl(char * mensaje){
+	/* logica de cada proceso, iniciar planificador en kernell por ejemplo*/
+	printf(mensaje);
 }
