@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "conexion.h"
 #include "config_kernel.h"
-#include "servidor.h"
 
 void imprimir(char* mensaje){
 	printf("El mensaje es %s\n", mensaje);

@@ -3,13 +3,13 @@ CC := gcc #Compilador
 
 CFLAGS := -Wall -Werror -g -std=c99 #Flags para Valgrind
 
-FILES := $(TARGET) $(CONFIG) $(CLIENTE) #Nombre de archivos a usar
+FILES := $(TARGET) $(CONFIG) $(CONEXION) #Nombre de archivos a usar
 
 TARGET := poolMemory #Principal
 
 CONFIG := config_poolMemory #Secundario
 
-CLIENTE := cliente
+CONEXION := conexion
 
 INCLUDES := -lcommons -lpthread #Librerias a linkear
 
@@ -21,8 +21,8 @@ INCLUDES := -lcommons -lpthread #Librerias a linkear
 all: clean $(FILES)
 
 #Build programa
-$(TARGET): $(TARGET).o $(CONFIG).o $(CLIENTE).o #Tenemos que poner aca todos los que buildean el programa
-	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o $(CONFIG).o $(CLIENTE).o $(INCLUDES)
+$(TARGET): $(TARGET).o $(CONFIG).o $(CONEXION).o #Tenemos que poner aca todos los que buildean el programa
+	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o $(CONFIG).o $(CONEXION).o $(INCLUDES)
 
 #######################################
 #Archivos .c que conforman el programa#
@@ -38,8 +38,8 @@ $(CONFIG).o: $(CONFIG).c $(CONFIG).h
 	$(CC) $(CFLAGS) $(CONFIG).c -o $(CONFIG) $(INCLUDES)
 
 #Build archivo cliente.c
-$(CLIENTE).o: $(CLIENTE).c $(CLIENTE).h
-	$(CC) $(CFLAGS) $(CLIENTE).c -o $(CLIENTE) $(INCLUDES)
+$(CONEXION).o: $(CONEXION).c $(CONEXION).h
+	$(CC) $(CFLAGS) $(CONEXION).c -o $(CONEXION) $(CONEXION)
 
 #Borrar todo
 clean:

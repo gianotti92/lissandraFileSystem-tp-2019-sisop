@@ -1,4 +1,4 @@
-#include "servidor.h"
+#include "conexion.h"
 
 
 int socketServer, socketPoolMem;
