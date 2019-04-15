@@ -33,7 +33,7 @@ void conectar_y_crear_hilo(void (*f) (char*), char* ip, int puerto) {
 }
 
 
-char* recibir(char* msj, char * ip, int puerto){
+char* recibir(char * ip, int puerto){
 	struct sockaddr_in serverAddress;
 	int socketCliente = iniciar_socket();
 	cargar_valores_address(&serverAddress, ip, puerto);

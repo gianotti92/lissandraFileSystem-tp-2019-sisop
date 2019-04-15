@@ -36,7 +36,7 @@ t_queue * listaConexiones;
 /*funciones que DEBERIAN utilizar los procesos*/
 void conectar_y_crear_hilo(void (*f) (char*), char* ip, int port);
 void enviar(char* mensaje, char* ip, int puerto);
-char* recibir(char* mensaje, char* ip, int puerto);
+char* recibir(char* ip, int puerto);
 
 /*funciones hilo handler*/
 void atender_cliente(void (*f) (char*));

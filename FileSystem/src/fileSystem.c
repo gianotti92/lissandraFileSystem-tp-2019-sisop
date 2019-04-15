@@ -17,6 +17,9 @@ int main(void) {
 
 
 void retornarControl(char * msj, int cliente){
-	printf("Mensaje desde fileSystem");
-	printf(msj);
+	printf("Mensaje desde fileSystem ");
+	printf("%s", msj);
+
+	enviar("Saludo desde file system",IP, 8081);
+
 }
