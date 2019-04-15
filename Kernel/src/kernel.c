@@ -10,9 +10,6 @@ void imprimir(char* mensaje){
 int main(void) {
 	get_parametros_config();
 	configure_logger();
-	Instruccion *instruccion = malloc(sizeof(Instruccion));
-	instruccion->funcion = imprimir;
-	instruccion->args = NULL;
-	levantar_servidor(&instruccion); // Le paso la funcion que quiero que ejecute
+	levantar_servidor(imprimir); // Le paso la funcion que quiero que ejecute
 	exit_gracefully(EXIT_SUCCESS);
 }

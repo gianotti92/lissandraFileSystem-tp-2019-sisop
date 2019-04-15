@@ -3,8 +3,8 @@
 t_queue * listaConexiones;
 int socketServer, socketPoolMem;
 
-void levantar_servidor(Instruccion *instruccion) {
-	listaConexiones = queue_create(); // Lista de conexiones que va a ir teniendo el servidor
+void levantar_servidor(void (*f) (char*)) {
+	listaConexiones = queue_create();
 
 	struct sockaddr_in serverAddress;
 	struct sockaddr_in clientAddress;
@@ -34,7 +34,7 @@ void levantar_servidor(Instruccion *instruccion) {
 		exit_gracefully(EXIT_FAILURE);
 	}
 	pthread_t hiloHandler;
-	pthread_create(&hiloHandler, NULL, (void*) atender_cliente, instruccion);
+	pthread_create(&hiloHandler, NULL, (void*) atender_cliente, f);
 
 	while (1) {
 		unsigned int tamanoDireccion = sizeof(struct sockaddr_in);
@@ -51,7 +51,7 @@ void levantar_servidor(Instruccion *instruccion) {
 	}
 }
 
-void atender_cliente(Instruccion *instruccion) {
+void atender_cliente(void (*f) (char*)) {
 	char * buffer = malloc(100);
 	while (1) {
 		if (queue_size(listaConexiones) > 0) {
@@ -68,7 +68,7 @@ void atender_cliente(Instruccion *instruccion) {
 				queue_push(listaConexiones, (int *)socketCliente);
 			}else{
 				buffer[bytesRecibidos] = '\0';
-				instruccion->funcion(buffer); // Aca pincha porque no debo estar allocando bien la memoria para la instruccion
+				f(buffer); // Aca pincha porque no debo estar allocando bien la memoria para la instruccion
 			}
 		}
 	}

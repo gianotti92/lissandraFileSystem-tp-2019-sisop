@@ -41,14 +41,9 @@ typedef struct{
     unsigned int tamanoDireccion;
 }  __attribute__((packed)) DatosCliente;
 
-typedef struct{
-    void (*funcion) (void*);
-    void* args;
-}  __attribute__((packed)) Instruccion;
 
+void atender_cliente(void (*f) (char*));
 
-void atender_cliente(Instruccion *instruccion);
-
-void levantar_servidor(Instruccion *instruccion);
+void levantar_servidor(void (*f) (char*));
 
 #endif
