@@ -88,6 +88,7 @@ void atender_cliente(void (*f) (char*)) {
 				/* con la funcion que sigue, retorna el control al metodo principal del proceso correspondiente*/
 				retornarControl(buffer, socketCliente);
 				/*************************************************************/
+				queue_push(listaConexiones, (int *) socketCliente);
 			}
 			free(buffer);
 		}

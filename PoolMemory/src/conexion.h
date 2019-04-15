@@ -28,6 +28,7 @@
 #define IP "127.0.0.1"
 
 t_queue * listaConexiones;
+t_queue * listaConexionesRetorno;
 
 /* id = 1 responder */
 /* id = 2 recibir */
@@ -40,6 +41,7 @@ char* recibir(char* ip, int puerto);
 
 /*funciones hilo handler*/
 void atender_cliente(void (*f) (char*));
+void atender_respuesta();
 
 
 /*funciones abstraccion comportamiento*/

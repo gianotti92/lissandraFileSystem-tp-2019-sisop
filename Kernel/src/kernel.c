@@ -20,6 +20,4 @@ void retornarControl(char * mensaje, int socketCliente){
 	/* logica de cada proceso, iniciar planificador en kernell por ejemplo*/
 	printf("%s", mensaje);
 	enviar(mensaje, IP, PUERTO_POOL_MEM);
-	char *msjRecibido = recibir(IP, PUERTO_POOL_MEM);
-	printf("%s", msjRecibido);
 }
