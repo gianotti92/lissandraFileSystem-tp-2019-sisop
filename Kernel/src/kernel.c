@@ -10,12 +10,14 @@ void imprimir(char* mensaje){
 int main(void) {
 	get_parametros_config();
 	configure_logger();
-	levantar_servidor(imprimir); // Le paso la funcion que quiero que ejecute
+	conectar_y_crear_hilo(imprimir, IP, PUERTO_KERNELL);
 	exit_gracefully(EXIT_SUCCESS);
 
 }
 
-void retornarControl(char * mensaje){
+void retornarControl(char * mensaje, int socketCliente){
 	/* logica de cada proceso, iniciar planificador en kernell por ejemplo*/
 	printf(mensaje);
+	enviar(mensaje, IP, PUERTO_POOL_MEM);
+	char msjRecibido=recibir("te envio esta", IP, PUERTO_POOL_MEM);
 }

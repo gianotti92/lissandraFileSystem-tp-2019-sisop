@@ -1,16 +1,16 @@
 #include "servidor.h"
 
-t_queue * listaConexiones;
+
 int socketServer, socketPoolMem;
 
 /* funciones genericas para todos los modulos*/
-void levantar_servidor(void (*f) (char*)) {
+void conectar_y_crear_hilo(void (*f) (char*), char* ip, int puerto) {
 	log_info(LOGGER, "Se inicia servidor");
 	listaConexiones = queue_create();
 	struct sockaddr_in serverAddress, clientAddress;
 
 	socketServer = iniciar_socket();
-	cargar_valores_address(&serverAddress, IP, PUERTO_KERNELL);
+	cargar_valores_address(&serverAddress, ip, puerto);
 	evitar_bloqueo_puerto(socketServer);
 	realizar_bind(socketServer, &serverAddress);
 	ponerse_a_escuchar(socketServer, BACKLOG);
@@ -32,12 +32,42 @@ void levantar_servidor(void (*f) (char*)) {
 	}
 }
 
+
+char* recibir(char* msj, char * ip, int puerto){
+	struct sockaddr_in serverAddress;
+	int socketCliente = iniciar_socket();
+	cargar_valores_address(&serverAddress, ip, puerto);
+	evitar_bloqueo_puerto(socketServer);
+	realizar_bind(socketServer, &serverAddress);
+	ponerse_a_escuchar(socketServer, BACKLOG);
+	char *buffer = malloc(100);
+	int bytesRecibidos = recv(socketCliente, buffer, 99, 0);
+	if (bytesRecibidos == 0){
+		char * error = string_new();
+		string_append(&error, "Cliente se desconecto: ");
+		string_append(&error, strerror(errno));
+		close(socketCliente);
+		log_error(LOGGER, error);
+	}
+	return buffer;
+}
+
+void enviar(char* msj, char * ip, int puerto){
+	struct sockaddr_in addressToConect;
+	int socketServidor = iniciar_socket();
+	cargar_valores_address(&addressToConect, ip, puerto);
+	realizar_conexion(socketServidor, &addressToConect);
+	if(send(socketServidor, msj, 99, 0) <= 0){
+		perror("Error al enviar querys de la consola");
+		exit_gracefully(EXIT_FAILURE);
+	}
+}
+
 /* funcion hilo handler*/
 void atender_cliente(void (*f) (char*)) {
-	char * buffer = malloc(100);
 	while (1) {
 		if (queue_size(listaConexiones) > 0) {
-			log_info(LOGGER, "Cliente atendido");
+			char * buffer = malloc(100);
 			int socketCliente = (int)queue_peek(listaConexiones);
 			queue_pop(listaConexiones);
 			int bytesRecibidos = recv(socketCliente, buffer, 99, 0);
@@ -56,9 +86,10 @@ void atender_cliente(void (*f) (char*)) {
 				f(buffer);
 				/*************************************************************/
 				/* con la funcion que sigue, retorna el control al metodo principal del proceso correspondiente*/
-				retornarControl(buffer);
+				retornarControl(buffer, socketCliente);
 				/*************************************************************/
 			}
+			free(buffer);
 		}
 	}
 }
@@ -107,6 +138,13 @@ void ponerse_a_escuchar(int socket, int cantidadConexiones) {
 	if (listen(socket, cantidadConexiones) == -1) {
 		perror("Fallo en el listen");
 		log_error(LOGGER, "fallo el listen");
+		exit_gracefully(EXIT_FAILURE);
+	}
+}
+
+void realizar_conexion(int socketServer, struct sockaddr_in * address){
+	if(connect(socketServer, (void *) address, sizeof(*address)) != 0){
+		perror("Error al realizar connect");
 		exit_gracefully(EXIT_FAILURE);
 	}
 }
