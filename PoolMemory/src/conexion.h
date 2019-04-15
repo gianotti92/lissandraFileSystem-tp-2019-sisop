@@ -18,7 +18,7 @@
 #include <pthread.h>
 #include <commons/config.h>
 #include <commons/collections/queue.h>
-#include "config_fileSystem.h"
+#include "config_poolMemory.h"
 
 #define BACKLOG 10     // Cuántas conexiones pendientes se mantienen en cola
 
@@ -28,20 +28,10 @@
 #define IP "127.0.0.1"
 
 t_queue * listaConexiones;
+t_queue * listaConexionesRetorno;
 
 /* id = 1 responder */
 /* id = 2 recibir */
-
-typedef struct{
-    int id;
-    int value;
-}  __attribute__((packed)) TypeOfCommunication;
-
-typedef struct{
-    int socketServidor;
-    struct sockaddr_in cliente;
-    unsigned int tamanoDireccion;
-}  __attribute__((packed)) DatosCliente;
 
 
 /*funciones que DEBERIAN utilizar los procesos*/
@@ -51,6 +41,7 @@ char* recibir(char* ip, int puerto);
 
 /*funciones hilo handler*/
 void atender_cliente(void (*f) (char*));
+void atender_respuesta();
 
 
 /*funciones abstraccion comportamiento*/

@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <sys/fcntl.h>
 #include <pthread.h>
 #include <commons/config.h>
 #include <commons/collections/queue.h>
@@ -26,9 +27,10 @@
 #define PUERTO_FS 8082
 #define IP "127.0.0.1"
 
+t_queue * listaConexiones;
+
 /* id = 1 responder */
 /* id = 2 recibir */
-
 
 typedef struct{
     int id;
@@ -42,18 +44,23 @@ typedef struct{
 }  __attribute__((packed)) DatosCliente;
 
 
-void atender_cliente(void * args);
+/*funciones que DEBERIAN utilizar los procesos*/
+void conectar_y_crear_hilo(void (*f) (char*), char* ip, int port);
+void enviar(char* mensaje, char* ip, int puerto);
+char* recibir(char* ip, int puerto);
 
-void levantar_servidor_kernel();
+/*funciones hilo handler*/
+void atender_cliente(void (*f) (char*));
 
-void levantar_servidor_status();
 
-void enviar_saludo(int fdCliente);
-
-int recibir_saludo(int fdCliente);
-
-void atender_cliente(void* idSocketCliente);
-
+/*funciones abstraccion comportamiento*/
+int iniciar_socket();
+void cargar_valores_address(struct sockaddr_in *fileSystemAddres, char* ip, int port);
+void evitar_bloqueo_puerto(int socket);
+void realizar_bind(int socket, struct sockaddr_in *fileSystemAddres);
+void ponerse_a_escuchar(int socket, int cantidadConexiones);
+void retornarControl(char * msj, int cliente);
+void realizar_conexion(int socketServer, struct sockaddr_in * address);
 
 
 
