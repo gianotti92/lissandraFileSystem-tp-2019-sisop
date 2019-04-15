@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <sys/fcntl.h>
 #include <pthread.h>
 #include <commons/config.h>
 #include <commons/collections/queue.h>
@@ -40,20 +41,14 @@ typedef struct{
     unsigned int tamanoDireccion;
 }  __attribute__((packed)) DatosCliente;
 
-
-void atender_cliente(void * args);
-
-void levantar_servidor_kernel();
-
-void levantar_servidor_status();
-
-void enviar_saludo(int fdCliente);
-
-int recibir_saludo(int fdCliente);
-
-void atender_cliente(void* idSocketCliente);
+typedef struct{
+    void (*funcion) (void*);
+    void* args;
+}  __attribute__((packed)) Instruccion;
 
 
+void atender_cliente(Instruccion *instruccion);
 
+void levantar_servidor(Instruccion *instruccion);
 
 #endif

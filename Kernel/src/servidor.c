@@ -1,123 +1,113 @@
 #include "servidor.h"
 
 t_queue * listaConexiones;
-int socketKernell, socketPoolMem;
+int socketServer, socketPoolMem;
 
-void levantar_servidor_kernel() {
-	struct sockaddr_in kernelAddres;
-	struct sockaddr_in consolClientAddres;
-	int activado = 1;
-	fd_set rfds; //conjunto de descriptores a vigilar para hacer el select()
+void levantar_servidor(Instruccion *instruccion) {
+	listaConexiones = queue_create(); // Lista de conexiones que va a ir teniendo el servidor
 
-	listaConexiones = queue_create();
-	socketKernell = socket(AF_INET, SOCK_STREAM, 0);
-	if (socketKernell <= -1) {
-		perror("No se pudo crear el socket servidor");
+	struct sockaddr_in serverAddress;
+	struct sockaddr_in clientAddress;
+	socketServer = socket(AF_INET, SOCK_STREAM, 0);
+	if (socketServer <= -1) {
+		log_error(LOGGER, "No se pudo crear el socket servidor");
 		exit_gracefully(EXIT_SUCCESS);
 	}
 
-	kernelAddres.sin_family = AF_INET;
-	kernelAddres.sin_addr.s_addr = inet_addr(IP);
-	kernelAddres.sin_port = htons(PUERTO_KERNELL);
-	memset(&(kernelAddres.sin_zero), '\0', 8);
+	serverAddress.sin_family = AF_INET;
+	serverAddress.sin_addr.s_addr = inet_addr(IP);
+	serverAddress.sin_port = htons(PUERTO_KERNELL);
+	memset(&(serverAddress.sin_zero), '\0', sizeof(serverAddress.sin_zero));
 
-	setsockopt(socketKernell, SOL_SOCKET, SO_REUSEADDR, &activado,
+	int activado = 1;
+	setsockopt(socketServer, SOL_SOCKET, SO_REUSEADDR, &activado,
 			sizeof(activado));
 
-	if (bind(socketKernell, (struct sockaddr *) &kernelAddres,
+	if (bind(socketServer, (struct sockaddr *) &serverAddress,
 			sizeof(struct sockaddr)) == -1) {
-		perror("Fallo el bind");
+		log_error(LOGGER, "Fallo el bind");
 		exit_gracefully(EXIT_FAILURE);
 	}
 
-	if (listen(socketKernell, 100) == -1) {
-		perror("Fallo en el listen");
+	if (listen(socketServer, 100) == -1) {
+		log_error(LOGGER, "Fallo en el listen");
 		exit_gracefully(EXIT_FAILURE);
 	}
-	puts("Estoy escuchando...");
-	/*--------------------------*/
-
 	pthread_t hiloHandler;
-	pthread_create(&hiloHandler, NULL, (void*) atender_cliente, NULL);
-	pthread_t hiloListner;
-	/* lanzar hilo*/
+	pthread_create(&hiloHandler, NULL, (void*) atender_cliente, instruccion);
 
 	while (1) {
 		unsigned int tamanoDireccion = sizeof(struct sockaddr_in);
-		int socketCliente = accept(socketKernell,
-				(struct sockaddr *) &consolClientAddres, &tamanoDireccion);
+		int socketCliente = accept(socketServer,
+				(struct sockaddr *) &clientAddress, &tamanoDireccion);
 		if (socketCliente != -1) {
 			printf("\nSe ha conectado %s por su puerto %d\n",
-					inet_ntoa(consolClientAddres.sin_addr), consolClientAddres.sin_port);
-			queue_push(listaConexiones, (void *) socketCliente);
+					inet_ntoa(clientAddress.sin_addr), clientAddress.sin_port);
+			fcntl(socketCliente, F_SETFL, O_NONBLOCK);
+			queue_push(listaConexiones, (int *) socketCliente);
 
 			printf("el numero de elementos encolados es %d\n", queue_size(listaConexiones));
 		}
 	}
-	exit_gracefully(EXIT_SUCCESS);
 }
 
-void atender_cliente(void* args) {
+void atender_cliente(Instruccion *instruccion) {
+	char * buffer = malloc(100);
 	while (1) {
 		if (queue_size(listaConexiones) > 0) {
-
-			char * buffer = malloc(100);
-			int *socketCliente = (int *)queue_peek(listaConexiones);
+			int socketCliente = queue_peek(listaConexiones);
 			queue_pop(listaConexiones);
 			int bytesRecibidos = recv(socketCliente, buffer, 99, 0);
-
-			if (bytesRecibidos == 0) {
-				log_info(LOGGER, "no recibi datos, vuelvo a encolar");
-				queue_push(listaConexiones, (void *)socketCliente);
-			}else if(bytesRecibidos <= -1){
+			if (bytesRecibidos == 0){
 				char * error = string_new();
 				string_append(&error, "Cliente se desconecto: ");
 				string_append(&error, strerror(errno));
-				close(*socketCliente);
+				close(socketCliente);
 				log_error(LOGGER, error);
+			}else if ((errno == EAGAIN || errno == EWOULDBLOCK) && bytesRecibidos == -1) {
+				queue_push(listaConexiones, (int *)socketCliente);
 			}else{
 				buffer[bytesRecibidos] = '\0';
-				/*Aca vendrian a estar las query que leemos por consola (definir protocolo de comunicacion)*/
-				printf("lo que recibi del netcat es: %s", buffer);
-
-				char * msj = string_new();
-				string_append(&msj, "lo que recibi del netcat es:");
-				string_append(&msj, buffer);
-				log_info(LOGGER, msj);
-
-
-				/*aca voy a levanatar el socket y enviar al proceso de memoria despues lo extraigo en una funcion aparte*/
-				struct sockaddr_in direccionServidor;
-				direccionServidor.sin_family = AF_INET;
-				direccionServidor.sin_addr.s_addr = inet_addr(IP);
-				direccionServidor.sin_port = htons(PUERTO_POOL_MEM);
-
-				socketPoolMem = socket(AF_INET, SOCK_STREAM, 0);
-				if (connect(socketPoolMem, (void *) &direccionServidor,
-						sizeof(direccionServidor)) != 0) {
-
-					char * error = string_new();
-					string_append(&error, "Error al conectar con el cliente:");
-					string_append(&error, strerror(errno));
-					close(*socketCliente);
-					log_error(LOGGER, error);
-					exit_gracefully(EXIT_FAILURE);
-				}
-
-				if (send(socketPoolMem, buffer, 99, 0) <= 0) {
-					char * error = string_new();
-					string_append(&error, "Error al enviar querys de la consola:");
-					string_append(&error, strerror(errno));
-					close(*socketCliente);
-					log_error(LOGGER, error);
-					exit_gracefully(EXIT_FAILURE);
-				}
-				/*fin*/
-				free(buffer);
+				instruccion->funcion(buffer); // Aca pincha porque no debo estar allocando bien la memoria para la instruccion
 			}
 		}
 	}
 }
 
+/*Aca vendrian a estar las query que leemos por consola (definir protocolo de comunicacion)*/
+//char * msj = string_new();
+//string_append(&msj, "lo que recibi del netcat es:");
+//string_append(&msj, buffer);
+//log_info(LOGGER, msj);
+//queue_push(listaConexiones, (int *)socketCliente);
 
+/*aca voy a levanatar el socket y enviar al proceso de memoria despues lo extraigo en una funcion aparte*/
+/*
+struct sockaddr_in direccionServidor;
+direccionServidor.sin_family = AF_INET;
+direccionServidor.sin_addr.s_addr = inet_addr(IP);
+direccionServidor.sin_port = htons(PUERTO_POOL_MEM);
 
+socketPoolMem = socket(AF_INET, SOCK_STREAM, 0);
+if (connect(socketPoolMem, (void *) &direccionServidor,
+		sizeof(direccionServidor)) != 0) {
+
+	char * error = string_new();
+	string_append(&error, "Error al conectar con el cliente:");
+	string_append(&error, strerror(errno));
+	close(*socketCliente);
+	log_error(LOGGER, error);
+	exit_gracefully(EXIT_FAILURE);
+}
+
+if (send(socketPoolMem, buffer, 99, 0) <= 0) {
+	char * error = string_new();
+	string_append(&error, "Error al enviar querys de la consola:");
+	string_append(&error, strerror(errno));
+	close(*socketCliente);
+	log_error(LOGGER, error);
+	exit_gracefully(EXIT_FAILURE);
+}
+#fin
+free(buffer);
+*/
