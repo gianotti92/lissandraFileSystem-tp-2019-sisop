@@ -1,13 +1,3 @@
-/*
- ============================================================================
- Name        : kernel.c
- Author      : 
- Version     :
- Copyright   : 
- Description : Hello World in C, Ansi-style
- ============================================================================
- */
-
 #include "config_kernel.h"
 
 
@@ -17,30 +7,32 @@ int main(void) {
 	puts("Hello Kernel!!"); /* prints  */
 	printf("%d \n", PUERTO_ESCUCHA_CONEXION);
 
-	leer_consola();
+	char* leido;
+	char** consulta_parseada;
+
+	while (1) {
+
+		leido = leer_consola();
+		consulta_parseada = parser_lql(leido, LOGGER);
+		if (!es_error(consulta_parseada)) print_consulta_parseada(consulta_parseada);
+
+	}
 
 	return EXIT_SUCCESS;
 }
 
-void leer_consola(){
+char* leer_consola(){
 	char* leido;
-	char** consulta_parseada;
 
 	leido = readline(">>");
 	add_history(leido);
 
-		while (!string_equals_ignore_case(leido, "EXIT")){
+	log_info(LOGGER, "Leido por consola: %s", leido);
 
-			log_info(LOGGER, "Leido por consola: %s", leido);
-			consulta_parseada = parser_lql(leido, LOGGER);
-
-			if (!es_error(consulta_parseada)) print_consulta_parseada(consulta_parseada);
-
-			free(leido);
-			leido = readline(">>");
-			add_history(leido);
+		if (string_equals_ignore_case(leido, "EXIT")){
+			puts("Salgo de la consola");
+			exit(1);
 		}
 
-	free(leido);
-	puts("Salgo de la consola");
+	return leido;
 }

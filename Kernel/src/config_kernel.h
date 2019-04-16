@@ -28,6 +28,6 @@ int PUERTO_ESCUCHA_CONEXION;
 //Cargo los parametros desde el archivo config y los libero conforme deje de usarlos
 void get_parametros_config();
 void configure_logger();
-void leer_consola();
+char* leer_consola();
 
 #endif
