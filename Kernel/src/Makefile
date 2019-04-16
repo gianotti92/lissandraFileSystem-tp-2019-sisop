@@ -1,17 +1,8 @@
 #Declaro variables
 CC := gcc #Compilador
 
-CFLAGS := -Wall -Werror -g -std=c99 #Flags para Valgrind
+OBJS := kernel.o config_kernel.o parser.o
 
-FILES := $(TARGET) $(CONFIG) $(CONEXION)#Nombre de archivos a usar
-
-TARGET := kernel #Principal
-
-CONFIG := config_kernel #Secundario
-
-CONEXION := conexion #Secundario
-
-INCLUDES := -lcommons -lpthread #Librerias a linkear
 
 #####################
 #Generador principal#
@@ -20,26 +11,17 @@ INCLUDES := -lcommons -lpthread #Librerias a linkear
 #Borro los archivos que antes estaban
 all: clean $(FILES)
 
-#Build programa
-$(TARGET): $(TARGET).o $(CONFIG).o $(CONEXION).o <#Tenemos que poner aca todos los que buildean el programa
-	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o $(CONFIG).o $(CONEXION).o $(INCLUDES)
+kernel: $(OBJS)
+	$(CC) -o kernel $(OBJS) -lcommons -lreadline -lm 
 
-#######################################
-#Archivos .c que conforman el programa#
-#######################################
-#Hay que hacer un build por cada uno de los archivos y sus dependencias
-
-#Build archivo fileSystem.c	
-$(TARGET).o: $(TARGET).c $(CONFIG).h 
-	$(CC) $(CFLAGS) $(TARGET).c -o $(TARGET) $(INCLUDES)
-
-#Build archivo config_fileSystem.c
-$(CONFIG).o: $(CONFIG).c $(CONFIG).h
-	$(CC) $(CFLAGS) $(CONFIG).c -o $(CONFIG) $(INCLUDES)
-
-#Build archivo conexion.c
-$(CONEXION).o: $(CONEXION).c $(CONEXION).h
-	$(CC) $(CFLAGS) $(CONEXION).c -o $(CONEXION) $(INCLUDES)
+kernel.o: kernel.c config_kernel.h
+	$(CC) -c kernel.c
+	
+config_kernel.o: config_kernel.c config_kernel.h
+	$(CC) -c  config_kernel.c 
+	
+parser.o: parser.c parser.h
+	$(CC) -c parser.c
 
 #Borrar todo
 clean:

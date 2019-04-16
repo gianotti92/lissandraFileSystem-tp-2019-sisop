@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #include <errno.h>
 #include <string.h>
 #include <netdb.h>
@@ -17,6 +19,8 @@
 #include <pthread.h>
 #include <commons/string.h>
 #include <math.h>
+#include <time.h>
+#include "parser.h"
 
 t_log * LOGGER;
 int PUERTO_ESCUCHA_CONEXION;
@@ -28,5 +32,6 @@ void configure_logger();
 //libera todos los parametros que tenga
 void free_parametros_config();
 void exit_gracefully(int exit_code);
+char* leer_consola();
 
 #endif
