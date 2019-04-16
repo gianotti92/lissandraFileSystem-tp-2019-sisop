@@ -24,24 +24,21 @@ int main(void) {
 
 void leer_consola(){
 	char* leido;
-	t_dictionary* consulta_parseada;
+	char** consulta_parseada;
 
 	leido = readline(">>");
 	add_history(leido);
 
-	string_to_upper(leido);
-
-		while (strncmp(leido, "EXIT", 4) != 0){
+		while (!string_equals_ignore_case(leido, "EXIT")){
 
 			log_info(LOGGER, "Leido por consola: %s", leido);
 			consulta_parseada = parser_lql(leido, LOGGER);
 
-			if (!dictionary_is_empty(consulta_parseada)) print_dictionary(consulta_parseada);
+			if (!es_error(consulta_parseada)) print_consulta_parseada(consulta_parseada);
 
 			free(leido);
 			leido = readline(">>");
 			add_history(leido);
-			string_to_upper(leido);
 		}
 
 	free(leido);

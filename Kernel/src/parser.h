@@ -17,17 +17,20 @@
 #include <math.h>
 #include <time.h>
 
-t_dictionary* parser_lql(char *, t_log*); //recibe una consulta en string y un logger, devuelve la consulta parseada y utiliza el loguer.
-int cantidad_elementos(char **); //dado un array devuelve la cantidad de elementos que contiene.
+char** parser_lql(char*, t_log*); //recibe una consulta en string y un logger, devuelve la consulta parseada y utiliza el loguer.
+int cantidad_elementos(char**); //dado un array devuelve la cantidad de elementos que contiene.
 int es_numero(char*); //dado un string devuelve 1 si es un numero, 0 en caso contrario.
-void print_dictionary(t_dictionary*);
-int es_select(t_dictionary*);
-bool es_insert(t_dictionary*);
-bool es_create(t_dictionary*);
-bool es_describe(t_dictionary*);
-bool es_drop(t_dictionary*);
-bool es_addmemory(t_dictionary*);
-bool es_run(t_dictionary*);
-bool es_metrics(t_dictionary*);
-bool es_journal(t_dictionary*);
+void print_consulta_parseada(char**);
+bool es_select(char**);
+bool es_insert(char**);
+bool es_create(char**);
+bool es_describe(char**);
+bool es_drop(char**);
+bool es_addmemory(char**);
+bool es_run(char**);
+bool es_metrics(char**);
+bool es_journal(char**);
+bool es_error(char**);
 unsigned long int string_to_ulint(char*);
+unsigned short int get_key(char**);
+unsigned long int get_timestamp(char**);

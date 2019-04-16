@@ -10,9 +10,10 @@
 
 #include "parser.h"
 
-t_dictionary* parser_lql(char* consulta, t_log* LOGGER){
+char** parser_lql(char* consulta, t_log* LOGGER){
 
-	t_dictionary* consulta_parseada = dictionary_create();//en caso de no poder parsear la consulta, devuelve diccionario vacio
+	char** ERROR = string_split("ERROR", " ");
+	char** CONSULTA_PARSEADA;
 
 	time_t echo_time;
 	echo_time = time(NULL);
@@ -20,7 +21,7 @@ t_dictionary* parser_lql(char* consulta, t_log* LOGGER){
 	if (echo_time == ((time_t)-1)){
 		(void) fprintf(stderr, "Fallo al obtener la hora. \n");
 		log_error(LOGGER, "Fallo al obtener la hora.");
-		return (consulta_parseada);
+		return ERROR;
 	}
 
 	consulta = string_from_format("%s %ju", consulta, (uintmax_t)echo_time);
@@ -30,58 +31,45 @@ t_dictionary* parser_lql(char* consulta, t_log* LOGGER){
 
 	int length = cantidad_elementos(consulta_separada) - 1;
 
-
-	if (strncmp(consulta_separada[0], "SELECT", 6) == 0){
+	if (es_select(consulta_separada)){
 
 		if (length != 3){
 			puts("ERROR: La sintaxis correcta es > SELECT [NOMBRE_TABLA] [KEY]");
 			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
-			return (consulta_parseada);
+			return ERROR;
 		}
 		else if(!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
 			log_error(LOGGER, "La Key es incorrecta.");
-			return (consulta_parseada);
+			return ERROR;
 		}
 		else{
-
-			unsigned int key = (short int) string_to_ulint(consulta_separada[2]);
-			unsigned long int timestamp = string_to_ulint(consulta_separada[3]);
-
-			dictionary_put(consulta_parseada, "operacion", consulta_separada[0]);
-			dictionary_put(consulta_parseada, "tabla", consulta_separada[1]);
-			dictionary_put(consulta_parseada, "key", key);
-			dictionary_put(consulta_parseada, "timestamp", timestamp);
 
 			/*puts(consulta_separada[0]);//select
 			puts(consulta_separada[1]);//tabla
 			puts(consulta_separada[2]);//key
 			puts(consulta_separada[3]);//timestamp*/
 
+			string_to_upper(consulta_separada[0]);
+			string_to_upper(consulta_separada[1]);
+
 			log_info(LOGGER, "Consulta aceptada.");
+			CONSULTA_PARSEADA = consulta_separada;
 		}
 	}
-	else if (strncmp(consulta_separada[0], "INSERT", 6) == 0){
+	else if (es_insert(consulta_separada)){
 
 		if (length != 4){
 			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]”");
 			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			return ERROR;
 		}
 		else if (!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
 			log_error(LOGGER, "La Key es incorrecta.");
+			return ERROR;
 		}
 		else{
-
-			unsigned int key = (short int) string_to_ulint(consulta_separada[2]);
-			unsigned long int timestamp = string_to_ulint(consulta_separada[4]);
-
-			dictionary_put(consulta_parseada, "operacion", consulta_separada[0]);
-			dictionary_put(consulta_parseada, "tabla", consulta_separada[1]);
-			dictionary_put(consulta_parseada, "key", key);
-			dictionary_put(consulta_parseada, "valor", consulta_separada[3]);
-			dictionary_put(consulta_parseada, "timestamp", timestamp);
-
 
 			/*puts(consulta_separada[0]);//insert
 			puts(consulta_separada[1]);//tabla
@@ -89,35 +77,31 @@ t_dictionary* parser_lql(char* consulta, t_log* LOGGER){
 			puts(consulta_separada[3]);//valor
 			puts(consulta_separada[4]);//timestamp*/
 
+			string_to_upper(consulta_separada[0]);
+			string_to_upper(consulta_separada[1]);
+
 			log_info(LOGGER, "Consulta aceptada.");
+			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
-	else if (strncmp(consulta_separada[0], "CREATE", 6) == 0){
+	else if (es_create(consulta_separada)){
 		if (length != 5){
 			puts("ERROR: La sintaxis correcta es > CREATE [NOMBRE_TABLA] [TIPO_CONSISTENCIA] [NUMERO_PARTICIONES] [COMPACTION_TIME]");
 			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			return ERROR;
 		}
 		else if (!es_numero(consulta_separada[3])){
 			puts("ERROR: La cantidad de particiones debe ser un numero.");
 			log_error(LOGGER, "La cantidad de particiones debe ser un numero.");
+			return ERROR;
 		}
 		else if (!es_numero(consulta_separada[4])){
 			puts("ERROR: El tiempo de compactacion debe ser un numero.");
 			log_error(LOGGER, "El tiempo de compactacion debe ser un numero.");
+			return ERROR;
 		}
 		else{
-			unsigned int particiones = (short int) string_to_ulint(consulta_separada[3]);
-			unsigned int compactacion = (short int) string_to_ulint(consulta_separada[4]);
-			unsigned long int timestamp = string_to_ulint(consulta_separada[5]);
-
-			dictionary_put(consulta_parseada, "operacion", consulta_separada[0]);
-			dictionary_put(consulta_parseada, "tabla", consulta_separada[1]);
-			dictionary_put(consulta_parseada, "consistencia", consulta_separada[2]);
-			dictionary_put(consulta_parseada, "particiones", particiones);
-			dictionary_put(consulta_parseada, "compactacion", compactacion);
-			dictionary_put(consulta_parseada, "timestamp", timestamp);
-
 
 			/*puts(consulta_separada[0]);//CREATE
 			puts(consulta_separada[1]);//tabla
@@ -126,68 +110,72 @@ t_dictionary* parser_lql(char* consulta, t_log* LOGGER){
 			puts(consulta_separada[4]);//compactacion
 			puts(consulta_separada[5]);//timestamp*/
 
+			string_to_upper(consulta_separada[0]);
+			string_to_upper(consulta_separada[1]);
+			string_to_upper(consulta_separada[2]);
+
 			log_info(LOGGER, "Consulta aceptada.");
+			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
-	else if (strncmp(consulta_separada[0], "DESCRIBE", 8) == 0){
+	else if (es_describe(consulta_separada)){
 
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > DESCRIBE [NOMBRE_TABLA]");
 			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			return ERROR;
 		}
 		else{
-
-			unsigned long int timestamp = string_to_ulint(consulta_separada[2]);
-
-			dictionary_put(consulta_parseada, "operacion", consulta_separada[0]);
-			dictionary_put(consulta_parseada, "tabla", consulta_separada[1]);
-			dictionary_put(consulta_parseada, "timestamp", timestamp);
 
 			/*puts(consulta_separada[0]);//DESCRIBE
 			puts(consulta_separada[1]);//tabla
 			puts(consulta_separada[2]);//timestamp*/
 
+			string_to_upper(consulta_separada[0]);
+			string_to_upper(consulta_separada[1]);
+
 			log_info(LOGGER, "Consulta aceptada.");
+			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
-	else if (strncmp(consulta_separada[0], "DROP", 4) == 0){
+	else if (es_drop(consulta_separada)){
 
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > DROP [NOMBRE_TABLA]");
 			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			return ERROR;
 		}
 		else{
-
-			unsigned long int timestamp = string_to_ulint(consulta_separada[2]);
-
-			dictionary_put(consulta_parseada, "operacion", consulta_separada[0]);
-			dictionary_put(consulta_parseada, "tabla", consulta_separada[1]);
-			dictionary_put(consulta_parseada, "timestamp", timestamp);
 
 			/*puts(consulta_separada[0]);//DROP
 			puts(consulta_separada[1]);//tabla
 			puts(consulta_separada[2]);//timestamp*/
 
+			string_to_upper(consulta_separada[0]);
+			string_to_upper(consulta_separada[1]);
+
 			log_info(LOGGER, "Consulta aceptada.");
+			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
-	else if (strncmp(string_from_format("%s %s", consulta_separada[0], consulta_separada[1]), "ADD MEMORY", 10) == 0){
+	else if (string_equals_ignore_case(string_from_format("%s %s", consulta_separada[0], consulta_separada[1]), "ADD MEMORY")){
 
 		if (length != 5){
 			puts("ERROR: La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO]");
 			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			return ERROR;
+		}
+		else if ((string_equals_ignore_case(consulta_separada[4], "SC"))
+				& (string_equals_ignore_case(consulta_separada[4], "SHC"))
+				& (string_equals_ignore_case(consulta_separada[4], "EC"))){
+			puts("ERROR: El tipo de consistencia es incorrecto. Debe ser uno de [SC, SHC, EC].");
+			log_error(LOGGER, "El tipo de consistencia es incorrecto.");
+			return ERROR;
 		}
 		else{
-
-			unsigned long int timestamp = string_to_ulint(consulta_separada[5]);
-
-			dictionary_put(consulta_parseada, "operacion", string_from_format("%s %s", consulta_separada[0], consulta_separada[1]));
-			dictionary_put(consulta_parseada, "memoria", consulta_separada[2]);
-			dictionary_put(consulta_parseada, "criterio", consulta_separada[4]);
-			dictionary_put(consulta_parseada, "timestamp", timestamp);
 
 			/*
 			puts(consulta_separada[0]);//ADD
@@ -197,69 +185,78 @@ t_dictionary* parser_lql(char* consulta, t_log* LOGGER){
 			puts(consulta_separada[4]);//criterio
 			puts(consulta_separada[5]);//timestamp*/
 
+			consulta_separada[0] = string_from_format("%s %s", consulta_separada[0], consulta_separada[1]);
+			consulta_separada[1] = consulta_separada[2];
+			consulta_separada[2] = consulta_separada[3];
+			consulta_separada[3] = consulta_separada[4];
+			consulta_separada[4] = consulta_separada[5];
+			consulta_separada[5] = NULL;
+			free(consulta_separada[6]);
+
+			string_to_upper(consulta_separada[0]);
+			string_to_upper(consulta_separada[2]);
+			string_to_upper(consulta_separada[3]);
+
 			log_info(LOGGER, "Consulta aceptada.");
+			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
-	else if (strncmp(consulta_separada[0], "RUN", 3) == 0 ){
+	else if (es_run(consulta_separada) ){
 
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > RUN [ARCHIVO]");
 			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			return ERROR;
 		}
 		else{
-
-			unsigned long int timestamp = string_to_ulint(consulta_separada[2]);
-
-			dictionary_put(consulta_parseada, "operacion", consulta_separada[0]);
-			dictionary_put(consulta_parseada, "archivo", consulta_separada[1]);
-			dictionary_put(consulta_parseada, "timestamp", timestamp);
 
 			/*puts(consulta_separada[0]);//RUN
 			puts(consulta_separada[1]);//path archivo
 			puts(consulta_separada[2]);//timestamp*/
 
+			string_to_upper(consulta_separada[0]);
+
 			log_info(LOGGER, "Consulta aceptada.");
+			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
-	else if (strncmp(consulta_separada[0], "METRICS", 7) == 0){
+	else if (es_metrics(consulta_separada)){
 
 			if (length != 1){
 				puts("ERROR: La sintaxis correcta es > METRICS");
 				log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+				return ERROR;
 			}
 			else{
-
-				unsigned long int timestamp = string_to_ulint(consulta_separada[1]);
-
-				dictionary_put(consulta_parseada, "operacion", consulta_separada[0]);
-				dictionary_put(consulta_parseada, "timestamp", timestamp);
 
 				/*puts(consulta_separada[0]);//METRICS
 				puts(consulta_separada[1]);//timestamp*/
 
+				string_to_upper(consulta_separada[0]);
+
 				log_info(LOGGER, "Consulta aceptada.");
+				CONSULTA_PARSEADA = consulta_separada;
 
 			}
 		}
-	else if (strncmp(consulta_separada[0], "JOURNAL", 7) == 0){
+	else if (es_journal(consulta_separada)){
 
 			if (length != 1){
 				puts("ERROR: La sintaxis correcta es > JOURNAL");
 				log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+				return ERROR;
 			}
 			else{
-
-				unsigned long int timestamp = string_to_ulint(consulta_separada[1]);
-
-				dictionary_put(consulta_parseada, "operacion", consulta_separada[0]);
-				dictionary_put(consulta_parseada, "timestamp", timestamp);
 
 				/*puts(consulta_separada[0]);//JOURNAL
 				puts(consulta_separada[1]);//timestamp*/
 
+				string_to_upper(consulta_separada[0]);
+
 				log_info(LOGGER, "Consulta aceptada.");
+				CONSULTA_PARSEADA = consulta_separada;
 
 			}
 		}
@@ -269,9 +266,10 @@ t_dictionary* parser_lql(char* consulta, t_log* LOGGER){
 		puts("Desde Pool Memory >> [SELECT, INSERT, CREATE, DESCRIBE, DROP, JOURNAL]");
 		puts("Desde File System >> [SELECT, INSERT, CREATE, DESCRIBE, DROP]");
 		log_error(LOGGER, "Operacion no reconocida.");
+		return ERROR;
 	}
 
-	return consulta_parseada;
+	return CONSULTA_PARSEADA;
 }
 
 
@@ -298,108 +296,75 @@ int es_numero(char* palabra){
 	return 1;
 }
 
-void print_dictionary(t_dictionary* dictionary){
+void print_consulta_parseada(char** consulta_parseada){
+	int i = 0;
 
-	if(es_select(dictionary)){
-		printf("%s %s %hu %lu \n",
-				dictionary_get(dictionary, "operacion"),
-				dictionary_get(dictionary, "tabla"),
-			    dictionary_get(dictionary, "key"),
-				dictionary_get(dictionary, "timestamp"));
-	}
-	else if (es_insert(dictionary)){
-		printf("%s %s %hu %s %lu \n",
-				dictionary_get(dictionary, "operacion"),
-				dictionary_get(dictionary, "tabla"),
-			    dictionary_get(dictionary, "key"),
-			    dictionary_get(dictionary, "valor"),
-				dictionary_get(dictionary, "timestamp"));
-
-	}
-	else if (es_create(dictionary)){
-		printf("%s %s %s %hu %hu %lu \n",
-				dictionary_get(dictionary, "operacion"),
-				dictionary_get(dictionary, "tabla"),
-			    dictionary_get(dictionary, "consistencia"),
-			    dictionary_get(dictionary, "particiones"),
-			    dictionary_get(dictionary, "compactacion"),
-				dictionary_get(dictionary, "timestamp"));
+	while (consulta_parseada[i] != NULL){
+		printf("%s ", consulta_parseada[i]);
+		i++;
 	}
 
-	else if (es_describe(dictionary)){
-		printf("%s %s %lu \n",
-				dictionary_get(dictionary, "operacion"),
-				dictionary_get(dictionary, "tabla"),
-				dictionary_get(dictionary, "timestamp"));
+	printf("\n");
+
+}
+
+
+
+bool es_select(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "SELECT"));
+}
+
+bool es_insert(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "INSERT"));
+}
+
+bool es_create(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "CREATE"));
+}
+
+bool es_describe(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "DESCRIBE"));
+}
+
+bool es_drop(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "DROP"));
+}
+
+bool es_addmemory(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "ADD MEMORY"));
+}
+
+bool es_run(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "RUN"));
+}
+
+bool es_metrics(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "METRICS"));
+}
+
+bool es_journal(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "JOURNAL"));
+}
+
+bool es_error(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "ERROR"));
+}
+
+unsigned short int get_key(char** consulta_parseada){
+
+	if (es_select(consulta_parseada)|es_insert(consulta_parseada)){
+		return (unsigned short int) string_to_ulint(consulta_parseada[2]);
 	}
-	else if (es_drop(dictionary)){
-		printf("%s %s %lu \n",
-				dictionary_get(dictionary, "operacion"),
-				dictionary_get(dictionary, "tabla"),
-				dictionary_get(dictionary, "timestamp"));
+	else {
+		return -1;
 	}
-	else if (es_addmemory(dictionary)){
-		printf("%s %s %s %lu \n",
-				dictionary_get(dictionary, "operacion"),
-				dictionary_get(dictionary, "memoria"),
-				dictionary_get(dictionary, "criterio"),
-				dictionary_get(dictionary, "timestamp"));
-	}
-	else if (es_run(dictionary)){
-		printf("%s %s %lu \n",
-				dictionary_get(dictionary, "operacion"),
-				dictionary_get(dictionary, "archivo"),
-				dictionary_get(dictionary, "timestamp"));
-	}
-	else if (es_metrics(dictionary)){
-		printf("%s %lu \n",
-				dictionary_get(dictionary, "operacion"),
-				dictionary_get(dictionary, "timestamp"));
-	}
-	else if (es_journal(dictionary)){
-		printf("%s %lu \n",
-				dictionary_get(dictionary, "operacion"),
-				dictionary_get(dictionary, "timestamp"));
-	}
-
 }
 
-int es_select(t_dictionary* dictionary){
-	return (strncmp(dictionary_get(dictionary, "operacion"), "SELECT", 6)) == 0;
+unsigned long int get_timestamp(char** consulta_parseada){
+	int i = 0;
+	while (consulta_parseada[i] != NULL) i++;
+	return string_to_ulint(consulta_parseada[i-1]);
 }
-
-bool es_insert(t_dictionary* dictionary){
-	return (strncmp(dictionary_get(dictionary, "operacion"), "INSERT", 6)) == 0;
-}
-
-bool es_create(t_dictionary* dictionary){
-	return (strncmp(dictionary_get(dictionary, "operacion"), "CREATE", 6)) == 0;
-}
-
-bool es_describe(t_dictionary* dictionary){
-	return (strncmp(dictionary_get(dictionary, "operacion"), "DESCRIBE", 8)) == 0;
-}
-
-bool es_drop(t_dictionary* dictionary){
-	return (strncmp(dictionary_get(dictionary, "operacion"), "DROP", 4)) == 0;
-}
-
-bool es_addmemory(t_dictionary* dictionary){
-	return (strncmp(dictionary_get(dictionary, "operacion"), "ADD MEMORY", 10)) == 0;
-}
-
-bool es_run(t_dictionary* dictionary){
-	return (strncmp(dictionary_get(dictionary, "operacion"), "RUN", 3)) == 0;
-}
-
-bool es_metrics(t_dictionary* dictionary){
-	return (strncmp(dictionary_get(dictionary, "operacion"), "METRICS", 7)) == 0;
-}
-
-bool es_journal(t_dictionary* dictionary){
-	return (strncmp(dictionary_get(dictionary, "operacion"), "JOURNAL", 7)) == 0;
-}
-
 
 unsigned long int string_to_ulint(char* string){
 	long int dec = 0;
