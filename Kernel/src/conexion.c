@@ -25,7 +25,7 @@ void conectar_y_crear_hilo(void (*f) (char*), char* ip, int puerto) {
 		if (socketCliente != -1) {
 			printf("\nSe ha conectado %s por su puerto %d\n",
 					inet_ntoa(clientAddress.sin_addr), clientAddress.sin_port);
-			fcntl(socketCliente, F_SETFL, O_NONBLOCK);
+//			fcntl(socketCliente, F_SETFL, O_NONBLOCK);
 			queue_push(listaConexiones, (int *) socketCliente);
 			printf("el numero de elementos encolados es %d\n", queue_size(listaConexiones));
 		}
