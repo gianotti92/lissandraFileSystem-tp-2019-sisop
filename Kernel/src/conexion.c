@@ -84,9 +84,9 @@ void atender_cliente(char** (*f) (char*, t_log*)) {
 				/* Aca es cuando se acepta conexion y se paresea, f es parser*/
 				buffer[bytesRecibidos] = '\0';
 
+				char * m = configurarMensajeIngreso(buffer);
 
-
-				char ** valorParseado = f(buffer, LOGGER);
+				char ** valorParseado = f(m, LOGGER);
 				/*************************************************************/
 				/* con la funcion que sigue, retorna el control al metodo principal del proceso correspondiente*/
 				retornarControl(valorParseado, socketCliente);
@@ -151,4 +151,11 @@ void realizar_conexion(int socketServer, struct sockaddr_in * address){
 		perror("Error al realizar connect");
 		exit_gracefully(EXIT_FAILURE);
 	}
+}
+
+char * configurarMensajeIngreso(char* mensaje){
+	string_to_upper(mensaje);
+	char * m = string_new();
+	m = string_substring_until(mensaje, string_length(mensaje)-1);
+	return m;
 }

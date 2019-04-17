@@ -41,19 +41,27 @@ void iniciarEstados(){
 }
 
 CategoriaDeMensaje categoria(char ** mensaje){
-	log_info(LOGGER,"Kernel:Se asigna categoria del mensaje");
-	char * msj = string_new();
-	strcpy(mensaje[0], msj);
-	if(string_contains(msj,"run")){
-		log_info(LOGGER,"Kernel:Categoria RUN. Se asigna categoria del mensaje");
-		return RUN;
-	}else if(string_contains(msj,"error")){
-		log_info(LOGGER,"Kernel:Categoria ERROR. Se asigna categoria del mensaje");
-		return ERROR;
-	}else{
-		log_info(LOGGER,"Kernel:Categoria QUERY. Se asigna categoria del mensaje");
-		return QUERY;
+
+	char * p = mensaje[0];
+	char c;
+
+	for(c = *p; c; c = c=*++p){
+		puts(c);
 	}
+	return QUERY;
+//	log_info(LOGGER,"Kernel:Se asigna categoria del mensaje");
+//	char * msj = string_new();
+//	strcpy(mensaje[0], msj);
+//	if(string_contains(msj,"run")){
+//		log_info(LOGGER,"Kernel:Categoria RUN. Se asigna categoria del mensaje");
+//		return RUN;
+//	}else if(string_contains(msj,"error")){
+//		log_info(LOGGER,"Kernel:Categoria ERROR. Se asigna categoria del mensaje");
+//		return ERROR;
+//	}else{
+//		log_info(LOGGER,"Kernel:Categoria QUERY. Se asigna categoria del mensaje");
+//		return QUERY;
+//	}
 }
 
 void moverAEstado(CategoriaDeMensaje categoria, char** mensaje){

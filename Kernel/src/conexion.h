@@ -61,6 +61,7 @@ void realizar_bind(int socket, struct sockaddr_in *fileSystemAddres);
 void ponerse_a_escuchar(int socket, int cantidadConexiones);
 void retornarControl(char ** msj, int cliente);
 void realizar_conexion(int socketServer, struct sockaddr_in * address);
+char * configurarMensajeIngreso(char* mensaje);
 
 
 
