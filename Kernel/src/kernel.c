@@ -14,18 +14,29 @@ void imprimir(char* mensaje){
 int main(void) {
 	get_parametros_config();
 	configure_logger();
+	log_info(LOGGER, "Hello Kernel!!");
+	printf("%d \n", PUERTO_ESCUCHA_CONEXION);
 	conectar_y_crear_hilo(imprimir, IP, PUERTO_KERNELL);
-	exit_gracefully(EXIT_SUCCESS);
+	char* leido;
+	char** consulta_parseada;
 
+	while (1) {
+
+		leido = leer_consola();
+		consulta_parseada = parser_lql(leido, LOGGER);
+		if (!es_error(consulta_parseada)) print_consulta_parseada(consulta_parseada);
+
+	}
+
+	exit_gracefully(EXIT_SUCCESS);
 }
 
+
 void retornarControl(char * mensaje, int socketCliente){
-	log_info(LOGGER,"Kernel:Se inicia proceso kernell");
+	log_info(LOGGER,"Kernel:Se retorna a kernell");
 	iniciarEstados();
 	CategoriaDeMensaje categoria = categoria(mensaje);
 	moverAEstado(categoria, mensaje);
-
-
 	printf("%s", mensaje);
 	enviar(mensaje, IP, PUERTO_POOL_MEM);
 }
