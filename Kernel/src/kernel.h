@@ -20,7 +20,7 @@ typedef enum categoriaDeMensaje{
 
 
 void iniciarEstados();
-CategoriaDeMensaje categoria(char * mensaje);
-void moverAEstado(CategoriaDeMensaje categoria, char * mensaje);
+CategoriaDeMensaje categoria(char ** mensaje);
+void moverAEstado(CategoriaDeMensaje categoria, char ** mensaje);
 
 #endif /* KERNEL_H_ */
