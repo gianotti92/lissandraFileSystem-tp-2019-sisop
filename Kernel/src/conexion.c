@@ -4,7 +4,7 @@
 int socketServer, socketPoolMem;
 
 /* funciones genericas para todos los modulos*/
-void conectar_y_crear_hilo(void (*f) (char*), char* ip, int puerto) {
+void conectar_y_crear_hilo(char** (*f) (char*, t_log*), char* ip, int puerto) {
 	log_info(LOGGER, "Se inicia servidor");
 	listaConexiones = queue_create();
 	struct sockaddr_in serverAddress, clientAddress;
@@ -64,7 +64,7 @@ void enviar(char* msj, char * ip, int puerto){
 }
 
 /* funcion hilo handler*/
-void atender_cliente(void (*f) (char*)) {
+void atender_cliente(char** (*f) (char*, t_log*)) {
 	while (1) {
 		if (queue_size(listaConexiones) > 0) {
 			char * buffer = malloc(100);
@@ -83,10 +83,13 @@ void atender_cliente(void (*f) (char*)) {
 				log_info(LOGGER, "informacion mandada por el cliente correcta");
 				/* Aca es cuando se acepta conexion y se paresea, f es parser*/
 				buffer[bytesRecibidos] = '\0';
-				f(buffer);
+
+
+
+				char ** valorParseado = f(buffer, LOGGER);
 				/*************************************************************/
 				/* con la funcion que sigue, retorna el control al metodo principal del proceso correspondiente*/
-				retornarControl(buffer, socketCliente);
+				retornarControl(valorParseado, socketCliente);
 				/*************************************************************/
 				queue_push(listaConexiones, (int *) socketCliente);
 			}
