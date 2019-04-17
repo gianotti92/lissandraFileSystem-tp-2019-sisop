@@ -10,7 +10,7 @@
 
 #include "parser.h"
 
-char** parser_lql(char* consulta, t_log* LOGGER){
+char** parser_lql(char* mensaje, t_log* LOGGER){
 
 	char** ERROR = string_split("ERROR", " ");
 	char** CONSULTA_PARSEADA;
@@ -18,16 +18,23 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 	time_t echo_time;
 	echo_time = time(NULL);
 
+
 	if (echo_time == ((time_t)-1)){
 		(void) fprintf(stderr, "Fallo al obtener la hora. \n");
 		log_error(LOGGER, "Fallo al obtener la hora.");
 		return ERROR;
 	}
 
+	char* consulta = string_new();
+	consulta = string_substring_until(mensaje, string_length(mensaje)-1);
+
 	consulta = string_from_format("%s %ju", consulta, (uintmax_t)echo_time);
 	log_info(LOGGER, "Consulta: %s", consulta);
 
+
 	char** consulta_separada = string_split(consulta, " ");
+
+	puts(consulta);
 
 	int length = cantidad_elementos(consulta_separada) - 1;
 
