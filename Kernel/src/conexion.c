@@ -84,9 +84,7 @@ void atender_cliente(char** (*f) (char*, t_log*)) {
 				/* Aca es cuando se acepta conexion y se paresea, f es parser*/
 				buffer[bytesRecibidos] = '\0';
 
-				char * m = configurarMensajeIngreso(buffer);
-
-				char ** valorParseado = f(m, LOGGER);
+				char ** valorParseado = f(buffer, LOGGER);
 				/*************************************************************/
 				/* con la funcion que sigue, retorna el control al metodo principal del proceso correspondiente*/
 				retornarControl(valorParseado, socketCliente);

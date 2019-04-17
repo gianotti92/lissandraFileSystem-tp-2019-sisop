@@ -41,13 +41,12 @@ void iniciarEstados(){
 }
 
 CategoriaDeMensaje categoria(char ** mensaje){
+	int *p = &mensaje[0];
+	int tam = sizeof(mensaje);
 
-	char * p = mensaje[0];
-	char c;
 
-	for(c = *p; c; c = c=*++p){
-		puts(c);
-	}
+
+
 	return QUERY;
 //	log_info(LOGGER,"Kernel:Se asigna categoria del mensaje");
 //	char * msj = string_new();

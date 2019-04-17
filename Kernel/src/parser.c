@@ -10,7 +10,7 @@
 
 #include "parser.h"
 
-char** parser_lql(char* consulta, t_log* LOGGER){
+char** parser_lql(char* mensaje, t_log* LOGGER){
 
 	char** ERROR = string_split("ERROR", " ");
 	char** CONSULTA_PARSEADA;
@@ -18,14 +18,19 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 	time_t echo_time;
 	echo_time = time(NULL);
 
+
 	if (echo_time == ((time_t)-1)){
 		(void) fprintf(stderr, "Fallo al obtener la hora. \n");
-		log_error(LOGGER, "Fallo al obtener la hora.");
+		log_error(LOGGER, "Parser: Fallo al obtener la hora.");
 		return ERROR;
 	}
 
+	char* consulta = string_new();
+	consulta = string_substring_until(mensaje, string_length(mensaje)-1);
+
 	consulta = string_from_format("%s %ju", consulta, (uintmax_t)echo_time);
-	log_info(LOGGER, "Consulta: %s", consulta);
+	log_info(LOGGER, "Parser: Consulta - %s", consulta);
+
 
 	char** consulta_separada = string_split(consulta, " ");
 
@@ -35,12 +40,12 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 		if (length != 3){
 			puts("ERROR: La sintaxis correcta es > SELECT [NOMBRE_TABLA] [KEY]");
-			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 			return ERROR;
 		}
 		else if(!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
-			log_error(LOGGER, "La Key es incorrecta.");
+			log_error(LOGGER, "Parser: La Key es incorrecta.");
 			return ERROR;
 		}
 		else{
@@ -53,7 +58,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 			string_to_upper(consulta_separada[0]);
 			string_to_upper(consulta_separada[1]);
 
-			log_info(LOGGER, "Consulta aceptada.");
+			log_info(LOGGER, "Parser: Consulta aceptada.");
 			CONSULTA_PARSEADA = consulta_separada;
 		}
 	}
@@ -61,12 +66,12 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 		if (length != 4){
 			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]”");
-			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 			return ERROR;
 		}
 		else if (!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
-			log_error(LOGGER, "La Key es incorrecta.");
+			log_error(LOGGER, "Parser: La Key es incorrecta.");
 			return ERROR;
 		}
 		else{
@@ -80,7 +85,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 			string_to_upper(consulta_separada[0]);
 			string_to_upper(consulta_separada[1]);
 
-			log_info(LOGGER, "Consulta aceptada.");
+			log_info(LOGGER, "Parser: Consulta aceptada.");
 			CONSULTA_PARSEADA = consulta_separada;
 
 		}
@@ -88,17 +93,17 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 	else if (es_create(consulta_separada)){
 		if (length != 5){
 			puts("ERROR: La sintaxis correcta es > CREATE [NOMBRE_TABLA] [TIPO_CONSISTENCIA] [NUMERO_PARTICIONES] [COMPACTION_TIME]");
-			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 			return ERROR;
 		}
 		else if (!es_numero(consulta_separada[3])){
 			puts("ERROR: La cantidad de particiones debe ser un numero.");
-			log_error(LOGGER, "La cantidad de particiones debe ser un numero.");
+			log_error(LOGGER, "Parser: La cantidad de particiones debe ser un numero.");
 			return ERROR;
 		}
 		else if (!es_numero(consulta_separada[4])){
 			puts("ERROR: El tiempo de compactacion debe ser un numero.");
-			log_error(LOGGER, "El tiempo de compactacion debe ser un numero.");
+			log_error(LOGGER, "Parser: El tiempo de compactacion debe ser un numero.");
 			return ERROR;
 		}
 		else{
@@ -114,7 +119,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 			string_to_upper(consulta_separada[1]);
 			string_to_upper(consulta_separada[2]);
 
-			log_info(LOGGER, "Consulta aceptada.");
+			log_info(LOGGER, "Parser: Consulta aceptada.");
 			CONSULTA_PARSEADA = consulta_separada;
 
 		}
@@ -123,7 +128,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > DESCRIBE [NOMBRE_TABLA]");
-			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 			return ERROR;
 		}
 		else{
@@ -135,7 +140,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 			string_to_upper(consulta_separada[0]);
 			string_to_upper(consulta_separada[1]);
 
-			log_info(LOGGER, "Consulta aceptada.");
+			log_info(LOGGER, "Parser: Consulta aceptada.");
 			CONSULTA_PARSEADA = consulta_separada;
 
 		}
@@ -144,7 +149,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > DROP [NOMBRE_TABLA]");
-			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 			return ERROR;
 		}
 		else{
@@ -156,7 +161,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 			string_to_upper(consulta_separada[0]);
 			string_to_upper(consulta_separada[1]);
 
-			log_info(LOGGER, "Consulta aceptada.");
+			log_info(LOGGER, "Parser: Consulta aceptada.");
 			CONSULTA_PARSEADA = consulta_separada;
 
 		}
@@ -165,14 +170,14 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 		if (length != 5){
 			puts("ERROR: La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO]");
-			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 			return ERROR;
 		}
 		else if ((string_equals_ignore_case(consulta_separada[4], "SC"))
 				& (string_equals_ignore_case(consulta_separada[4], "SHC"))
 				& (string_equals_ignore_case(consulta_separada[4], "EC"))){
 			puts("ERROR: El tipo de consistencia es incorrecto. Debe ser uno de [SC, SHC, EC].");
-			log_error(LOGGER, "El tipo de consistencia es incorrecto.");
+			log_error(LOGGER, "Parser: El tipo de consistencia es incorrecto.");
 			return ERROR;
 		}
 		else{
@@ -197,7 +202,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 			string_to_upper(consulta_separada[2]);
 			string_to_upper(consulta_separada[3]);
 
-			log_info(LOGGER, "Consulta aceptada.");
+			log_info(LOGGER, "Parser: Consulta aceptada.");
 			CONSULTA_PARSEADA = consulta_separada;
 
 		}
@@ -206,7 +211,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > RUN [ARCHIVO]");
-			log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 			return ERROR;
 		}
 		else{
@@ -226,7 +231,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 			if (length != 1){
 				puts("ERROR: La sintaxis correcta es > METRICS");
-				log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 				return ERROR;
 			}
 			else{
@@ -236,7 +241,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 				string_to_upper(consulta_separada[0]);
 
-				log_info(LOGGER, "Consulta aceptada.");
+				log_info(LOGGER, "Parser: Consulta aceptada.");
 				CONSULTA_PARSEADA = consulta_separada;
 
 			}
@@ -245,7 +250,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 			if (length != 1){
 				puts("ERROR: La sintaxis correcta es > JOURNAL");
-				log_error(LOGGER, "Sintaxis incorrecta, chinguengencha!");
+				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 				return ERROR;
 			}
 			else{
@@ -255,7 +260,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 
 				string_to_upper(consulta_separada[0]);
 
-				log_info(LOGGER, "Consulta aceptada.");
+				log_info(LOGGER, "Parser: Consulta aceptada.");
 				CONSULTA_PARSEADA = consulta_separada;
 
 			}
@@ -265,7 +270,7 @@ char** parser_lql(char* consulta, t_log* LOGGER){
 		puts("Desde Kernel      >> [SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD MEMORY, RUN, METRICS]");
 		puts("Desde Pool Memory >> [SELECT, INSERT, CREATE, DESCRIBE, DROP, JOURNAL]");
 		puts("Desde File System >> [SELECT, INSERT, CREATE, DESCRIBE, DROP]");
-		log_error(LOGGER, "Operacion no reconocida.");
+		log_error(LOGGER, "Parser: Operacion no reconocida.");
 		return ERROR;
 	}
 
