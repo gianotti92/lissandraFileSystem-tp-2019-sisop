@@ -1,16 +1,7 @@
-/*
- * kernel.h
- *
- *  Created on: 16 abr. 2019
- *      Author: luqui
- */
-
 #ifndef KERNEL_H_
 #define KERNEL_H_
 
-#include <commons/collections/dictionary.h>
-#include <commons/string.h>
-#include <string.h>
+#include <utilguenguencha/utilguenguencha.h>
 
 typedef enum categoriaDeMensaje{
 	ERROR,
@@ -18,6 +9,10 @@ typedef enum categoriaDeMensaje{
 	QUERY
 } CategoriaDeMensaje;
 
+t_dictionary *estadoReady;
+t_dictionary *estadoNew;
+t_dictionary *estadoExit;
+t_dictionary *estadoExec;
 
 void iniciarEstados();
 CategoriaDeMensaje categoria(char ** mensaje);

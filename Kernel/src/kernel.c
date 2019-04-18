@@ -1,12 +1,4 @@
-#include "conexion.h"
-#include "config_kernel.h"
-#include "parser.h"
 #include "kernel.h"
-
-t_dictionary *estadoReady;
-t_dictionary *estadoNew;
-t_dictionary *estadoExit;
-t_dictionary *estadoExec;
 
 int main(void) {
 	get_parametros_config();
@@ -14,10 +6,7 @@ int main(void) {
 	log_info(LOGGER, "Hello Kernel!!");
 	printf("%d \n", PUERTO_ESCUCHA_CONEXION);
 	conectar_y_crear_hilo(parser_lql, IP, PUERTO_KERNELL);
-
-	exit_gracefully(EXIT_SUCCESS);
 }
-
 
 void retornarControl(char ** mensaje, int socketCliente){
 	log_info(LOGGER,"Kernel:Se retorna a kernell");

@@ -1,5 +1,4 @@
-#include "config_kernel.h"
-
+#include "utils.h"
 
 void get_parametros_config(){
 
@@ -11,8 +10,8 @@ void get_parametros_config(){
 	}
 
 	PUERTO_ESCUCHA_CONEXION = config_get_int_value(config,"PUERTO_ESCUCHA_CONEXION");
-	IP_CONFIG_MIO = malloc(sizeof(char) * 100);
-	strcpy(IP_CONFIG_MIO,config_get_string_value(config, "IP_CONFIG_MIO"));
+	IP_CONFIG = malloc(sizeof(char) * 100);
+	strcpy(IP_CONFIG,config_get_string_value(config, "IP_CONFIG_MIO"));
 
 	config_destroy(config);
 }

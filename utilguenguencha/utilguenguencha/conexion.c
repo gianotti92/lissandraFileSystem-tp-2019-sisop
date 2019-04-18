@@ -1,6 +1,5 @@
 #include "conexion.h"
 
-
 int socketServer, socketPoolMem;
 
 /* funciones genericas para todos los modulos*/

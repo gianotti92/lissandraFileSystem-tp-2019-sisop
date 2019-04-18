@@ -16,9 +16,8 @@
 #include <signal.h>
 #include <sys/fcntl.h>
 #include <pthread.h>
-#include <commons/config.h>
-#include <commons/collections/queue.h>
-#include "config_kernel.h"
+#include "utils.h"
+
 
 #define BACKLOG 10     // Cuántas conexiones pendientes se mantienen en cola
 
