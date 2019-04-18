@@ -55,6 +55,3 @@ dkms.conf
 # Tales como las librerías usadas.
 Debug/
 Release/
-
-*.cproject
-*.xml
