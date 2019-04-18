@@ -41,26 +41,24 @@ void iniciarEstados(){
 }
 
 CategoriaDeMensaje categoria(char ** mensaje){
-	int *p = &mensaje[0];
+	log_info(LOGGER,"Kernel:Se asigna categoria del mensaje");
 	int tam = sizeof(mensaje);
-
-
-
-
-	return QUERY;
-//	log_info(LOGGER,"Kernel:Se asigna categoria del mensaje");
-//	char * msj = string_new();
-//	strcpy(mensaje[0], msj);
-//	if(string_contains(msj,"run")){
-//		log_info(LOGGER,"Kernel:Categoria RUN. Se asigna categoria del mensaje");
-//		return RUN;
-//	}else if(string_contains(msj,"error")){
-//		log_info(LOGGER,"Kernel:Categoria ERROR. Se asigna categoria del mensaje");
-//		return ERROR;
-//	}else{
-//		log_info(LOGGER,"Kernel:Categoria QUERY. Se asigna categoria del mensaje");
-//		return QUERY;
-//	}
+	int i = 0;
+	while (i<=tam){
+		log_info(LOGGER,mensaje[i]);
+		if(string_contains(mensaje[i],"RUN")){
+			log_info(LOGGER,"Kernel:Categoria RUN. Se asigna categoria del mensaje");
+			return RUN;
+		}else if(string_contains(mensaje[i],"ERROR")){
+			log_info(LOGGER,"Kernel:Categoria ERROR. Se asigna categoria del mensaje");
+			return ERROR;
+		}else{
+			log_info(LOGGER,"Kernel:Categoria QUERY. Se asigna categoria del mensaje");
+			return QUERY;
+		}
+		i++;
+	}
+	return ERROR;
 }
 
 void moverAEstado(CategoriaDeMensaje categoria, char** mensaje){
@@ -68,12 +66,8 @@ void moverAEstado(CategoriaDeMensaje categoria, char** mensaje){
 	char * v;
 	u_int32_t k;
 	case RUN:
-			log_info(LOGGER,"Kernel:Categoria RUN. Se mueve el mensaje a nuevos");
-			v = string_new();
-			k = 1;
-			string_append(&v, mensaje);
-			dictionary_put(estadoNew, k, v);
-			free(v);
+			log_info(LOGGER,"Kernel:Categoria RUN. Se comienza funcion de lectura");
+			leerArchivo(mensaje[1]);
 		break;
 	case ERROR:
 		log_info(LOGGER,"Kernel:Categoria ERROR. Esta mal escrita la query, no se continua");
@@ -90,4 +84,27 @@ void moverAEstado(CategoriaDeMensaje categoria, char** mensaje){
 		log_info(LOGGER,"Kernel:Categoria NADA. Esto no deberia pasar nunca ajaj..");
 		break;
 	}
+}
+
+void leerArchivo(char * path){
+	FILE * fp;
+	fp = fopen ( path, "r" );
+	char * linea = string_new();
+
+	if(fp != NULL){
+		while(fgets(linea, 1024, (FILE*) fp)){
+			 int n = strlen(linea);
+			 if (linea[n-1] != '\n') {
+				log_info (LOGGER, "Kernel: Error. leída línea incompleta");
+			}else{
+
+			}
+		}
+	}else{
+		log_error(LOGGER,"Kernel:Error al leer sobre el path");
+		exit_gracefully(1);
+	}
+
+	free(linea);
+
 }

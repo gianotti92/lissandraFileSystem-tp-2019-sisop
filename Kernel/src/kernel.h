@@ -23,5 +23,6 @@ void iniciarEstados();
 
 CategoriaDeMensaje categoria(char ** mensaje);
 void moverAEstado(CategoriaDeMensaje categoria, char ** mensaje);
+void leerArchivo(char * path);
 
 #endif /* KERNEL_H_ */
