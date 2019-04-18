@@ -1,21 +1,19 @@
-/*
- ============================================================================
- Name        : PoolMemory.c
- Author      : 
- Version     :
- Copyright   : 
- Description : Hello World in C, Ansi-style
- ============================================================================
- */
-
-#include <stdio.h>
-#include <stdlib.h>
 #include "config_poolMemory.h"
+#include "conexion.h"
+
+void imprimir(char* mensaje){
+	printf("El mensaje es %s\n", mensaje);
+}
 
 int main(void) {
-	get_parametros_config();
 	configure_logger();
-	puts("Hello PoolMemory!!"); /* prints  */
-	printf("%d", PUERTO_ESCUCHA_CONEXION);
-	return EXIT_SUCCESS;
+	get_parametros_config();
+	conectar_y_crear_hilo(imprimir, IP, PUERTO_POOL_MEM);
+	exit_gracefully(EXIT_SUCCESS);
+}
+
+void retornarControl(char * msj, int cliente){
+	printf("mensaje desde pool memory");
+	printf("%s", msj);
+	enviar(msj, IP, PUERTO_FS);
 }

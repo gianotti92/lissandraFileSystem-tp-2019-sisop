@@ -1,21 +1,46 @@
 #Declaro variables
-CC := gcc
+CC := gcc #Compilador
 
-OBJS := kernel.o config_kernel.o
+CFLAGS := -Wall -Werror -g -std=c99 #Flags para Valgrind
 
-#Generador principal
-all: kernel
+FILES := $(TARGET) $(CONFIG) $(CONEXION)#Nombre de archivos a usar
 
+TARGET := kernel #Principal
 
-kernel: $(OBJS)
-	$(CC) -o kernel $(OBJS) -lcommons -lm 
+CONFIG := config_kernel #Secundario
 
-kernel.o: kernel.c config_kernel.h
-	$(CC) -c kernel.c
-	
-config_kernel.o: config_kernel.c config_kernel.h
-	$(CC) -c  config_kernel.c
-	
+CONEXION := conexion #Secundario
+
+INCLUDES := -lcommons -lpthread #Librerias a linkear
+
+#####################
+#Generador principal#
+#####################
+
+#Borro los archivos que antes estaban
+all: clean $(FILES)
+
+#Build programa
+$(TARGET): $(TARGET).o $(CONFIG).o $(CONEXION).o <#Tenemos que poner aca todos los que buildean el programa
+	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o $(CONFIG).o $(CONEXION).o $(INCLUDES)
+
+#######################################
+#Archivos .c que conforman el programa#
+#######################################
+#Hay que hacer un build por cada uno de los archivos y sus dependencias
+
+#Build archivo fileSystem.c	
+$(TARGET).o: $(TARGET).c $(CONFIG).h 
+	$(CC) $(CFLAGS) $(TARGET).c -o $(TARGET) $(INCLUDES)
+
+#Build archivo config_fileSystem.c
+$(CONFIG).o: $(CONFIG).c $(CONFIG).h
+	$(CC) $(CFLAGS) $(CONFIG).c -o $(CONFIG) $(INCLUDES)
+
+#Build archivo conexion.c
+$(CONEXION).o: $(CONEXION).c $(CONEXION).h
+	$(CC) $(CFLAGS) $(CONEXION).c -o $(CONEXION) $(INCLUDES)
+
 #Borrar todo
 clean:
-	rm kernel $(OBJS)
+	rm -f $(FILES))
