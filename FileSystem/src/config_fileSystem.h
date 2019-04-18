@@ -21,6 +21,8 @@
 t_log * LOGGER;
 int PUERTO_ESCUCHA_CONEXION;
 
+
+
 //Cargo los parametros desde el archivo config y los libero conforme deje de usarlos
 void funcion_para_testear_valgrind(void);
 void get_parametros_config();

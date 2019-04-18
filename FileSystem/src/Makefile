@@ -5,7 +5,7 @@ CFLAGS := -Wall -Werror -g -std=c99 #Flags para Valgrind
 
 FILES := $(TARGET) $(CONFIG) #Nombre de archivos a usar
 
-TARGET := fileSystem #Principal
+TARGET := FileSystem #Principal
 
 CONFIG := config_fileSystem #Secundario
 
