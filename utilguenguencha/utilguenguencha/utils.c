@@ -1,25 +1,10 @@
 #include "utils.h"
 
-void get_parametros_config(){
-
-	t_config* config = config_create("config.cfg");
-	if (!config) {
-		printf("No encuentro el archivo config\n");
-		//MUERO
-		exit_gracefully(EXIT_FAILURE);
-	}
-
-	PUERTO_ESCUCHA_CONEXION = config_get_int_value(config,"PUERTO_ESCUCHA_CONEXION");
-	IP_CONFIG = malloc(sizeof(char) * 100);
-	strcpy(IP_CONFIG,config_get_string_value(config, "IP_CONFIG_MIO"));
-
-	config_destroy(config);
-}
 
 void configure_logger() {
 
-	LOGGER = log_create("kernel.log","tp-lissandra",1,LOG_LEVEL_DEBUG);
-	log_info(LOGGER, "Inicia Kernel");
+	LOGGER = log_create("logger.log","tp-lissandra",1,LOG_LEVEL_DEBUG);
+	log_info(LOGGER, "Inicia Proceso");
 }
 
 void exit_gracefully(int exit_code){

@@ -3,9 +3,8 @@
 int main(void) {
 	get_parametros_config();
 	configure_logger();
-	log_info(LOGGER, "Hello Kernel!!");
 	printf("%d \n", PUERTO_ESCUCHA_CONEXION);
-	conectar_y_crear_hilo(parser_lql, IP, PUERTO_KERNELL);
+	conectar_y_crear_hilo(parser_lql, IP_CONFIG, PUERTO_ESCUCHA_CONEXION);
 }
 
 void retornarControl(char ** mensaje, int socketCliente){

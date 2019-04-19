@@ -6,6 +6,7 @@ int socketServer, socketPoolMem;
 void conectar_y_crear_hilo(char** (*f) (char*, t_log*), char* ip, int puerto) {
 	log_info(LOGGER, "Se inicia servidor");
 	listaConexiones = queue_create();
+	listaConexionesRetorno = queue_create();
 	struct sockaddr_in serverAddress, clientAddress;
 
 	socketServer = iniciar_socket();
@@ -93,6 +94,29 @@ void atender_cliente(char** (*f) (char*, t_log*)) {
 				queue_push(listaConexiones, (int *) socketCliente);
 			}
 			free(buffer);
+		}
+	}
+}
+
+void atender_respuesta() {
+	while (1) {
+		char * buffer = malloc(100);
+		if (queue_size(listaConexionesRetorno) > 0) {
+			int cliente = (int)queue_peek(listaConexionesRetorno);
+			queue_pop(listaConexionesRetorno);
+			int bytesRecibidos = recv(cliente, buffer, 99, 0);
+			if (bytesRecibidos == 0) {
+				char * error = string_new();
+				string_append(&error, "Cliente se desconecto: ");
+				string_append(&error, strerror(errno));
+				close(cliente);
+				log_error(LOGGER, error);
+			} else if ((errno == EAGAIN || errno == EWOULDBLOCK)
+					&& bytesRecibidos == -1) {
+				queue_push(listaConexiones, (int *) cliente);
+			} else {
+				log_info(LOGGER, "informacion mandada por el cliente correcta");
+			}
 		}
 	}
 }

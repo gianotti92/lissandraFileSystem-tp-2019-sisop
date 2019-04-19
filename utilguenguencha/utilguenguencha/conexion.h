@@ -27,6 +27,7 @@
 #define IP "127.0.0.1"
 
 t_queue * listaConexiones;
+t_queue * listaConexionesRetorno;
 
 /* id = 1 responder */
 /* id = 2 recibir */

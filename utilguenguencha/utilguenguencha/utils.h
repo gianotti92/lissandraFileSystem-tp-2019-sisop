@@ -11,7 +11,6 @@
 #include <stdlib.h>
 
 t_log * LOGGER;
-int PUERTO_ESCUCHA_CONEXION;
-char* IP_CONFIG;
+t_config CONFIG;
 
 #endif /* UTILGUENGUENCHA_UTILS_H_ */
