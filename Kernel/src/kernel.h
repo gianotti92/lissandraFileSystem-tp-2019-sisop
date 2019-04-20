@@ -8,7 +8,7 @@
 
 // Tipos del proceso
 typedef enum categoriaDeMensaje{
-	ERROR,
+	ERROR_MESSAGE,
 	RUN_MESSAGE,
 	QUERY
 } CategoriaDeMensaje;
