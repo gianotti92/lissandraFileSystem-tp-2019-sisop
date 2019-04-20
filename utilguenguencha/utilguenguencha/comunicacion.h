@@ -20,7 +20,8 @@ typedef enum{
 	ADD,
 	RUN,
 	JOURNAL,
-	METRICS
+	METRICS,
+	ERROR
 }Instruction_set;
 
 typedef struct{
@@ -75,15 +76,7 @@ typedef struct{
 
 typedef struct{
 	Instruction_set instruccion;
-	Select select;
-	Insert insert;
-	Create create;
-	Describe describe;
-	Drop drop;
-	Add add;
-	Run run;
-	Journal journal;
-	Metrics metrics;
+	void * instruccion_a_realizar;
 }Instruccion;
 
 
