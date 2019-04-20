@@ -8,6 +8,9 @@
 
 // Funciones del proceso
 void configuracion_inicial(void);
+void retorno_consola(char* leido);
+void retornarControl(Instruction_set instruccion, int socket_cliente);
+
 
 // Variables globales del proceso
 int PUERTO_DE_ESCUCHA;

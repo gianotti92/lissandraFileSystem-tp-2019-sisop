@@ -1,6 +1,5 @@
-
-#ifndef FILESSYSTEM_H_
-#define FILESSYSTEM_H_
+#ifndef FILESYSTEM_H_
+#define FILESYSTEM_H_
 
 #include <utilguenguencha/comunicacion.h>
 #include <utilguenguencha/conexion.h>
@@ -9,6 +8,8 @@
 
 // Funciones del proceso
 void configuracion_inicial(void);
+void retorno_consola(char* leido);
+void retornarControl(Instruction_set instruccion, int cliente);
 
 // Variables del proceso
 int PUERTO_DE_ESCUCHA;
@@ -17,4 +18,4 @@ int TAMANIO_VALUE;
 uint32_t TIEMPO_DUMP;
 uint32_t RETARDO;
 
-#endif /* FILESSYSTEM_H_ */
+#endif /* FILESYSTEM_H_ */

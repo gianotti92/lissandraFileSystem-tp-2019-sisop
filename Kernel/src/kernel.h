@@ -15,9 +15,12 @@ typedef enum categoriaDeMensaje{
 
 // Funciones del proceso
 void configuracion_inicial(void);
+void retorno_consola(char* leido);
+void retornarControl(Instruction_set instruccion, int socket_cliente);
 void iniciarEstados();
 CategoriaDeMensaje categoria(char ** mensaje);
 void moverAEstado(CategoriaDeMensaje categoria, char ** mensaje);
+
 
 // Variables del proceso
 t_dictionary *estadoReady;

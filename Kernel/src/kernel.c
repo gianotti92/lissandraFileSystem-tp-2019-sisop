@@ -3,14 +3,16 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
-	conectar_y_crear_hilo(retornarControl, "127.0.0.1", PUERTO_DE_ESCUCHA);
+	pthread_t consolaKernel;
+	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
+	for(;;){} // Para que no muera
 }
 
 void configuracion_inicial(void){
 	t_config* CONFIG;
 	CONFIG = config_create("config.cfg");
 	if (!CONFIG) {
-		printf("No encuentro el archivo config\n");
+		log_error(LOGGER,"No encuentro el archivo config");
 		exit_gracefully(EXIT_FAILURE);
 	}
 	PUERTO_DE_ESCUCHA = config_get_int_value(CONFIG,"PUERTO_DE_ESCUCHA");
@@ -20,24 +22,39 @@ void configuracion_inicial(void){
 	config_destroy(CONFIG);
 }
 
+void retorno_consola(char* leido){
+	printf("Lo leido es: %s",leido);
+
+	/* KERNEL SOLO RECIBE COSAS POR CONSOLA POR LO CUAL NO TIENE SENTIDO QUE ESTE ESCUCHANDO
+	 * EN NINGUN PUERTO, SOLO RECIBE Y ACCIONA
+	 *
+	 * */
+
+
+	//Instruction_set instruccion; // Deberia ser una instruccion ya parseada asi kernel la envia
+	// el enviar de kernel tiene una logica previa para definir a
+	// que memoria deber{a enviar segun el tipo de tabla a la cual
+	// sea necesario acceder segun su consistencia
+	//enviar(instruccion, IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL);
+}
+
+/*
 void retornarControl(Instruction_set instruccion, int socket_cliente){
 	printf("Me llego algo y algo deberia hacer");
-	/*
+
 	log_info(LOGGER,"Kernel:Se retorna a kernell");
 	iniciarEstados();
 	CategoriaDeMensaje categoriaMsj = categoria(mensaje);
 	moverAEstado(categoriaMsj, mensaje);
 	printf("%s", mensaje[0]);
-	*/
 
-	/*el enviar de kernel tiene una logica previa para definir a
-	 * que memoria deber{a enviar segun el tipo de tabla a la cual
-	 * sea necesario acceder segun su consistencia
-	 * */
+
+
+
 	enviar(instruccion, IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL);
 
 }
-
+*/
 void iniciarEstados(){
 	log_info(LOGGER,"Kernel:Se inician estados");
 	estadoReady = dictionary_create();
@@ -94,4 +111,3 @@ void moverAEstado(CategoriaDeMensaje categoria, char** mensaje){
 		break;
 	}
 }
-

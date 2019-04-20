@@ -3,6 +3,7 @@
 	<name>PoolMemory</name>
 	<comment></comment>
 	<projects>
+		<project>utilguenguencha</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

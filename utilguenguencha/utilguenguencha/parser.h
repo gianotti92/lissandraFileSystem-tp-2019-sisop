@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <readline/readline.h>
+#include <readline/history.h>
 #include <errno.h>
 #include <string.h>
 #include <netdb.h>
@@ -16,6 +17,7 @@
 #include <commons/string.h>
 #include <math.h>
 #include <time.h>
+#include "utils.h"
 
 char** parser_lql(char*, t_log*); //recibe una consulta en string y un logger, devuelve la consulta parseada y utiliza el loguer.
 int cantidad_elementos(char**); //dado un array devuelve la cantidad de elementos que contiene.
@@ -34,3 +36,4 @@ bool es_error(char**);
 unsigned long int string_to_ulint(char*);
 unsigned short int get_key(char**);
 unsigned long int get_timestamp(char**);
+void* leer_por_consola(void (*f) (char*));
