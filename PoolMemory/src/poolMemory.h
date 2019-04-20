@@ -7,7 +7,6 @@
 #include <utilguenguencha/utils.h>
 
 // Funciones del proceso
-void retornar_control(Instruction_set, int socket_cliente);
 void configuracion_inicial(void);
 
 // Variables globales del proceso

@@ -1,6 +1,6 @@
 #include "clienguenguencha.h"
 
 int main(void) {
-	puts(""); /* prints  */
-	return EXIT_SUCCESS;
+
+	exit_gracefully(EXIT_SUCCESS);
 }

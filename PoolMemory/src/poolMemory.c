@@ -4,15 +4,12 @@ int main(void) {
 	configure_logger();
 	configuracion_inicial();
 	conectar_y_crear_hilo(retornarControl,"127.0.0.1", PUERTO_DE_ESCUCHA);
-	exit_gracefully(EXIT_SUCCESS);
 }
 
 void retornarControl(Instruction_set instruccion, int socket_cliente){
-
-	enviar(instruccion, IP_FS, PUERTO_FS);
-
+	printf("ME llego algo y algo deberia hacer");
+	//enviar(instruccion, IP_FS, PUERTO_FS);
 }
-
 
 void configuracion_inicial(void){
 	t_config* CONFIG;
@@ -24,4 +21,5 @@ void configuracion_inicial(void){
 	PUERTO_DE_ESCUCHA = config_get_int_value(CONFIG,"PUERTO_DE_ESCUCHA");
 	IP_FS = config_get_string_value(CONFIG,"IP_FS");
 	PUERTO_FS = config_get_int_value(CONFIG,"PUERTO_FS");
+	config_destroy(CONFIG);
 }
