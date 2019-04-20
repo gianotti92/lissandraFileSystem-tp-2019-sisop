@@ -1,8 +1,6 @@
 #include "utils.h"
 
-
 void configure_logger() {
-
 	LOGGER = log_create("logger.log","tp-lissandra",1,LOG_LEVEL_DEBUG);
 	log_info(LOGGER, "Inicia Proceso");
 }

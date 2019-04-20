@@ -11,6 +11,6 @@
 #include <stdlib.h>
 
 t_log * LOGGER;
-t_config CONFIG;
+
 
 #endif /* UTILGUENGUENCHA_UTILS_H_ */
