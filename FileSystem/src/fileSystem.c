@@ -1,11 +1,11 @@
 #include "filesSystem.h"
 
-int main(void) {
+/*int main(void) {
 	configure_logger();
 	configuracion_inicial();
 	conectar_y_crear_hilo(retornarControl, "127.0.0.1", PUERTO_DE_ESCUCHA);
 }
-
+*/
 
 void retornarControl(Instruction_set instruccion, int cliente){
 	printf("Me llego algo y algo deberia hacer");
