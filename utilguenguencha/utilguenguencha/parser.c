@@ -1,12 +1,3 @@
-/*
- ============================================================================
- Name        : parser.c
- Author      : 
- Version     :
- Copyright   : 
- Description :
- ============================================================================
- */
 
 #include "parser.h"
 
@@ -382,3 +373,22 @@ unsigned long int string_to_ulint(char* string){
 
 	return dec;
 }
+
+void* leer_por_consola(void (*f) (char*)){
+	char* leido;
+
+	leido = readline(">>");
+	add_history(leido);
+
+	while (strncmp(leido, "EXIT", 4) != 0){
+		f(leido);
+		free(leido);
+		leido = readline("\n>>");
+		add_history(leido);
+	}
+
+	free(leido);
+	log_info(LOGGER, "Salida del sistema por consola");
+	exit_gracefully(EXIT_SUCCESS);
+}
+

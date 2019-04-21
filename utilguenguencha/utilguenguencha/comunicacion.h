@@ -1,13 +1,5 @@
-/*
- * cliente.h
- *
- *  Created on: 18 abr. 2019
- *      Author: utnso
- */
-
-#ifndef CLIENTE_H_
-#define CLIENTE_H_
-
+#ifndef UTILGUENGUENCHA_COMUNICACION_H_
+#define UTILGUENGUENCHA_COMUNICACION_H_
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,7 +20,8 @@ typedef enum{
 	ADD,
 	RUN,
 	JOURNAL,
-	METRICS
+	METRICS,
+	ERROR
 }Instruction_set;
 
 typedef struct{
@@ -83,15 +76,8 @@ typedef struct{
 
 typedef struct{
 	Instruction_set instruccion;
-	Select select;
-	Insert insert;
-	Create create;
-	Describe describe;
-	Drop drop;
-	Add add;
-	Run run;
-	Journal journal;
-	Metrics metrics;
+	void * instruccion_a_realizar;
 }Instruccion;
 
-#endif /* CLIENTE_H_ */
+
+#endif /* UTILGUENGUENCHA_COMUNICACION_H_ */

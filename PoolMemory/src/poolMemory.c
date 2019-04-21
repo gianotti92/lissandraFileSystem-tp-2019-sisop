@@ -1,19 +1,36 @@
-#include "config_poolMemory.h"
-#include "conexion.h"
-
-void imprimir(char* mensaje){
-	printf("El mensaje es %s\n", mensaje);
-}
+#include "poolMemory.h"
 
 int main(void) {
 	configure_logger();
-	get_parametros_config();
-	conectar_y_crear_hilo(imprimir, IP, PUERTO_POOL_MEM);
-	exit_gracefully(EXIT_SUCCESS);
+	configuracion_inicial();
+	pthread_t consolaKernel;
+	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
+	conectar_y_crear_hilo(retornarControl,"127.0.0.1", PUERTO_DE_ESCUCHA);
 }
 
-void retornarControl(char * msj, int cliente){
-	printf("mensaje desde pool memory");
-	printf("%s", msj);
-	enviar(msj, IP, PUERTO_FS);
+void configuracion_inicial(void){
+	t_config* CONFIG;
+	CONFIG = config_create("config.cfg");
+	if (!CONFIG) {
+		printf("No encuentro el archivo config\n");
+		exit_gracefully(EXIT_FAILURE);
+	}
+	PUERTO_DE_ESCUCHA = config_get_int_value(CONFIG,"PUERTO_DE_ESCUCHA");
+	IP_FS = config_get_string_value(CONFIG,"IP_FS");
+	PUERTO_FS = config_get_int_value(CONFIG,"PUERTO_FS");
+	config_destroy(CONFIG);
+}
+
+void retorno_consola(char* leido){
+	printf("Lo leido es: %s",leido);
+
+	/*
+	 * METO LO QUE LLEGA POR CONSOLA EN LA PLANIFICACION DE "NEW"
+	 *
+	 * */
+}
+
+void retornarControl(Instruction_set instruccion, int socket_cliente){
+	printf("ME llego algo y algo deberia hacer");
+	//enviar(instruccion, IP_FS, PUERTO_FS);
 }
