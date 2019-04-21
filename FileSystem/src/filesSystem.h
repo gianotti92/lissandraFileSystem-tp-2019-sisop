@@ -1,11 +1,13 @@
 
 #ifndef FILESSYSTEM_H_
 #define FILESSYSTEM_H_
+#define PATH_TABLE="TABLE"
 
 #include <utilguenguencha/comunicacion.h>
 #include <utilguenguencha/conexion.h>
 #include <utilguenguencha/parser.h>
 #include <utilguenguencha/utils.h>
+
 
 // Funciones del proceso
 void configuracion_inicial(void);
