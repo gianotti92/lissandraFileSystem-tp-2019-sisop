@@ -6,6 +6,12 @@
 #include <stdint.h>
 
 typedef enum{
+	KERNEL,
+	POOLMEMORY,
+	FILESYSTEM
+}Procesos;
+
+typedef enum{
 	EC,
 	SC,
 	SHC
@@ -34,6 +40,7 @@ typedef struct{
 	char* nombre_tabla;
 	uint16_t key;
 	char* value;
+	uint32_t timestamp_insert;
 	uint32_t timestamp;
 }Insert;
 

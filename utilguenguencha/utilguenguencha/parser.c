@@ -2,6 +2,7 @@
 #include "parser.h"
 
 void print_consulta(Instruccion consulta){
+
 	printf("%i %i", consulta.instruccion, consulta.instruccion_a_realizar);
 }
 
@@ -12,8 +13,6 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 	Instruccion consultaParseadaError;
 	consultaParseadaError.instruccion = ERROR;
 	consultaParseadaError.instruccion_a_realizar = NULL;
-
-	return consultaParseada;
 
 	time_t echo_time;
 	echo_time = time(NULL);
@@ -50,15 +49,14 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 
 			string_to_upper(consulta_separada[1]);
 			strcpy(nuevoSelect.nombre_tabla, consulta_separada[1]); 				// cargo tabla
-			uint16_t key = (int) consulta_separada[2];
+			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
 			nuevoSelect.key = key;	 												// cargo key
-			uint32_t timestamp = (uint32_t) consulta_separada[2];
-			nuevoSelect.timestamp = timestamp;										// cargo timestamp
+			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[3]);
+			nuevoSelect.timestamp = timestamp;									// cargo timestamp
 
 			consultaParseada.instruccion = SELECT;
 			consultaParseada.instruccion_a_realizar = &nuevoSelect;
 
-			log_info(LOGGER, "Parser: Consulta aceptada.");
 		}
 	}
 	else if (es_insert(consulta_separada)){
@@ -78,27 +76,26 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			Insert nuevoInsert;															 // es INSERT
 			string_to_upper(consulta_separada[1]);
 			strcpy(nuevoInsert.nombre_tabla, consulta_separada[1]);	 					 // cargo tabla
-			uint16_t key = (int) consulta_separada[2];
-			nuevoInsert.key = key;														 // cargo key
+			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
+			nuevoInsert.key = key;					 									 // cargo key
 
 			strcpy(nuevoInsert.value, consulta_separada[3]);							 // cargo value
 
 			if (length == 4) {															 // no vino con timestamp en la consulta
-				uint32_t timestamp = (uint32_t) consulta_separada[4];
+				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[4]);
 				nuevoInsert.timestamp_insert = timestamp;								 // cargo timestamp_insert
 				nuevoInsert.timestamp = timestamp;										 // cargo timestamp
 			}
 			else {																		 // vino con timestamp en la consulta
-				uint32_t timestamp_insert = (uint32_t) consulta_separada[4];
+				uint32_t timestamp_insert = (uint32_t) string_to_ulint(consulta_separada[4]);
 				nuevoInsert.timestamp_insert = timestamp_insert;				 		 // cargo timestamp_insert
-				uint32_t timestamp = (uint32_t) consulta_separada[5];				 	 // cargo timestamp
-				nuevoInsert.timestamp = timestamp;
+				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[5]);
+				nuevoInsert.timestamp = timestamp;										 // cargo timestamp
 			}
 
 			consultaParseada.instruccion = INSERT;
 			consultaParseada.instruccion_a_realizar = &nuevoInsert;
 
-			log_info(LOGGER, "Parser: Consulta aceptada.");
 		}
 	}
 	else if (es_create(consulta_separada)){
@@ -142,17 +139,15 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			};
 
 			nuevoCreate.consistencia = consistencia;									 // cargo consistencia
-			uint8_t particiones = (int) consulta_separada[3];
+			uint8_t particiones = (int) string_to_ulint(consulta_separada[3]);
 			nuevoCreate.particiones = particiones;										 // cargo particiones
-			uint32_t compactation_time = (uint32_t) consulta_separada[4];
+			uint32_t compactation_time = (uint32_t) string_to_ulint(consulta_separada[4]);
 			nuevoCreate.compactation_time = compactation_time;							 // cargo compactation_time
-			uint32_t timestamp = (uint32_t) consulta_separada[5];
+			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[5]);
 			nuevoCreate.timestamp = timestamp;											 // cargo timestamp
 
 			consultaParseada.instruccion = CREATE;
 			consultaParseada.instruccion_a_realizar = &nuevoCreate;
-
-			log_info(LOGGER, "Parser: Consulta aceptada.");
 
 		}
 	}
@@ -168,13 +163,12 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			Describe nuevoDescribe;														// es DESCRIBE
 			string_to_upper(consulta_separada[1]);
 			strcpy(nuevoDescribe.nombre_tabla, consulta_separada[1]); 					// cargo tabla
-			uint32_t timestamp = (uint32_t) consulta_separada[2];
+			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 			nuevoDescribe.timestamp = timestamp;				 				 		// cargo timestamp
 
 			consultaParseada.instruccion = DESCRIBE;
 			consultaParseada.instruccion_a_realizar = &nuevoDescribe;
 
-			log_info(LOGGER, "Parser: Consulta aceptada.");
 
 		}
 	}
@@ -190,13 +184,12 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			Drop nuevoDrop;																	// es DROP
 			string_to_upper(consulta_separada[1]);
 			strcpy(nuevoDrop.nombre_tabla, consulta_separada[1]); 							// cargo tabla
-			uint32_t timestamp = (uint32_t) consulta_separada[2];
+			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 			nuevoDrop.timestamp = timestamp;												// cargo timestamp
 
 			consultaParseada.instruccion = DROP;
 			consultaParseada.instruccion_a_realizar = &nuevoDrop;
 
-			log_info(LOGGER, "Parser: Consulta aceptada.");
 
 		}
 	}
@@ -211,7 +204,7 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 
 			Add nuevoAddMemory;																// es ADD MEMORY
 
-			nuevoAddMemory.memoria = (int) consulta_separada[2];		 					// cargo memoria
+			nuevoAddMemory.memoria = (int) string_to_ulint(consulta_separada[2]);			// cargo memoria
 
 			Consistencias consistencia;
 
@@ -231,13 +224,12 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			};
 
 			nuevoAddMemory.consistencia = consistencia;									// cargo consistencia
-			uint32_t timestamp = (uint32_t) consulta_separada[5];
+			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[5]);
 			nuevoAddMemory.timestamp = timestamp;					 		 			// cargo timestamp
 
 			consultaParseada.instruccion = ADD;
 			consultaParseada.instruccion_a_realizar = &nuevoAddMemory;
 
-			log_info(LOGGER, "Parser: Consulta aceptada.");
 
 		}
 	}
@@ -253,13 +245,12 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			Run nuevoRun;																// es RUN
 
 			strcpy(nuevoRun.path, consulta_separada[1]); 								// cargo path
-			uint32_t timestamp = (uint32_t) consulta_separada[2];
+			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 			nuevoRun.timestamp = timestamp;				 				 				// cargo timestamp
 
 			consultaParseada.instruccion = RUN;
 			consultaParseada.instruccion_a_realizar = &nuevoRun;
 
-			log_info(LOGGER, "Parser: Consulta aceptada.");
 
 		}
 	}
@@ -273,13 +264,12 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			else{
 
 				Metrics nuevoMetrics;														// es METRICS
-				uint32_t timestamp = (uint32_t) consulta_separada[1];
+				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
 				nuevoMetrics.timestamp = timestamp;						 				 	// cargo timestamp
 
 				consultaParseada.instruccion = METRICS;
 				consultaParseada.instruccion_a_realizar = &nuevoMetrics;
 
-				log_info(LOGGER, "Parser: Consulta aceptada.");
 			}
 		}
 	else if (es_journal(consulta_separada) & (procesoOrigen == POOLMEMORY)){
@@ -292,13 +282,11 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			else{
 
 				Journal nuevoJournal;														// es JOURNAL
-				uint32_t timestamp = (uint32_t) consulta_separada[1];
+				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
 				nuevoJournal.timestamp = timestamp;						 				 	// cargo timestamp
 
 				consultaParseada.instruccion = JOURNAL;
 				consultaParseada.instruccion_a_realizar = &nuevoJournal;
-
-				log_info(LOGGER, "Parser: Consulta aceptada.");
 
 			}
 		}
@@ -311,6 +299,7 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		return consultaParseadaError;
 	}
 
+	log_info(LOGGER, "Parser: Consulta aceptada.");
 	return consultaParseada;
 }
 
@@ -418,4 +407,22 @@ unsigned long int string_to_ulint(char* string){
 	}
 
 	return dec;
+}
+
+void* leer_por_consola(void (*f) (char*)){
+	char* leido;
+
+	leido = readline(">>");
+	add_history(leido);
+
+	while (strncmp(leido, "EXIT", 4) != 0){
+		f(leido);
+		free(leido);
+		leido = readline("\n>>");
+		add_history(leido);
+	}
+
+	free(leido);
+	log_info(LOGGER, "Salida del sistema por consola");
+	exit_gracefully(EXIT_SUCCESS);
 }

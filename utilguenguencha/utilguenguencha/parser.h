@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <readline/readline.h>
+#include <readline/history.h>
 #include <errno.h>
 #include <string.h>
 #include <netdb.h>
@@ -37,3 +38,4 @@ bool es_error(char**);
 unsigned long int string_to_ulint(char*);
 unsigned short int get_key(char**);
 unsigned long int get_timestamp(char**);
+void* leer_por_consola(void (*f) (char*));

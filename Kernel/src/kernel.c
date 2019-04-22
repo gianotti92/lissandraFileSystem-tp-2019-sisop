@@ -3,6 +3,7 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
+
 	pthread_t consolaKernel;
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
 	for(;;){} // Para que no muera
