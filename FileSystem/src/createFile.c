@@ -6,6 +6,7 @@
 #include "filesSystem.h"
 #include <commons/string.h>
 #include <utilguenguencha/comunicacion.h>
+#include <utilguenguencha/utils.h>
 int main() {
 
 	Create * createTable = malloc(sizeof(Create));
@@ -81,7 +82,8 @@ void escribirMetadata(char * metaDataPath, Create * createTable) {
 	}
 
 	char* formato = string_new();
-	string_append_with_format(&formato, "CONSISTENCY=%d\n", createTable->consistencia);
+
+	string_append_with_format(&formato, "CONSISTENCY=%s\n", consistency_to_string(createTable->consistencia));
 	string_append_with_format(&formato, "PARTITIONS=%d\n", createTable->particiones);
 	string_append_with_format(&formato, "COMPACTATION_TIME=%d\n", createTable->compactation_time);
 

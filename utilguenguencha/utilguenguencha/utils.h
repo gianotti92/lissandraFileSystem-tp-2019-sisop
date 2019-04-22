@@ -12,5 +12,5 @@
 
 t_log * LOGGER;
 
-
+char* consistency_to_string(int consistency);
 #endif /* UTILGUENGUENCHA_UTILS_H_ */
