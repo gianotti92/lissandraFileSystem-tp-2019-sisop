@@ -1,27 +1,32 @@
 
 #include "parser.h"
 
-char** parser_lql(char* mensaje, t_log* LOGGER){
+void print_consulta(Instruccion consulta){
+	printf("%i %i", consulta.instruccion, consulta.instruccion_a_realizar);
+}
 
-	char** ERROR = string_split("ERROR", " ");
-	char** CONSULTA_PARSEADA;
+Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
+
+	Instruccion consultaParseada;
+
+	Instruccion consultaParseadaError;
+	consultaParseadaError.instruccion = ERROR;
+	consultaParseadaError.instruccion_a_realizar = NULL;
+
+	return consultaParseada;
 
 	time_t echo_time;
 	echo_time = time(NULL);
 
-
 	if (echo_time == ((time_t)-1)){
-		(void) fprintf(stderr, "Fallo al obtener la hora. \n");
+		puts ("ERROR: Fallo al obtener la hora.");
 		log_error(LOGGER, "Parser: Fallo al obtener la hora.");
-		return ERROR;
-	}
 
-	char* consulta = string_new();
-	consulta = string_substring_until(mensaje, string_length(mensaje)-1);
+		return consultaParseadaError;
+	}
 
 	consulta = string_from_format("%s %ju", consulta, (uintmax_t)echo_time);
 	log_info(LOGGER, "Parser: Consulta - %s", consulta);
-
 
 	char** consulta_separada = string_split(consulta, " ");
 
@@ -32,86 +37,122 @@ char** parser_lql(char* mensaje, t_log* LOGGER){
 		if (length != 3){
 			puts("ERROR: La sintaxis correcta es > SELECT [NOMBRE_TABLA] [KEY]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else if(!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
 			log_error(LOGGER, "Parser: La Key es incorrecta.");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else{
 
-			/*puts(consulta_separada[0]);//select
-			puts(consulta_separada[1]);//tabla
-			puts(consulta_separada[2]);//key
-			puts(consulta_separada[3]);//timestamp*/
+			Select nuevoSelect;												 		// es SELECT
 
-			string_to_upper(consulta_separada[0]);
 			string_to_upper(consulta_separada[1]);
+			strcpy(nuevoSelect.nombre_tabla, consulta_separada[1]); 				// cargo tabla
+			uint16_t key = (int) consulta_separada[2];
+			nuevoSelect.key = key;	 												// cargo key
+			uint32_t timestamp = (uint32_t) consulta_separada[2];
+			nuevoSelect.timestamp = timestamp;										// cargo timestamp
+
+			consultaParseada.instruccion = SELECT;
+			consultaParseada.instruccion_a_realizar = &nuevoSelect;
 
 			log_info(LOGGER, "Parser: Consulta aceptada.");
-			CONSULTA_PARSEADA = consulta_separada;
 		}
 	}
 	else if (es_insert(consulta_separada)){
 
-		if (length != 4){
-			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]”");
+		if ( ((length != 4) & (length != 5)) | ((length == 5) & (!es_numero(consulta_separada[4]))) ){
+			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else if (!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
 			log_error(LOGGER, "Parser: La Key es incorrecta.");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else{
 
-			/*puts(consulta_separada[0]);//insert
-			puts(consulta_separada[1]);//tabla
-			puts(consulta_separada[2]);//key
-			puts(consulta_separada[3]);//valor
-			puts(consulta_separada[4]);//timestamp*/
-
-			string_to_upper(consulta_separada[0]);
+			Insert nuevoInsert;															 // es INSERT
 			string_to_upper(consulta_separada[1]);
+			strcpy(nuevoInsert.nombre_tabla, consulta_separada[1]);	 					 // cargo tabla
+			uint16_t key = (int) consulta_separada[2];
+			nuevoInsert.key = key;														 // cargo key
+
+			strcpy(nuevoInsert.value, consulta_separada[3]);							 // cargo value
+
+			if (length == 4) {															 // no vino con timestamp en la consulta
+				uint32_t timestamp = (uint32_t) consulta_separada[4];
+				nuevoInsert.timestamp_insert = timestamp;								 // cargo timestamp_insert
+				nuevoInsert.timestamp = timestamp;										 // cargo timestamp
+			}
+			else {																		 // vino con timestamp en la consulta
+				uint32_t timestamp_insert = (uint32_t) consulta_separada[4];
+				nuevoInsert.timestamp_insert = timestamp_insert;				 		 // cargo timestamp_insert
+				uint32_t timestamp = (uint32_t) consulta_separada[5];				 	 // cargo timestamp
+				nuevoInsert.timestamp = timestamp;
+			}
+
+			consultaParseada.instruccion = INSERT;
+			consultaParseada.instruccion_a_realizar = &nuevoInsert;
 
 			log_info(LOGGER, "Parser: Consulta aceptada.");
-			CONSULTA_PARSEADA = consulta_separada;
-
 		}
 	}
 	else if (es_create(consulta_separada)){
 		if (length != 5){
 			puts("ERROR: La sintaxis correcta es > CREATE [NOMBRE_TABLA] [TIPO_CONSISTENCIA] [NUMERO_PARTICIONES] [COMPACTION_TIME]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else if (!es_numero(consulta_separada[3])){
 			puts("ERROR: La cantidad de particiones debe ser un numero.");
 			log_error(LOGGER, "Parser: La cantidad de particiones debe ser un numero.");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else if (!es_numero(consulta_separada[4])){
 			puts("ERROR: El tiempo de compactacion debe ser un numero.");
 			log_error(LOGGER, "Parser: El tiempo de compactacion debe ser un numero.");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else{
 
-			/*puts(consulta_separada[0]);//CREATE
-			puts(consulta_separada[1]);//tabla
-			puts(consulta_separada[2]);//consistencia
-			puts(consulta_separada[3]);//particiones
-			puts(consulta_separada[4]);//compactacion
-			puts(consulta_separada[5]);//timestamp*/
-
-			string_to_upper(consulta_separada[0]);
+			Create nuevoCreate;												 			// es CREATE
 			string_to_upper(consulta_separada[1]);
-			string_to_upper(consulta_separada[2]);
+			strcpy(nuevoCreate.nombre_tabla, consulta_separada[1]); 					// cargo tabla
+
+			Consistencias consistencia;
+
+			if (string_equals_ignore_case(consulta_separada[2],"SC")){
+				consistencia = SC;
+			}
+			else if (string_equals_ignore_case(consulta_separada[2],"SHC")){
+				consistencia = SHC;
+
+			}else if (string_equals_ignore_case(consulta_separada[2],"EC")){
+				consistencia = EC;
+
+			}
+			else {
+				puts("ERROR: Los criterios de consistencia aceptados son [SC, SHC, EC]");
+				log_error(LOGGER, "Parser: Criterio de consistencia no aceptado.");
+				return consultaParseadaError;
+			};
+
+			nuevoCreate.consistencia = consistencia;									 // cargo consistencia
+			uint8_t particiones = (int) consulta_separada[3];
+			nuevoCreate.particiones = particiones;										 // cargo particiones
+			uint32_t compactation_time = (uint32_t) consulta_separada[4];
+			nuevoCreate.compactation_time = compactation_time;							 // cargo compactation_time
+			uint32_t timestamp = (uint32_t) consulta_separada[5];
+			nuevoCreate.timestamp = timestamp;											 // cargo timestamp
+
+			consultaParseada.instruccion = CREATE;
+			consultaParseada.instruccion_a_realizar = &nuevoCreate;
 
 			log_info(LOGGER, "Parser: Consulta aceptada.");
-			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
@@ -120,19 +161,20 @@ char** parser_lql(char* mensaje, t_log* LOGGER){
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > DESCRIBE [NOMBRE_TABLA]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else{
 
-			/*puts(consulta_separada[0]);//DESCRIBE
-			puts(consulta_separada[1]);//tabla
-			puts(consulta_separada[2]);//timestamp*/
-
-			string_to_upper(consulta_separada[0]);
+			Describe nuevoDescribe;														// es DESCRIBE
 			string_to_upper(consulta_separada[1]);
+			strcpy(nuevoDescribe.nombre_tabla, consulta_separada[1]); 					// cargo tabla
+			uint32_t timestamp = (uint32_t) consulta_separada[2];
+			nuevoDescribe.timestamp = timestamp;				 				 		// cargo timestamp
+
+			consultaParseada.instruccion = DESCRIBE;
+			consultaParseada.instruccion_a_realizar = &nuevoDescribe;
 
 			log_info(LOGGER, "Parser: Consulta aceptada.");
-			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
@@ -141,131 +183,135 @@ char** parser_lql(char* mensaje, t_log* LOGGER){
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > DROP [NOMBRE_TABLA]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else{
 
-			/*puts(consulta_separada[0]);//DROP
-			puts(consulta_separada[1]);//tabla
-			puts(consulta_separada[2]);//timestamp*/
-
-			string_to_upper(consulta_separada[0]);
+			Drop nuevoDrop;																	// es DROP
 			string_to_upper(consulta_separada[1]);
+			strcpy(nuevoDrop.nombre_tabla, consulta_separada[1]); 							// cargo tabla
+			uint32_t timestamp = (uint32_t) consulta_separada[2];
+			nuevoDrop.timestamp = timestamp;												// cargo timestamp
+
+			consultaParseada.instruccion = DROP;
+			consultaParseada.instruccion_a_realizar = &nuevoDrop;
 
 			log_info(LOGGER, "Parser: Consulta aceptada.");
-			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
-	else if (string_equals_ignore_case(string_from_format("%s %s", consulta_separada[0], consulta_separada[1]), "ADD MEMORY")){
+	else if (string_equals_ignore_case(string_from_format("%s %s", consulta_separada[0], consulta_separada[1]), "ADD MEMORY") & (string_equals_ignore_case(consulta_separada[3], "TO")) & (procesoOrigen == KERNEL)){
 
 		if (length != 5){
 			puts("ERROR: La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return ERROR;
-		}
-		else if ((string_equals_ignore_case(consulta_separada[4], "SC"))
-				& (string_equals_ignore_case(consulta_separada[4], "SHC"))
-				& (string_equals_ignore_case(consulta_separada[4], "EC"))){
-			puts("ERROR: El tipo de consistencia es incorrecto. Debe ser uno de [SC, SHC, EC].");
-			log_error(LOGGER, "Parser: El tipo de consistencia es incorrecto.");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else{
 
-			/*
-			puts(consulta_separada[0]);//ADD
-			puts(consulta_separada[1]);//MEMORY
-			puts(consulta_separada[2]);//memoria
-			puts(consulta_separada[3]);//TO
-			puts(consulta_separada[4]);//criterio
-			puts(consulta_separada[5]);//timestamp*/
+			Add nuevoAddMemory;																// es ADD MEMORY
 
-			consulta_separada[0] = string_from_format("%s %s", consulta_separada[0], consulta_separada[1]);
-			consulta_separada[1] = consulta_separada[2];
-			consulta_separada[2] = consulta_separada[3];
-			consulta_separada[3] = consulta_separada[4];
-			consulta_separada[4] = consulta_separada[5];
-			consulta_separada[5] = NULL;
-			free(consulta_separada[6]);
+			nuevoAddMemory.memoria = (int) consulta_separada[2];		 					// cargo memoria
 
-			string_to_upper(consulta_separada[0]);
-			string_to_upper(consulta_separada[2]);
-			string_to_upper(consulta_separada[3]);
+			Consistencias consistencia;
+
+			if (string_equals_ignore_case(consulta_separada[4],"SC")){
+				consistencia = SC;
+			}
+			else if (string_equals_ignore_case(consulta_separada[4],"SHC")){
+				consistencia = SHC;
+			}
+			else if (string_equals_ignore_case(consulta_separada[4],"EC")){
+				consistencia = EC;
+			}
+			else {
+				puts("ERROR: Los criterios de consistencia aceptados son [SC, SHC, EC]");
+				log_error(LOGGER, "Parser: Criterio de consistencia no aceptado.");
+				return consultaParseadaError;
+			};
+
+			nuevoAddMemory.consistencia = consistencia;									// cargo consistencia
+			uint32_t timestamp = (uint32_t) consulta_separada[5];
+			nuevoAddMemory.timestamp = timestamp;					 		 			// cargo timestamp
+
+			consultaParseada.instruccion = ADD;
+			consultaParseada.instruccion_a_realizar = &nuevoAddMemory;
 
 			log_info(LOGGER, "Parser: Consulta aceptada.");
-			CONSULTA_PARSEADA = consulta_separada;
 
 		}
 	}
-	else if (es_run(consulta_separada) ){
+	else if (es_run(consulta_separada) & (procesoOrigen == KERNEL)){
 
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > RUN [ARCHIVO]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return ERROR;
+			return consultaParseadaError;
 		}
 		else{
 
-			/*puts(consulta_separada[0]);//RUN
-			puts(consulta_separada[1]);//path archivo
-			puts(consulta_separada[2]);//timestamp*/
+			Run nuevoRun;																// es RUN
 
-			string_to_upper(consulta_separada[0]);
+			strcpy(nuevoRun.path, consulta_separada[1]); 								// cargo path
+			uint32_t timestamp = (uint32_t) consulta_separada[2];
+			nuevoRun.timestamp = timestamp;				 				 				// cargo timestamp
 
-			log_info(LOGGER, "Consulta aceptada.");
-			CONSULTA_PARSEADA = consulta_separada;
+			consultaParseada.instruccion = RUN;
+			consultaParseada.instruccion_a_realizar = &nuevoRun;
+
+			log_info(LOGGER, "Parser: Consulta aceptada.");
 
 		}
 	}
-	else if (es_metrics(consulta_separada)){
+	else if (es_metrics(consulta_separada) & (procesoOrigen == KERNEL)){
 
 			if (length != 1){
 				puts("ERROR: La sintaxis correcta es > METRICS");
 				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-				return ERROR;
+				return consultaParseadaError;
 			}
 			else{
 
-				/*puts(consulta_separada[0]);//METRICS
-				puts(consulta_separada[1]);//timestamp*/
+				Metrics nuevoMetrics;														// es METRICS
+				uint32_t timestamp = (uint32_t) consulta_separada[1];
+				nuevoMetrics.timestamp = timestamp;						 				 	// cargo timestamp
 
-				string_to_upper(consulta_separada[0]);
+				consultaParseada.instruccion = METRICS;
+				consultaParseada.instruccion_a_realizar = &nuevoMetrics;
 
 				log_info(LOGGER, "Parser: Consulta aceptada.");
-				CONSULTA_PARSEADA = consulta_separada;
-
 			}
 		}
-	else if (es_journal(consulta_separada)){
+	else if (es_journal(consulta_separada) & (procesoOrigen == POOLMEMORY)){
 
 			if (length != 1){
 				puts("ERROR: La sintaxis correcta es > JOURNAL");
 				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-				return ERROR;
+				return consultaParseadaError;
 			}
 			else{
 
-				/*puts(consulta_separada[0]);//JOURNAL
-				puts(consulta_separada[1]);//timestamp*/
+				Journal nuevoJournal;														// es JOURNAL
+				uint32_t timestamp = (uint32_t) consulta_separada[1];
+				nuevoJournal.timestamp = timestamp;						 				 	// cargo timestamp
 
-				string_to_upper(consulta_separada[0]);
+				consultaParseada.instruccion = JOURNAL;
+				consultaParseada.instruccion_a_realizar = &nuevoJournal;
 
 				log_info(LOGGER, "Parser: Consulta aceptada.");
-				CONSULTA_PARSEADA = consulta_separada;
 
 			}
 		}
 	else {
 		puts("ERROR: Las operaciones disponibles son:");
-		puts("Desde Kernel      >> [SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD MEMORY, RUN, METRICS]");
-		puts("Desde Pool Memory >> [SELECT, INSERT, CREATE, DESCRIBE, DROP, JOURNAL]");
-		puts("Desde File System >> [SELECT, INSERT, CREATE, DESCRIBE, DROP]");
+		if ((procesoOrigen == KERNEL)) puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD MEMORY, RUN, METRICS]");
+		if ((procesoOrigen == POOLMEMORY)) puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, JOURNAL]");
+		if ((procesoOrigen == FILESYSTEM)) puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP]");
 		log_error(LOGGER, "Parser: Operacion no reconocida.");
-		return ERROR;
+		return consultaParseadaError;
 	}
 
-	return CONSULTA_PARSEADA;
+	return consultaParseada;
 }
 
 
@@ -373,22 +419,3 @@ unsigned long int string_to_ulint(char* string){
 
 	return dec;
 }
-
-void* leer_por_consola(void (*f) (char*)){
-	char* leido;
-
-	leido = readline(">>");
-	add_history(leido);
-
-	while (strncmp(leido, "EXIT", 4) != 0){
-		f(leido);
-		free(leido);
-		leido = readline("\n>>");
-		add_history(leido);
-	}
-
-	free(leido);
-	log_info(LOGGER, "Salida del sistema por consola");
-	exit_gracefully(EXIT_SUCCESS);
-}
-
