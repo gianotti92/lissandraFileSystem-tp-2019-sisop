@@ -12,17 +12,16 @@ int main() {
 
 	MockTabla(&createTable);
 
-	crear_carpeta_tables();
+	crear_folder_tablas();
 
 	crear_tabla(&createTable);
 	printf("sali bien");
 	return 0;
 }
 
-void crear_carpeta_tables() {
+void crear_folder_tablas() {
 	mkdir("tables", 0777);
 }
-
 
 void crear_tabla(Create * createTable) {
 	char * pathTable = string_new();
@@ -31,7 +30,7 @@ void crear_tabla(Create * createTable) {
 
 	//creo la carpeta de la tabla
 	mkdir(pathTable, 0777);
-	crearMetaData(pathTable, &createTable);
+	crearMetaData(pathTable, createTable);
 
 	for (int i = 0; i < createTable->particiones; ++i) {
 		char * numberBin = string_new();
@@ -51,17 +50,14 @@ void crear_tabla(Create * createTable) {
 }
 
 void MockTabla(Create * createTable) {
-
 	createTable->nombre_tabla = "name";
 	createTable->compactation_time = 002;
 	createTable->particiones = 4;
 	createTable->timestamp = 8;
 	createTable->consistencia = SC;
-
 }
 
 void crearMetaData(char * pathTable, Create * createTable) {
-
 	char * metaDataPath = string_new();
 	string_append(&metaDataPath, pathTable);
 	string_append(&metaDataPath, "/Metadata");
@@ -70,40 +66,33 @@ void crearMetaData(char * pathTable, Create * createTable) {
 		perror("Error creating my_log file\n");
 		exit(-1);
 	}
-
 	escribirMetadata(metaDataPath, createTable);
 	free(metaDataPath);
-
 }
 void escribirMetadata(char * metaDataPath, Create * createTable) {
 
-	FILE *outfile;
+	FILE *metaDataFile;
 
 	// open file for writing
-	outfile = fopen(metaDataPath, "wb+");
-	if (outfile == NULL) {
+	metaDataFile = fopen(metaDataPath, "wb+");
+	if (metaDataFile == NULL) {
 		fprintf(stderr, "\nError opend file\n");
 		exit(1);
 	}
 
 	char* formato = string_new();
-
 	string_append_with_format(&formato, "CONSISTENCY=%d\n", createTable->consistencia);
-	string_append_with_format(&formato, "PARTITIONS=%s\n", string_itoa(createTable->particiones));
-	string_append_with_format(&formato, "COMPACTATION_TIME=%d\n", string_itoa(createTable->compactation_time));
-	//string_append(&lines, "-\n");
+	string_append_with_format(&formato, "PARTITIONS=%d\n", createTable->particiones);
+	string_append_with_format(&formato, "COMPACTATION_TIME=%d\n", createTable->compactation_time);
 
-	// write struct to file
-
-	fwrite(formato, strlen(formato),1, outfile);
+	fwrite(formato, strlen(formato), 1, metaDataFile);
 
 	if (fwrite != 0)
 		printf("contents to file written successfully !\n");
 	else
 		printf("error writing file !\n");
 
-	// close file
-	fclose(outfile);
+	fclose(metaDataFile);
 	free(formato);
 
 }
