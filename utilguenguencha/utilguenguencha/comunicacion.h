@@ -87,4 +87,5 @@ typedef struct{
 }Instruccion;
 
 
+
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */

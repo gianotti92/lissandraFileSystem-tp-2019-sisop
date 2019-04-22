@@ -96,7 +96,7 @@ void moverAEstado(CategoriaDeMensaje categoria, char** mensaje){
 			dictionary_put(estadoNew, k, v);
 			free(v);
 		break;
-	case ERROR:
+	case ERROR_MESSAGE:
 		log_info(LOGGER,"Kernel:Categoria ERROR. Esta mal escrita la query, no se continua");
 		break;
 	case QUERY:

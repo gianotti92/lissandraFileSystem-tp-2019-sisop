@@ -58,5 +58,6 @@ void realizar_bind(int socket, struct sockaddr_in *fileSystemAddres);
 void ponerse_a_escuchar(int socket, int cantidadConexiones);
 void retornarControl(Instruction_set instruccion, int socket_cliente);
 void realizar_conexion(int socketServer, struct sockaddr_in * address);
+int sizeof_select(Select *select);
 
 #endif

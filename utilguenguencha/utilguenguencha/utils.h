@@ -12,5 +12,9 @@
 
 t_log * LOGGER;
 
+void configure_logger();
+
+void exit_gracefully(int);
+
 
 #endif /* UTILGUENGUENCHA_UTILS_H_ */
