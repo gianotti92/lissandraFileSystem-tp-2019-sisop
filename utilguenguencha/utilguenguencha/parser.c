@@ -46,6 +46,11 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		else{
 
 			// es SELECT
+
+			Select nuevoSelect;
+			Select * p_select;
+			p_select = &nuevoSelect;
+
 			string_to_upper(consulta_separada[1]);
 			nuevoSelect.nombre_tabla = consulta_separada[1]; 		  				// cargo tabla
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
@@ -53,8 +58,10 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[3]);
 			nuevoSelect.timestamp = timestamp;										// cargo timestamp
 
+			p_generico = (void *)p_select;
+
 			consultaParseada.instruccion = SELECT;
-			consultaParseada.instruccion_a_realizar = &nuevoSelect;
+			consultaParseada.instruccion_a_realizar = p_generico;
 
 		}
 	}
@@ -78,6 +85,10 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		else{
 
 			 // es INSERT
+			Insert nuevoInsert;
+			Insert * p_insert;
+			p_insert = &nuevoInsert;
+
 			string_to_upper(consulta_separada[1]);
 			nuevoInsert.nombre_tabla = consulta_separada[1];	 						 // cargo tabla
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
@@ -97,8 +108,10 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 				nuevoInsert.timestamp = timestamp;										 // cargo timestamp
 			}
 
+			p_generico = (void *)p_insert;
+
 			consultaParseada.instruccion = INSERT;
-			consultaParseada.instruccion_a_realizar = &nuevoInsert;
+			consultaParseada.instruccion_a_realizar = p_generico;
 
 		}
 	}
@@ -121,6 +134,10 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		else{
 
 			// es CREATE
+			Create nuevoCreate;
+			Create * p_create;
+			p_create = &nuevoCreate;
+
 			string_to_upper(consulta_separada[1]);
 			nuevoCreate.nombre_tabla = consulta_separada[1]; 					// cargo tabla
 
@@ -150,8 +167,11 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[5]);
 			nuevoCreate.timestamp = timestamp;											 // cargo timestamp
 
+
+			p_generico = (void *)p_create;
+
 			consultaParseada.instruccion = CREATE;
-			consultaParseada.instruccion_a_realizar = &nuevoCreate;
+			consultaParseada.instruccion_a_realizar = p_generico;
 
 		}
 	}
@@ -165,13 +185,19 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		else{
 
 			// es DESCRIBE
+			Describe nuevoDescribe;
+			Describe * p_describe;
+			p_describe = &nuevoDescribe;
+
 			string_to_upper(consulta_separada[1]);
 			nuevoDescribe.nombre_tabla = consulta_separada[1]; 							// cargo tabla
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 			nuevoDescribe.timestamp = timestamp;				 				 		// cargo timestamp
 
+			p_generico = (void *)p_describe;
+
 			consultaParseada.instruccion = DESCRIBE;
-			consultaParseada.instruccion_a_realizar = &nuevoDescribe;
+			consultaParseada.instruccion_a_realizar = p_generico;
 
 
 		}
@@ -186,18 +212,24 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		else{
 
 			// es DROP
+			Drop nuevoDrop;
+			Drop * p_drop;
+			p_drop = &nuevoDrop;
+
 			string_to_upper(consulta_separada[1]);
 			nuevoDrop.nombre_tabla = consulta_separada[1]; 									// cargo tabla
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 			nuevoDrop.timestamp = timestamp;												// cargo timestamp
 
+			p_generico = (void *)p_drop;
+
 			consultaParseada.instruccion = DROP;
-			consultaParseada.instruccion_a_realizar = &nuevoDrop;
+			consultaParseada.instruccion_a_realizar = p_generico;
 
 
 		}
 	}
-	else if (string_equals_ignore_case(string_from_format("%s %s", consulta_separada[0], consulta_separada[1]), "ADD MEMORY") & (string_equals_ignore_case(consulta_separada[3], "TO")) & (procesoOrigen == KERNEL)){
+	else if (es_add(consulta_separada) & (procesoOrigen == KERNEL)){
 
 		if (length != 5){
 			puts("ERROR: La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO]");
@@ -209,9 +241,17 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			log_error(LOGGER, "Parser: La memoria debe ser un numero.");
 			return consultaParseadaError;
 		}
+		else if (!(string_equals_ignore_case(string_from_format("%s %s", consulta_separada[0], consulta_separada[1]), "ADD MEMORY") & (string_equals_ignore_case(consulta_separada[3], "TO")))){
+			puts("ERROR: La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO]");
+			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
+			return consultaParseadaError;
+		}
 		else{
 
 			// es ADD MEMORY
+			Add nuevoAddMemory;
+			Add * p_addmemory;
+			p_addmemory = &nuevoAddMemory;
 
 			nuevoAddMemory.memoria = (int) string_to_ulint(consulta_separada[2]);			// cargo memoria
 
@@ -230,15 +270,17 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 				puts("ERROR: Los criterios de consistencia aceptados son [SC, SHC, EC]");
 				log_error(LOGGER, "Parser: Criterio de consistencia no aceptado.");
 				return consultaParseadaError;
-			};
+			}
 
 			nuevoAddMemory.consistencia = consistencia;									// cargo consistencia
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[5]);
 			nuevoAddMemory.timestamp = timestamp;					 		 			// cargo timestamp
 
-			consultaParseada.instruccion = ADD;
-			consultaParseada.instruccion_a_realizar = &nuevoAddMemory;
 
+			p_generico = (void *)p_addmemory;
+
+			consultaParseada.instruccion = ADD;
+			consultaParseada.instruccion_a_realizar = p_generico;
 
 		}
 	}
@@ -252,12 +294,18 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		else{
 
 			// es RUN
+			Run nuevoRun;
+			Run * p_run;
+			p_run = &nuevoRun;
+
 			nuevoRun.path = consulta_separada[1]; 								// cargo path
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 			nuevoRun.timestamp = timestamp;				 				 				// cargo timestamp
 
+			p_generico = (void *)p_run;
+
 			consultaParseada.instruccion = RUN;
-			consultaParseada.instruccion_a_realizar = &nuevoRun;
+			consultaParseada.instruccion_a_realizar = p_generico;
 
 
 		}
@@ -272,11 +320,18 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			else{
 
 				// es METRICS
+				Metrics nuevoMetrics;
+				Metrics * p_metrics;
+				p_metrics = &nuevoMetrics;
+
+
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
 				nuevoMetrics.timestamp = timestamp;						 				 	// cargo timestamp
 
+				p_generico = (void *)p_metrics;
+
 				consultaParseada.instruccion = METRICS;
-				consultaParseada.instruccion_a_realizar = &nuevoMetrics;
+				consultaParseada.instruccion_a_realizar = p_generico;
 
 			}
 		}
@@ -290,11 +345,17 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			else{
 
 				// es JOURNAL
+				Journal nuevoJournal;
+				Journal * p_journal;
+				p_journal = &nuevoJournal;
+
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
 				nuevoJournal.timestamp = timestamp;						 				 	// cargo timestamp
 
+				p_generico = (void *)p_journal;
+
 				consultaParseada.instruccion = JOURNAL;
-				consultaParseada.instruccion_a_realizar = &nuevoJournal;
+				consultaParseada.instruccion_a_realizar = p_generico;
 
 			}
 		}
@@ -335,15 +396,38 @@ int es_numero(char* palabra){
 	return 1;
 }
 
-void print_consulta_parseada(char** consulta_parseada){
-	int i = 0;
+void print_instruccion_parseada(Instruccion instruccion_parseada){
 
-	while (consulta_parseada[i] != NULL){
-		printf("%s ", consulta_parseada[i]);
-		i++;
-	}
-
-	printf("\n");
+	switch(instruccion_parseada.instruccion){
+			case SELECT: {Select * select = instruccion_parseada.instruccion_a_realizar;
+						 printf("Tabla: %s Key: %i TS: %lu \n",select->nombre_tabla, select->key, select->timestamp);
+						 break;}
+			case INSERT: {Insert * insert = instruccion_parseada.instruccion_a_realizar;
+						 printf("Tabla: %s Key: %i Valor: %s TSins: %lu TS: %lu \n",insert->nombre_tabla,insert->key, insert->value, insert->timestamp_insert, insert->timestamp);
+						 break;}
+			case CREATE: {Create * create = instruccion_parseada.instruccion_a_realizar;
+						 printf("Tabla: %s Particiones: %i Compactacion: %lu Consistencia: %i TS: %lu \n",create->nombre_tabla,create->particiones, create->compactation_time, create->consistencia, create->timestamp);
+						 break;}
+			case DESCRIBE: {Describe * describe = instruccion_parseada.instruccion_a_realizar;
+							printf("Tabla: %s TS: %lu\n",describe->nombre_tabla, describe->timestamp);
+							break;}
+			case ADD: {Add * add = instruccion_parseada.instruccion_a_realizar;
+					   printf("Memoria: %i Consistencia: %i TS: %lu\n",add->memoria, add->consistencia, add->timestamp);
+					   break;}
+			case RUN: {Run * run = instruccion_parseada.instruccion_a_realizar;
+					   printf("Path: %s TS: %lu\n",run->path, run->timestamp);
+					   break;}
+			case DROP: {Drop * drop = instruccion_parseada.instruccion_a_realizar;
+						printf("Tabla: %s TS: %lu\n",drop->nombre_tabla, drop->timestamp);
+						break;}
+			case JOURNAL: {Journal * journal = instruccion_parseada.instruccion_a_realizar;
+						   printf("TS: %lu \n",journal->timestamp);
+						   break;}
+			case METRICS: {Metrics * metrics = instruccion_parseada.instruccion_a_realizar;
+						   printf("TS: %lu \n",metrics->timestamp);
+						   break;}
+			case ERROR: printf("ERROR DE CONSULTA \n");
+		}
 
 }
 
@@ -369,8 +453,8 @@ bool es_drop(char** consulta_parseada){
 	return (string_equals_ignore_case(consulta_parseada[0], "DROP"));
 }
 
-bool es_addmemory(char** consulta_parseada){
-	return (string_equals_ignore_case(consulta_parseada[0], "ADD MEMORY"));
+bool es_add(char** consulta_parseada){
+	return (string_equals_ignore_case(consulta_parseada[0], "ADD"));
 }
 
 bool es_run(char** consulta_parseada){
@@ -389,21 +473,6 @@ bool es_error(char** consulta_parseada){
 	return (string_equals_ignore_case(consulta_parseada[0], "ERROR"));
 }
 
-unsigned short int get_key(char** consulta_parseada){
-
-	if (es_select(consulta_parseada)|es_insert(consulta_parseada)){
-		return (unsigned short int) string_to_ulint(consulta_parseada[2]);
-	}
-	else {
-		return -1;
-	}
-}
-
-unsigned long int get_timestamp(char** consulta_parseada){
-	int i = 0;
-	while (consulta_parseada[i] != NULL) i++;
-	return string_to_ulint(consulta_parseada[i-1]);
-}
 
 unsigned long int string_to_ulint(char* string){
 	long int dec = 0;

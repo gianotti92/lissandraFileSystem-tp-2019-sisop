@@ -45,20 +45,11 @@ void retorno_consola(char* leido){
 		case DESCRIBE: {Describe * describe = instruccion_parseada.instruccion_a_realizar;
 						printf("Tabla: %s TS: %lu\n",describe->nombre_tabla, describe->timestamp);
 						break;}
-		case ADD: {Add * add = instruccion_parseada.instruccion_a_realizar;
-				   printf("Memoria: %i Consistencia: %i TS: %lu\n",add->memoria, add->consistencia, add->timestamp);
-				   break;}
-		case RUN: {Run * run = instruccion_parseada.instruccion_a_realizar;
-				   printf("Path: %s TS: %lu\n",run->path, run->timestamp);
-				   break;}
 		case DROP: {Drop * drop = instruccion_parseada.instruccion_a_realizar;
 					printf("Tabla: %s TS: %lu\n",drop->nombre_tabla, drop->timestamp);
 					break;}
 		case JOURNAL: {Journal * journal = instruccion_parseada.instruccion_a_realizar;
 					   printf("TS: %lu \n",journal->timestamp);
-					   break;}
-		case METRICS: {Metrics * metrics = instruccion_parseada.instruccion_a_realizar;
-					   printf("TS: %lu \n",metrics->timestamp);
 					   break;}
 		case ERROR: printf("ERROR DE CONSULTA \n");
 	}

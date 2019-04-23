@@ -20,32 +20,22 @@
 #include "utils.h"
 #include "comunicacion.h"
 
-Select nuevoSelect;
-Insert nuevoInsert;
-Create nuevoCreate;
-Describe nuevoDescribe;
-Drop nuevoDrop;
-Add nuevoAddMemory;
-Run nuevoRun;
-Metrics nuevoMetrics;
-Journal nuevoJournal;
+void * p_generico; //puntero que va a ser asignado a la estructura necesaria para la consulta parseada
 
 void print_consulta(Instruccion);
 Instruccion parser_lql(char*, Procesos); //recibe una consulta en string y desde donde fue llamado, devuelve la consulta parseada o error en un struct instruction.
 int cantidad_elementos(char**); //dado un array devuelve la cantidad de elementos que contiene.
 int es_numero(char*); //dado un string devuelve 1 si es un numero, 0 en caso contrario.
-void print_consulta_parseada(char**);
+void instruccion_parseada(Instruccion);
 bool es_select(char**);
 bool es_insert(char**);
 bool es_create(char**);
 bool es_describe(char**);
 bool es_drop(char**);
-bool es_addmemory(char**);
+bool es_add(char**);
 bool es_run(char**);
 bool es_metrics(char**);
 bool es_journal(char**);
 bool es_error(char**);
 unsigned long int string_to_ulint(char*);
-unsigned short int get_key(char**);
-unsigned long int get_timestamp(char**);
 void* leer_por_consola(void (*f) (char*));

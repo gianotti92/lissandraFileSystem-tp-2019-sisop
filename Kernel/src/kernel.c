@@ -24,38 +24,49 @@ void configuracion_inicial(void){
 }
 
 void retorno_consola(char* leido){
-	printf("Lo leido es: %s",leido);
+	printf("Lo leido es: %s \n",leido);
 
 	/* KERNEL SOLO RECIBE COSAS POR CONSOLA POR LO CUAL NO TIENE SENTIDO QUE ESTE ESCUCHANDO
 	 * EN NINGUN PUERTO, SOLO RECIBE Y ACCIONA
 	 *
 	 * */
 
+	Instruccion instruccion_parseada = parser_lql(leido, KERNEL);
 
-	//Instruction_set instruccion; // Deberia ser una instruccion ya parseada asi kernel la envia
-	// el enviar de kernel tiene una logica previa para definir a
-	// que memoria deber{a enviar segun el tipo de tabla a la cual
-	// sea necesario acceder segun su consistencia
-	//enviar(instruccion, IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL);
+	switch(instruccion_parseada.instruccion){
+		case SELECT: {Select * select = instruccion_parseada.instruccion_a_realizar;
+					 printf("Tabla: %s Key: %i TS: %lu \n",select->nombre_tabla, select->key, select->timestamp);
+					 break;}
+		case INSERT: {Insert * insert = instruccion_parseada.instruccion_a_realizar;
+					 printf("Tabla: %s Key: %i Valor: %s TSins: %lu TS: %lu \n",insert->nombre_tabla,insert->key, insert->value, insert->timestamp_insert, insert->timestamp);
+					 break;}
+		case CREATE: {Create * create = instruccion_parseada.instruccion_a_realizar;
+					 printf("Tabla: %s Particiones: %i Compactacion: %lu Consistencia: %i TS: %lu \n",create->nombre_tabla,create->particiones, create->compactation_time, create->consistencia, create->timestamp);
+					 break;}
+		case DESCRIBE: {Describe * describe = instruccion_parseada.instruccion_a_realizar;
+						printf("Tabla: %s TS: %lu\n",describe->nombre_tabla, describe->timestamp);
+						break;}
+		case ADD: {Add * add = instruccion_parseada.instruccion_a_realizar;
+				   printf("Memoria: %i Consistencia: %i TS: %lu\n",add->memoria, add->consistencia, add->timestamp);
+				   break;}
+		case RUN: {Run * run = instruccion_parseada.instruccion_a_realizar;
+				   printf("Path: %s TS: %lu\n",run->path, run->timestamp);
+				   break;}
+		case DROP: {Drop * drop = instruccion_parseada.instruccion_a_realizar;
+					printf("Tabla: %s TS: %lu\n",drop->nombre_tabla, drop->timestamp);
+					break;}
+		case JOURNAL: {Journal * journal = instruccion_parseada.instruccion_a_realizar;
+					   printf("TS: %lu \n",journal->timestamp);
+					   break;}
+		case METRICS: {Metrics * metrics = instruccion_parseada.instruccion_a_realizar;
+					   printf("TS: %lu \n",metrics->timestamp);
+					   break;}
+		case ERROR: printf("ERROR DE CONSULTA \n");
+	}
+
+
 }
 
-/*
-void retornarControl(Instruction_set instruccion, int socket_cliente){
-	printf("Me llego algo y algo deberia hacer");
-
-	log_info(LOGGER,"Kernel:Se retorna a kernell");
-	iniciarEstados();
-	CategoriaDeMensaje categoriaMsj = categoria(mensaje);
-	moverAEstado(categoriaMsj, mensaje);
-	printf("%s", mensaje[0]);
-
-
-
-
-	enviar(instruccion, IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL);
-
-}
-*/
 void iniciarEstados(){
 	log_info(LOGGER,"Kernel:Se inician estados");
 	estadoReady = dictionary_create();
