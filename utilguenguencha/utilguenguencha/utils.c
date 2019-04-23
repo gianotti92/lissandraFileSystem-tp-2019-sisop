@@ -15,12 +15,12 @@ void exit_gracefully(int exit_code) {
 	exit(exit_code);
 }
 char* consistency_to_string(int consistency) {
-	if (consistency == 1) {
+	if (consistency == 0) {
+		return "EC";
+	} else if (consistency == 1) {
 		return "SC";
-	} else if (consistency == 2) {
-		return "LALA";
 	} else {
-		return "HS";
+		return "SHC";
 	}
 
 }
