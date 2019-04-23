@@ -1,31 +1,70 @@
-#include "conexion.h"
-#include "config_kernel.h"
-#include "parser.h"
 #include "kernel.h"
 
-t_dictionary *estadoReady;
-t_dictionary *estadoNew;
-t_dictionary *estadoExit;
-t_dictionary *estadoExec;
-
 int main(void) {
-	get_parametros_config();
 	configure_logger();
-	log_info(LOGGER, "Hello Kernel!!");
-	printf("%d \n", PUERTO_ESCUCHA_CONEXION);
-	conectar_y_crear_hilo(parser_lql, IP, PUERTO_KERNELL);
+	configuracion_inicial();
 
-	exit_gracefully(EXIT_SUCCESS);
+	pthread_t consolaKernel;
+	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
+	for(;;){} // Para que no muera
 }
 
+void configuracion_inicial(void){
+	t_config* CONFIG;
+	CONFIG = config_create("config.cfg");
+	if (!CONFIG) {
+		log_error(LOGGER,"No encuentro el archivo config");
+		exit_gracefully(EXIT_FAILURE);
+	}
+	PUERTO_DE_ESCUCHA = config_get_int_value(CONFIG,"PUERTO_DE_ESCUCHA");
+	IP_MEMORIA_PPAL = config_get_string_value(CONFIG,"IP_MEMORIA_PPAL");
+	PUERTO_MEMORIA_PPAL = config_get_int_value(CONFIG,"PUERTO_MEMORIA_PPAL");
+	QUANTUM = config_get_int_value(CONFIG, "QUANTUM");
+	config_destroy(CONFIG);
+}
 
-void retornarControl(char ** mensaje, int socketCliente){
-	log_info(LOGGER,"Kernel:Se retorna a kernell");
-	iniciarEstados();
-	CategoriaDeMensaje categoriaMsj = categoria(mensaje);
-	moverAEstado(categoriaMsj, mensaje);
-	printf("%s", mensaje[0]);
-	enviar(mensaje[0], IP, PUERTO_POOL_MEM);
+void retorno_consola(char* leido){
+	printf("Lo leido es: %s \n",leido);
+
+	/* KERNEL SOLO RECIBE COSAS POR CONSOLA POR LO CUAL NO TIENE SENTIDO QUE ESTE ESCUCHANDO
+	 * EN NINGUN PUERTO, SOLO RECIBE Y ACCIONA
+	 *
+	 * */
+
+	Instruccion instruccion_parseada = parser_lql(leido, KERNEL);
+
+	switch(instruccion_parseada.instruccion){
+		case SELECT: {Select * select = instruccion_parseada.instruccion_a_realizar;
+					 printf("Tabla: %s Key: %i TS: %lu \n",select->nombre_tabla, select->key, select->timestamp);
+					 break;}
+		case INSERT: {Insert * insert = instruccion_parseada.instruccion_a_realizar;
+					 printf("Tabla: %s Key: %i Valor: %s TSins: %lu TS: %lu \n",insert->nombre_tabla,insert->key, insert->value, insert->timestamp_insert, insert->timestamp);
+					 break;}
+		case CREATE: {Create * create = instruccion_parseada.instruccion_a_realizar;
+					 printf("Tabla: %s Particiones: %i Compactacion: %lu Consistencia: %i TS: %lu \n",create->nombre_tabla,create->particiones, create->compactation_time, create->consistencia, create->timestamp);
+					 break;}
+		case DESCRIBE: {Describe * describe = instruccion_parseada.instruccion_a_realizar;
+						printf("Tabla: %s TS: %lu\n",describe->nombre_tabla, describe->timestamp);
+						break;}
+		case ADD: {Add * add = instruccion_parseada.instruccion_a_realizar;
+				   printf("Memoria: %i Consistencia: %i TS: %lu\n",add->memoria, add->consistencia, add->timestamp);
+				   break;}
+		case RUN: {Run * run = instruccion_parseada.instruccion_a_realizar;
+				   printf("Path: %s TS: %lu\n",run->path, run->timestamp);
+				   break;}
+		case DROP: {Drop * drop = instruccion_parseada.instruccion_a_realizar;
+					printf("Tabla: %s TS: %lu\n",drop->nombre_tabla, drop->timestamp);
+					break;}
+		case JOURNAL: {Journal * journal = instruccion_parseada.instruccion_a_realizar;
+					   printf("TS: %lu \n",journal->timestamp);
+					   break;}
+		case METRICS: {Metrics * metrics = instruccion_parseada.instruccion_a_realizar;
+					   printf("TS: %lu \n",metrics->timestamp);
+					   break;}
+		case ERROR: printf("ERROR DE CONSULTA \n");
+	}
+
+
 }
 
 void iniciarEstados(){
@@ -42,34 +81,33 @@ void iniciarEstados(){
 
 CategoriaDeMensaje categoria(char ** mensaje){
 	log_info(LOGGER,"Kernel:Se asigna categoria del mensaje");
-	int tam = sizeof(mensaje);
-	int i = 0;
-	while (i<=tam){
-		log_info(LOGGER,mensaje[i]);
-		if(string_contains(mensaje[i],"RUN")){
-			log_info(LOGGER,"Kernel:Categoria RUN. Se asigna categoria del mensaje");
-			return RUN;
-		}else if(string_contains(mensaje[i],"ERROR")){
-			log_info(LOGGER,"Kernel:Categoria ERROR. Se asigna categoria del mensaje");
-			return ERROR;
-		}else{
-			log_info(LOGGER,"Kernel:Categoria QUERY. Se asigna categoria del mensaje");
-			return QUERY;
-		}
-		i++;
+	char * msj = string_new();
+	strcpy(mensaje[0], msj);
+	if(string_contains(msj,"run")){
+		log_info(LOGGER,"Kernel:Categoria RUN. Se asigna categoria del mensaje");
+		return RUN_MESSAGE;
+	}else if(string_contains(msj,"error")){
+		log_info(LOGGER,"Kernel:Categoria ERROR. Se asigna categoria del mensaje");
+		return ERROR;
+	}else{
+		log_info(LOGGER,"Kernel:Categoria QUERY. Se asigna categoria del mensaje");
+		return QUERY;
 	}
-	return ERROR;
 }
 
 void moverAEstado(CategoriaDeMensaje categoria, char** mensaje){
 	switch(categoria){
 	char * v;
 	u_int32_t k;
-	case RUN:
-			log_info(LOGGER,"Kernel:Categoria RUN. Se comienza funcion de lectura");
-			leerArchivo(mensaje[1]);
+	case RUN_MESSAGE:
+			log_info(LOGGER,"Kernel:Categoria RUN. Se mueve el mensaje a nuevos");
+			v = string_new();
+			k = 1;
+			string_append(&v, mensaje);
+			dictionary_put(estadoNew, k, v);
+			free(v);
 		break;
-	case ERROR:
+	case ERROR_MESSAGE:
 		log_info(LOGGER,"Kernel:Categoria ERROR. Esta mal escrita la query, no se continua");
 		break;
 	case QUERY:
@@ -84,27 +122,4 @@ void moverAEstado(CategoriaDeMensaje categoria, char** mensaje){
 		log_info(LOGGER,"Kernel:Categoria NADA. Esto no deberia pasar nunca ajaj..");
 		break;
 	}
-}
-
-void leerArchivo(char * path){
-	FILE * fp;
-	fp = fopen ( path, "r" );
-	char * linea = string_new();
-
-	if(fp != NULL){
-		while(fgets(linea, 1024, (FILE*) fp)){
-			 int n = strlen(linea);
-			 if (linea[n-1] != '\n') {
-				log_info (LOGGER, "Kernel: Error. leída línea incompleta");
-			}else{
-
-			}
-		}
-	}else{
-		log_error(LOGGER,"Kernel:Error al leer sobre el path");
-		exit_gracefully(1);
-	}
-
-	free(linea);
-
 }
