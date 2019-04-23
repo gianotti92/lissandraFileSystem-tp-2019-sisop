@@ -45,14 +45,13 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		}
 		else{
 
-			Select nuevoSelect;												 		// es SELECT
-
+			// es SELECT
 			string_to_upper(consulta_separada[1]);
-			strcpy(nuevoSelect.nombre_tabla, consulta_separada[1]); 				// cargo tabla
+			nuevoSelect.nombre_tabla = consulta_separada[1]; 		  				// cargo tabla
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
 			nuevoSelect.key = key;	 												// cargo key
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[3]);
-			nuevoSelect.timestamp = timestamp;									// cargo timestamp
+			nuevoSelect.timestamp = timestamp;										// cargo timestamp
 
 			consultaParseada.instruccion = SELECT;
 			consultaParseada.instruccion_a_realizar = &nuevoSelect;
@@ -61,7 +60,12 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 	}
 	else if (es_insert(consulta_separada)){
 
-		if ( ((length != 4) & (length != 5)) | ((length == 5) & (!es_numero(consulta_separada[4]))) ){
+		if (length < 4 ){
+			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
+			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
+			return consultaParseadaError;
+		}
+		else if ( ((length != 4) & (length != 5)) | ((length == 5) & (!es_numero(consulta_separada[4]))) ){
 			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 			return consultaParseadaError;
@@ -73,13 +77,13 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		}
 		else{
 
-			Insert nuevoInsert;															 // es INSERT
+			 // es INSERT
 			string_to_upper(consulta_separada[1]);
-			strcpy(nuevoInsert.nombre_tabla, consulta_separada[1]);	 					 // cargo tabla
+			nuevoInsert.nombre_tabla = consulta_separada[1];	 						 // cargo tabla
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
 			nuevoInsert.key = key;					 									 // cargo key
 
-			strcpy(nuevoInsert.value, consulta_separada[3]);							 // cargo value
+			nuevoInsert.value = consulta_separada[3];									 // cargo value
 
 			if (length == 4) {															 // no vino con timestamp en la consulta
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[4]);
@@ -116,9 +120,9 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		}
 		else{
 
-			Create nuevoCreate;												 			// es CREATE
+			// es CREATE
 			string_to_upper(consulta_separada[1]);
-			strcpy(nuevoCreate.nombre_tabla, consulta_separada[1]); 					// cargo tabla
+			nuevoCreate.nombre_tabla = consulta_separada[1]; 					// cargo tabla
 
 			Consistencias consistencia;
 
@@ -160,9 +164,9 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		}
 		else{
 
-			Describe nuevoDescribe;														// es DESCRIBE
+			// es DESCRIBE
 			string_to_upper(consulta_separada[1]);
-			strcpy(nuevoDescribe.nombre_tabla, consulta_separada[1]); 					// cargo tabla
+			nuevoDescribe.nombre_tabla = consulta_separada[1]; 							// cargo tabla
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 			nuevoDescribe.timestamp = timestamp;				 				 		// cargo timestamp
 
@@ -181,9 +185,9 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		}
 		else{
 
-			Drop nuevoDrop;																	// es DROP
+			// es DROP
 			string_to_upper(consulta_separada[1]);
-			strcpy(nuevoDrop.nombre_tabla, consulta_separada[1]); 							// cargo tabla
+			nuevoDrop.nombre_tabla = consulta_separada[1]; 									// cargo tabla
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 			nuevoDrop.timestamp = timestamp;												// cargo timestamp
 
@@ -200,9 +204,14 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 			return consultaParseadaError;
 		}
+		else if (!es_numero(consulta_separada[2])){
+			puts("ERROR: La memoria debe ser un numero.");
+			log_error(LOGGER, "Parser: La memoria debe ser un numero.");
+			return consultaParseadaError;
+		}
 		else{
 
-			Add nuevoAddMemory;																// es ADD MEMORY
+			// es ADD MEMORY
 
 			nuevoAddMemory.memoria = (int) string_to_ulint(consulta_separada[2]);			// cargo memoria
 
@@ -242,9 +251,8 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		}
 		else{
 
-			Run nuevoRun;																// es RUN
-
-			strcpy(nuevoRun.path, consulta_separada[1]); 								// cargo path
+			// es RUN
+			nuevoRun.path = consulta_separada[1]; 								// cargo path
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 			nuevoRun.timestamp = timestamp;				 				 				// cargo timestamp
 
@@ -263,7 +271,7 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			}
 			else{
 
-				Metrics nuevoMetrics;														// es METRICS
+				// es METRICS
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
 				nuevoMetrics.timestamp = timestamp;						 				 	// cargo timestamp
 
@@ -281,7 +289,7 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			}
 			else{
 
-				Journal nuevoJournal;														// es JOURNAL
+				// es JOURNAL
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
 				nuevoJournal.timestamp = timestamp;						 				 	// cargo timestamp
 

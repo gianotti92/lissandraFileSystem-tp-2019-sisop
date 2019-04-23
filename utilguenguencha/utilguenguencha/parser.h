@@ -20,6 +20,16 @@
 #include "utils.h"
 #include "comunicacion.h"
 
+Select nuevoSelect;
+Insert nuevoInsert;
+Create nuevoCreate;
+Describe nuevoDescribe;
+Drop nuevoDrop;
+Add nuevoAddMemory;
+Run nuevoRun;
+Metrics nuevoMetrics;
+Journal nuevoJournal;
+
 void print_consulta(Instruccion);
 Instruccion parser_lql(char*, Procesos); //recibe una consulta en string y desde donde fue llamado, devuelve la consulta parseada o error en un struct instruction.
 int cantidad_elementos(char**); //dado un array devuelve la cantidad de elementos que contiene.
