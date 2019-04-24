@@ -19,16 +19,16 @@ void retorno_consola(char* leido);
 void retornarControl(Instruction_set instruccion, int socket_cliente);
 void iniciarEstados();
 
-CategoriaDeMensaje categoria(char ** mensaje);
 void moverAEstado(CategoriaDeMensaje categoria, char ** mensaje);
 void leerArchivo(char * path);
+void planificar_programas();
 
 
 // Variables del proceso
-t_dictionary *estadoReady;
-t_dictionary *estadoNew;
-t_dictionary *estadoExit;
-t_dictionary *estadoExec;
+t_queue *estadoReady;
+t_queue *estadoNew;
+t_queue *estadoExit;
+t_queue *estadoExec;
 int PUERTO_DE_ESCUCHA;
 char * IP_MEMORIA_PPAL;
 int PUERTO_MEMORIA_PPAL;
