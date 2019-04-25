@@ -6,12 +6,10 @@
 #include <utilguenguencha/parser.h>
 #include <utilguenguencha/utils.h>
 
-// Tipos del proceso
-typedef enum categoriaDeMensaje{
-	ERROR_MESSAGE,
-	RUN_MESSAGE,
-	QUERY
-} CategoriaDeMensaje;
+typedef struct{
+	t_queue * instrucciones;
+}Proceso;
+
 
 // Funciones del proceso
 void configuracion_inicial(void);
@@ -19,9 +17,9 @@ void retorno_consola(char* leido);
 void retornarControl(Instruction_set instruccion, int socket_cliente);
 void iniciarEstados();
 
-void moverAEstado(CategoriaDeMensaje categoria, char ** mensaje);
 void leerArchivo(char * path);
 void planificar_programas();
+Proceso * crear_proceso(char * leido);
 
 
 // Variables del proceso
