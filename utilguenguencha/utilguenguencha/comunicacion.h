@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef enum{
 	EC,
@@ -79,5 +80,14 @@ typedef struct{
 	void * instruccion_a_realizar;
 }Instruccion;
 
+size_t sizeof_select(Select *select);
+size_t sizeof_insert(Insert *insert);
+size_t sizeof_create(Create *create);
+size_t sizeof_describe(Describe *describe);
+size_t sizeof_drop(Drop *drop);
+size_t sizeof_add(Add *add);
+size_t sizeof_run(Run *run);
+size_t sizeof_journal(Journal *journal);
+size_t sizeof_metrics(Metrics *metrics);
 
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */

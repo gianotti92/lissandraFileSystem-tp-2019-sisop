@@ -4,7 +4,6 @@ int socketServer, socketPoolMem;
 
 /* funciones genericas para todos los modulos*/
 void conectar_y_crear_hilo(void (*f) (Instruction_set, int),char* ip, int puerto) {
-	log_info(LOGGER, "Se inicia servidor");
 	listaConexiones = queue_create();
 	listaConexionesRetorno = queue_create();
 	struct sockaddr_in serverAddress, clientAddress;
@@ -15,8 +14,9 @@ void conectar_y_crear_hilo(void (*f) (Instruction_set, int),char* ip, int puerto
 	realizar_bind(socketServer, &serverAddress);
 	ponerse_a_escuchar(socketServer, BACKLOG);
 
-	pthread_t hiloHandler;
-	pthread_create(&hiloHandler, NULL, (void*) atender_cliente, f);
+//	pthread_t hiloHandler;
+//	pthread_create(&hiloHandler, NULL, (void*) atender_cliente, f);
+
 
 	while (1) {
 		unsigned int tamanoDireccion = sizeof(struct sockaddr_in);
