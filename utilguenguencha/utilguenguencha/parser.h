@@ -22,11 +22,13 @@
 
 void * p_generico; //puntero que va a ser asignado a la estructura necesaria para la consulta parseada
 
-void print_consulta(Instruccion);
-Instruccion parser_lql(char*, Procesos); //recibe una consulta en string y desde donde fue llamado, devuelve la consulta parseada o error en un struct instruction.
+
+Instruccion* parser_lql(char*, Procesos); //recibe una consulta en string y desde donde fue llamado, devuelve la consulta parseada o error en un struct instruction.
 int cantidad_elementos(char**); //dado un array devuelve la cantidad de elementos que contiene.
 int es_numero(char*); //dado un string devuelve 1 si es un numero, 0 en caso contrario.
-void instruccion_parseada(Instruccion);
+void print_instruccion_parseada(Instruccion*);
+Instruccion* crear_instruccion(Instruction_set, void*, int);
+Instruccion* instruccion_error();
 bool es_select(char**);
 bool es_insert(char**);
 bool es_create(char**);
@@ -39,3 +41,5 @@ bool es_journal(char**);
 bool es_error(char**);
 unsigned long int string_to_ulint(char*);
 void* leer_por_consola(void (*f) (char*));
+void free_consulta(Instruccion*);
+uintmax_t get_timestamp();
