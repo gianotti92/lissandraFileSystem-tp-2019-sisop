@@ -34,7 +34,7 @@ void retorno_consola(char* leido){
 
 	print_instruccion_parseada(instruccion_parseada);
 
-	//free_consulta(instruccion_parseada);
+	free_consulta(instruccion_parseada);
 
 }
 
