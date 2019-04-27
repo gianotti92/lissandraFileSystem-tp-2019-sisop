@@ -1,19 +1,11 @@
 
 #include "parser.h"
 
-void print_consulta(Instruccion consulta){
+Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 
-	printf("%i %i", consulta.instruccion, consulta.instruccion_a_realizar);
-}
+	Instruccion* consultaParseada;
 
-Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
-
-	Instruccion consultaParseada;
-
-	Instruccion consultaParseadaError;
-	consultaParseadaError.instruccion = ERROR;
-	consultaParseadaError.instruccion_a_realizar = NULL;
-
+	/*
 	time_t echo_time;
 	echo_time = time(NULL);
 
@@ -21,8 +13,10 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		puts ("ERROR: Fallo al obtener la hora.");
 		log_error(LOGGER, "Parser: Fallo al obtener la hora.");
 
-		return consultaParseadaError;
-	}
+		return instruccion_error();
+	}*/
+
+	uintmax_t echo_time = get_timestamp();
 
 	consulta = string_from_format("%s %ju", consulta, (uintmax_t)echo_time);
 	log_info(LOGGER, "Parser: Consulta - %s", consulta);
@@ -36,82 +30,114 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		if (length != 3){
 			puts("ERROR: La sintaxis correcta es > SELECT [NOMBRE_TABLA] [KEY]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else if(!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
 			log_error(LOGGER, "Parser: La Key es incorrecta.");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else{
 
 			// es SELECT
 
-			Select nuevoSelect;
-			Select * p_select;
-			p_select = &nuevoSelect;
+			Select * nuevoSelect = malloc(sizeof(Select));
 
 			string_to_upper(consulta_separada[1]);
-			nuevoSelect.nombre_tabla = consulta_separada[1]; 		  				// cargo tabla
+			nuevoSelect->nombre_tabla = consulta_separada[1]; 		  				// cargo tabla
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
-			nuevoSelect.key = key;	 												// cargo key
+			nuevoSelect->key = key;	 												// cargo key
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[3]);
-			nuevoSelect.timestamp = timestamp;										// cargo timestamp
+			nuevoSelect->timestamp = timestamp;										// cargo timestamp
 
-			p_generico = (void *)p_select;
+			//Select * p_select = malloc(sizeof(nuevoSelect));
+			//p_select = &nuevoSelect;
 
-			consultaParseada.instruccion = SELECT;
-			consultaParseada.instruccion_a_realizar = p_generico;
+			//consultaParseada->instruccion = SELECT;
+			//consultaParseada->instruccion_a_realizar = p_select;
+			consultaParseada = crear_instruccion(SELECT, nuevoSelect, sizeof(nuevoSelect));
 
 		}
 	}
 	else if (es_insert(consulta_separada)){
 
-		if (length < 4 ){
+
+		if (length < 4){
+
 			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
-		else if ( ((length != 4) & (length != 5)) | ((length == 5) & (!es_numero(consulta_separada[4]))) ){
+		if (length >= 5){
+
+			int largo_primer_palabra = string_length(consulta_separada[3]);
+
+		if(length >= 5 && string_starts_with(consulta_separada[3], "\"") && (!string_ends_with(consulta_separada[3], "\"") || largo_primer_palabra == 1)){
+
+				int i = 0;
+
+				while((!string_ends_with(consulta_separada[3], "\"") || i == 0) && (i+4 < length)){
+					consulta_separada[3] = string_from_format("%s %s", consulta_separada[3], consulta_separada[4]);
+					i++;
+					consulta_separada[4] = consulta_separada[4+i];
+				}
+				consulta_separada[5] = consulta_separada[5+i];
+				consulta_separada[6] = consulta_separada[6+i];
+
+				length = length - i;
+			}
+
+
+			if (length > 5){
+
+				puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
+				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
+
+				return instruccion_error();
+			}
+		}
+
+		if ((length == 5) && !es_numero(consulta_separada[4])){
 			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else if (!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
 			log_error(LOGGER, "Parser: La Key es incorrecta.");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else{
 
 			 // es INSERT
-			Insert nuevoInsert;
-			Insert * p_insert;
-			p_insert = &nuevoInsert;
+			Insert* nuevoInsert = malloc(sizeof(Insert));
 
 			string_to_upper(consulta_separada[1]);
-			nuevoInsert.nombre_tabla = consulta_separada[1];	 						 // cargo tabla
+			nuevoInsert->nombre_tabla = consulta_separada[1];	 						 // cargo tabla
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
-			nuevoInsert.key = key;					 									 // cargo key
+			nuevoInsert->key = key;					 									 // cargo key
 
-			nuevoInsert.value = consulta_separada[3];									 // cargo value
+			nuevoInsert->value = consulta_separada[3];									 // cargo value
 
 			if (length == 4) {															 // no vino con timestamp en la consulta
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[4]);
-				nuevoInsert.timestamp_insert = timestamp;								 // cargo timestamp_insert
-				nuevoInsert.timestamp = timestamp;										 // cargo timestamp
+				nuevoInsert->timestamp_insert = timestamp;								 // cargo timestamp_insert
+				nuevoInsert->timestamp = timestamp;										 // cargo timestamp
 			}
 			else {																		 // vino con timestamp en la consulta
 				uint32_t timestamp_insert = (uint32_t) string_to_ulint(consulta_separada[4]);
-				nuevoInsert.timestamp_insert = timestamp_insert;				 		 // cargo timestamp_insert
+				nuevoInsert->timestamp_insert = timestamp_insert;				 		 // cargo timestamp_insert
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[5]);
-				nuevoInsert.timestamp = timestamp;										 // cargo timestamp
+				nuevoInsert->timestamp = timestamp;										 // cargo timestamp
 			}
 
-			p_generico = (void *)p_insert;
 
-			consultaParseada.instruccion = INSERT;
-			consultaParseada.instruccion_a_realizar = p_generico;
+			consultaParseada = crear_instruccion(INSERT, nuevoInsert, sizeof(nuevoInsert));
 
 		}
 	}
@@ -119,27 +145,28 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		if (length != 5){
 			puts("ERROR: La sintaxis correcta es > CREATE [NOMBRE_TABLA] [TIPO_CONSISTENCIA] [NUMERO_PARTICIONES] [COMPACTION_TIME]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else if (!es_numero(consulta_separada[3])){
 			puts("ERROR: La cantidad de particiones debe ser un numero.");
 			log_error(LOGGER, "Parser: La cantidad de particiones debe ser un numero.");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else if (!es_numero(consulta_separada[4])){
 			puts("ERROR: El tiempo de compactacion debe ser un numero.");
 			log_error(LOGGER, "Parser: El tiempo de compactacion debe ser un numero.");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else{
 
 			// es CREATE
-			Create nuevoCreate;
-			Create * p_create;
-			p_create = &nuevoCreate;
+			Create * nuevoCreate = malloc(sizeof(Create));
 
 			string_to_upper(consulta_separada[1]);
-			nuevoCreate.nombre_tabla = consulta_separada[1]; 					// cargo tabla
+			nuevoCreate->nombre_tabla = consulta_separada[1]; 					// cargo tabla
 
 			Consistencias consistencia;
 
@@ -156,22 +183,20 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			else {
 				puts("ERROR: Los criterios de consistencia aceptados son [SC, SHC, EC]");
 				log_error(LOGGER, "Parser: Criterio de consistencia no aceptado.");
-				return consultaParseadaError;
+
+				return instruccion_error();
 			};
 
-			nuevoCreate.consistencia = consistencia;									 // cargo consistencia
+			nuevoCreate->consistencia = consistencia;									 // cargo consistencia
 			uint8_t particiones = (int) string_to_ulint(consulta_separada[3]);
-			nuevoCreate.particiones = particiones;										 // cargo particiones
+			nuevoCreate->particiones = particiones;										 // cargo particiones
 			uint32_t compactation_time = (uint32_t) string_to_ulint(consulta_separada[4]);
-			nuevoCreate.compactation_time = compactation_time;							 // cargo compactation_time
+			nuevoCreate->compactation_time = compactation_time;							 // cargo compactation_time
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[5]);
-			nuevoCreate.timestamp = timestamp;											 // cargo timestamp
+			nuevoCreate->timestamp = timestamp;											 // cargo timestamp
 
 
-			p_generico = (void *)p_create;
-
-			consultaParseada.instruccion = CREATE;
-			consultaParseada.instruccion_a_realizar = p_generico;
+			consultaParseada = crear_instruccion(CREATE, nuevoCreate, sizeof(nuevoCreate));
 
 		}
 	}
@@ -180,24 +205,20 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > DESCRIBE [NOMBRE_TABLA]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else{
 
 			// es DESCRIBE
-			Describe nuevoDescribe;
-			Describe * p_describe;
-			p_describe = &nuevoDescribe;
+			Describe * nuevoDescribe = malloc(sizeof(Describe));;
 
 			string_to_upper(consulta_separada[1]);
-			nuevoDescribe.nombre_tabla = consulta_separada[1]; 							// cargo tabla
+			nuevoDescribe->nombre_tabla = consulta_separada[1]; 							// cargo tabla
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
-			nuevoDescribe.timestamp = timestamp;				 				 		// cargo timestamp
+			nuevoDescribe->timestamp = timestamp;				 				 		// cargo timestamp
 
-			p_generico = (void *)p_describe;
-
-			consultaParseada.instruccion = DESCRIBE;
-			consultaParseada.instruccion_a_realizar = p_generico;
+			consultaParseada = crear_instruccion(DESCRIBE, nuevoDescribe, sizeof(nuevoDescribe));
 
 
 		}
@@ -207,24 +228,20 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > DROP [NOMBRE_TABLA]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else{
 
 			// es DROP
-			Drop nuevoDrop;
-			Drop * p_drop;
-			p_drop = &nuevoDrop;
+			Drop* nuevoDrop = malloc(sizeof(Drop));;
 
 			string_to_upper(consulta_separada[1]);
-			nuevoDrop.nombre_tabla = consulta_separada[1]; 									// cargo tabla
+			nuevoDrop->nombre_tabla = consulta_separada[1]; 									// cargo tabla
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
-			nuevoDrop.timestamp = timestamp;												// cargo timestamp
+			nuevoDrop->timestamp = timestamp;												// cargo timestamp
 
-			p_generico = (void *)p_drop;
-
-			consultaParseada.instruccion = DROP;
-			consultaParseada.instruccion_a_realizar = p_generico;
+			consultaParseada = crear_instruccion(DROP, nuevoDrop, sizeof(nuevoDrop));
 
 
 		}
@@ -234,26 +251,27 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		if (length != 5){
 			puts("ERROR: La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else if (!es_numero(consulta_separada[2])){
 			puts("ERROR: La memoria debe ser un numero.");
 			log_error(LOGGER, "Parser: La memoria debe ser un numero.");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else if (!(string_equals_ignore_case(string_from_format("%s %s", consulta_separada[0], consulta_separada[1]), "ADD MEMORY") & (string_equals_ignore_case(consulta_separada[3], "TO")))){
 			puts("ERROR: La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else{
 
 			// es ADD MEMORY
-			Add nuevoAddMemory;
-			Add * p_addmemory;
-			p_addmemory = &nuevoAddMemory;
+			Add * nuevoAddMemory = malloc(sizeof(Add));
 
-			nuevoAddMemory.memoria = (int) string_to_ulint(consulta_separada[2]);			// cargo memoria
+			nuevoAddMemory->memoria = (int) string_to_ulint(consulta_separada[2]);			// cargo memoria
 
 			Consistencias consistencia;
 
@@ -269,18 +287,16 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			else {
 				puts("ERROR: Los criterios de consistencia aceptados son [SC, SHC, EC]");
 				log_error(LOGGER, "Parser: Criterio de consistencia no aceptado.");
-				return consultaParseadaError;
+
+				return instruccion_error();
 			}
 
-			nuevoAddMemory.consistencia = consistencia;									// cargo consistencia
+			nuevoAddMemory->consistencia = consistencia;									// cargo consistencia
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[5]);
-			nuevoAddMemory.timestamp = timestamp;					 		 			// cargo timestamp
+			nuevoAddMemory->timestamp = timestamp;					 		 			// cargo timestamp
 
 
-			p_generico = (void *)p_addmemory;
-
-			consultaParseada.instruccion = ADD;
-			consultaParseada.instruccion_a_realizar = p_generico;
+			consultaParseada = crear_instruccion(ADD, nuevoAddMemory, sizeof(nuevoAddMemory));
 
 		}
 	}
@@ -289,23 +305,19 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 		if (length != 2){
 			puts("ERROR: La sintaxis correcta es > RUN [ARCHIVO]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-			return consultaParseadaError;
+
+			return instruccion_error();
 		}
 		else{
 
 			// es RUN
-			Run nuevoRun;
-			Run * p_run;
-			p_run = &nuevoRun;
+			Run * nuevoRun = malloc(sizeof(Run));;
 
-			nuevoRun.path = consulta_separada[1]; 								// cargo path
+			nuevoRun->path = consulta_separada[1]; 								// cargo path
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
-			nuevoRun.timestamp = timestamp;				 				 				// cargo timestamp
+			nuevoRun->timestamp = timestamp;				 				 				// cargo timestamp
 
-			p_generico = (void *)p_run;
-
-			consultaParseada.instruccion = RUN;
-			consultaParseada.instruccion_a_realizar = p_generico;
+			consultaParseada = crear_instruccion(RUN, nuevoRun, sizeof(nuevoRun));
 
 
 		}
@@ -315,23 +327,18 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			if (length != 1){
 				puts("ERROR: La sintaxis correcta es > METRICS");
 				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-				return consultaParseadaError;
+
+				return instruccion_error();
 			}
 			else{
 
 				// es METRICS
-				Metrics nuevoMetrics;
-				Metrics * p_metrics;
-				p_metrics = &nuevoMetrics;
-
+				Metrics* nuevoMetrics = malloc(sizeof(Metrics));
 
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
-				nuevoMetrics.timestamp = timestamp;						 				 	// cargo timestamp
+				nuevoMetrics->timestamp = timestamp;						 				 	// cargo timestamp
 
-				p_generico = (void *)p_metrics;
-
-				consultaParseada.instruccion = METRICS;
-				consultaParseada.instruccion_a_realizar = p_generico;
+				consultaParseada = crear_instruccion(METRICS, nuevoMetrics, sizeof(nuevoMetrics));
 
 			}
 		}
@@ -340,36 +347,58 @@ Instruccion parser_lql(char* consulta, Procesos procesoOrigen){
 			if (length != 1){
 				puts("ERROR: La sintaxis correcta es > JOURNAL");
 				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
-				return consultaParseadaError;
+
+				return instruccion_error();
 			}
 			else{
 
 				// es JOURNAL
-				Journal nuevoJournal;
-				Journal * p_journal;
-				p_journal = &nuevoJournal;
+				Journal* nuevoJournal = malloc(sizeof(Journal));
 
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
-				nuevoJournal.timestamp = timestamp;						 				 	// cargo timestamp
+				nuevoJournal->timestamp = timestamp;						 				 	// cargo timestamp
 
-				p_generico = (void *)p_journal;
-
-				consultaParseada.instruccion = JOURNAL;
-				consultaParseada.instruccion_a_realizar = p_generico;
+				consultaParseada = crear_instruccion(JOURNAL, &nuevoJournal, sizeof(nuevoJournal));
 
 			}
 		}
 	else {
 		puts("ERROR: Las operaciones disponibles son:");
-		if ((procesoOrigen == KERNEL)) puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD MEMORY, RUN, METRICS]");
-		if ((procesoOrigen == POOLMEMORY)) puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, JOURNAL]");
-		if ((procesoOrigen == FILESYSTEM)) puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP]");
+
+		switch(procesoOrigen){
+			case KERNEL: {puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD MEMORY, RUN, METRICS]"); break;}
+			case POOLMEMORY: {puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, JOURNAL]"); break;}
+			case FILESYSTEM: {puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP]"); break;}
+		}
+
 		log_error(LOGGER, "Parser: Operacion no reconocida.");
-		return consultaParseadaError;
+
+		return instruccion_error();
 	}
 
 	log_info(LOGGER, "Parser: Consulta aceptada.");
+
+	print_instruccion_parseada(consultaParseada);
+
 	return consultaParseada;
+}
+
+
+Instruccion* crear_instruccion(Instruction_set operacion, void* operacion_a_realizar, int tamanio){
+
+	void * p_instruccion_a_realizar = malloc(sizeof(tamanio));
+	p_instruccion_a_realizar = operacion_a_realizar;
+
+	Instruccion * p_instruccion = malloc(sizeof(Instruccion));
+	p_instruccion->instruccion = operacion;
+	p_instruccion->instruccion_a_realizar = operacion_a_realizar;
+
+	return p_instruccion;
+
+}
+
+Instruccion* instruccion_error(){
+	return crear_instruccion(ERROR, NULL, 1);
 }
 
 
@@ -396,34 +425,34 @@ int es_numero(char* palabra){
 	return 1;
 }
 
-void print_instruccion_parseada(Instruccion instruccion_parseada){
+void print_instruccion_parseada(Instruccion * instruccion_parseada){
 
-	switch(instruccion_parseada.instruccion){
-			case SELECT: {Select * select = instruccion_parseada.instruccion_a_realizar;
+	switch(instruccion_parseada->instruccion){
+			case SELECT: {Select * select = instruccion_parseada->instruccion_a_realizar;
 						 printf("Tabla: %s Key: %i TS: %lu \n",select->nombre_tabla, select->key, select->timestamp);
 						 break;}
-			case INSERT: {Insert * insert = instruccion_parseada.instruccion_a_realizar;
+			case INSERT: {Insert * insert = instruccion_parseada->instruccion_a_realizar;
 						 printf("Tabla: %s Key: %i Valor: %s TSins: %lu TS: %lu \n",insert->nombre_tabla,insert->key, insert->value, insert->timestamp_insert, insert->timestamp);
 						 break;}
-			case CREATE: {Create * create = instruccion_parseada.instruccion_a_realizar;
+			case CREATE: {Create * create = instruccion_parseada->instruccion_a_realizar;
 						 printf("Tabla: %s Particiones: %i Compactacion: %lu Consistencia: %i TS: %lu \n",create->nombre_tabla,create->particiones, create->compactation_time, create->consistencia, create->timestamp);
 						 break;}
-			case DESCRIBE: {Describe * describe = instruccion_parseada.instruccion_a_realizar;
+			case DESCRIBE: {Describe * describe = instruccion_parseada->instruccion_a_realizar;
 							printf("Tabla: %s TS: %lu\n",describe->nombre_tabla, describe->timestamp);
 							break;}
-			case ADD: {Add * add = instruccion_parseada.instruccion_a_realizar;
+			case ADD: {Add * add = instruccion_parseada->instruccion_a_realizar;
 					   printf("Memoria: %i Consistencia: %i TS: %lu\n",add->memoria, add->consistencia, add->timestamp);
 					   break;}
-			case RUN: {Run * run = instruccion_parseada.instruccion_a_realizar;
+			case RUN: {Run * run = instruccion_parseada->instruccion_a_realizar;
 					   printf("Path: %s TS: %lu\n",run->path, run->timestamp);
 					   break;}
-			case DROP: {Drop * drop = instruccion_parseada.instruccion_a_realizar;
+			case DROP: {Drop * drop = instruccion_parseada->instruccion_a_realizar;
 						printf("Tabla: %s TS: %lu\n",drop->nombre_tabla, drop->timestamp);
 						break;}
-			case JOURNAL: {Journal * journal = instruccion_parseada.instruccion_a_realizar;
+			case JOURNAL: {Journal * journal = instruccion_parseada->instruccion_a_realizar;
 						   printf("TS: %lu \n",journal->timestamp);
 						   break;}
-			case METRICS: {Metrics * metrics = instruccion_parseada.instruccion_a_realizar;
+			case METRICS: {Metrics * metrics = instruccion_parseada->instruccion_a_realizar;
 						   printf("TS: %lu \n",metrics->timestamp);
 						   break;}
 			case ERROR: printf("ERROR DE CONSULTA \n");
@@ -492,7 +521,7 @@ void* leer_por_consola(void (*f) (char*)){
 	leido = readline(">>");
 	add_history(leido);
 
-	while (strncmp(leido, "EXIT", 4) != 0){
+	while (!string_equals_ignore_case(leido, "EXIT")){
 		f(leido);
 		free(leido);
 		leido = readline("\n>>");
@@ -503,3 +532,28 @@ void* leer_por_consola(void (*f) (char*)){
 	log_info(LOGGER, "Salida del sistema por consola");
 	exit_gracefully(EXIT_SUCCESS);
 }
+
+
+void free_consulta(Instruccion* consulta){
+	free(consulta->instruccion_a_realizar);
+	free(consulta);
+}
+
+
+
+uintmax_t get_timestamp(){
+
+	time_t echo_time;
+	echo_time = time(NULL);
+
+	if (echo_time == ((time_t)-1)){
+		puts ("ERROR: Fallo al obtener la hora.");
+		log_error(LOGGER, "Parser: Fallo al obtener la hora.");
+
+		return instruccion_error();
+	}
+
+	return echo_time;
+
+}
+
