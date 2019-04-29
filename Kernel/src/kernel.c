@@ -1,4 +1,5 @@
 #include "kernel.h"
+#include <sys/types.h>
 
 int main(void) {
 	configure_logger();
@@ -30,127 +31,90 @@ void retorno_consola(char* leido) {
 	log_info(LOGGER, "Kernel. Se retorno a consola");
 	log_info(LOGGER, leido);
 
-	Proceso * proceso = malloc(sizeof(Proceso));
-	proceso->instrucciones = queue_create();
-
-	Instruccion instruccion_parseada = parser_lql(leido, KERNEL);
-
-	if (instruccion_parseada.instruccion == RUN) {
-			FILE* f;
-			Run * run = instruccion_parseada.instruccion_a_realizar;
-			f = fopen(run->path, "r");
-
-			 char *line = string_new();
-
-			if (f != NULL) {
-				while(fgets(line, 1000, f) != NULL){
-					if(string_length(line) > 0 && line[string_length(line)-1] == '\n'){
-						line[string_length(line)-1] = '\0';
-					}
-					Instruccion instruc = parser_lql(line, KERNEL);
-					queue_push(proceso->instrucciones, &instruc);
-				}
-			} else {
-				log_error(LOGGER, "Kernel: Error al abrir el archivo");
-				exit_gracefully(1);
-			}
-			free(line);
-
-		} else {
-			queue_push(proceso->instrucciones, &instruccion_parseada);
-		}
-
-
-//	switch(instruccion_parseada.instruccion){
-//		case SELECT:;
-//			Select * select = instruccion_parseada.instruccion_a_realizar;
-//			printf("Tabla: %s Key: %i TS: %lu \n",select->nombre_tabla, select->key, select->timestamp);
-//			break;
-//		case INSERT:;
-//			Insert * insert = instruccion_parseada.instruccion_a_realizar;
-//			printf("Tabla: %s Key: %i Valor: %s TSins: %lu TS: %lu \n",insert->nombre_tabla,insert->key, insert->value, insert->timestamp_insert, insert->timestamp);
-//			break;
-//		case CREATE:;
-//			Create * create = instruccion_parseada.instruccion_a_realizar;
-//			printf("Tabla: %s Particiones: %i Compactacion: %lu Consistencia: %i TS: %lu \n",create->nombre_tabla,create->particiones, create->compactation_time, create->consistencia, create->timestamp);
-//			break;
-//		case DESCRIBE:;
-//			Describe * describe = instruccion_parseada.instruccion_a_realizar;
-//			printf("Tabla: %s TS: %lu\n",describe->nombre_tabla, describe->timestamp);
-//			break;
-//		case ADD:;
-//			Add * add = instruccion_parseada.instruccion_a_realizar;
-//			printf("Memoria: %i Consistencia: %i TS: %lu\n",add->memoria, add->consistencia, add->timestamp);
-//			break;
-//		case RUN:;
-//			Run * run = instruccion_parseada.instruccion_a_realizar;
-//			printf("Path: %s TS: %lu\n",run->path, run->timestamp);
-//			break;
-//		case DROP:;
-//			Drop * drop = instruccion_parseada.instruccion_a_realizar;
-//			printf("Tabla: %s TS: %lu\n",drop->nombre_tabla, drop->timestamp);
-//			break;
-//		case JOURNAL:;
-//			Journal * journal = instruccion_parseada.instruccion_a_realizar;
-//			printf("TS: %lu \n",journal->timestamp);
-//			break;
-//		case METRICS:;
-//			Metrics * metrics = instruccion_parseada.instruccion_a_realizar;
-//			printf("TS: %lu \n",metrics->timestamp);
-//			break;
-//		case ERROR:
-//			printf("ERROR DE CONSULTA \n");
+	char ** leidoSplit = string_split(leido, " ");
+	Proceso * proceso = asignar_instrucciones(leidoSplit);
+//	Proceso * proceso = crear_proceso();
+//
+//	if (es_run(leidoSplit)) {
+//		FILE * f = fopen(leidoSplit[1], "r");
+//		char buffer[tamano_maximo_lectura_archivo];
+//		if (f == NULL) {
+//			perror("No se puede abrir archivo!");
+//			log_error(LOGGER, "Kernel. error al leer el archivo");
+//			exit_gracefully(1);
+//		}
+//		while (fgets(buffer, sizeof(buffer), f) != NULL) {
+//			fputs(buffer, stdout);
+//			char * line = string_new();
+//			line = strtok(buffer, "\n");
+//			list_add(proceso->instrucciones, &line);
+//		}
+//		fclose(f);
+//
+//	} else {
+//		list_add(proceso->instrucciones, &leidoSplit);
 //	}
+//
+//	int cantidad = cantidad_elementos(leidoSplit);
+//	int i = 0;
+//	while (i < cantidad) {
+//		free(leidoSplit[i]);
+//		i++;
+//	}
+	liberarProceso(proceso);
 
-//	Proceso *proceso = crear_proceso(leido);
-	printf("Llegue jaja");
 }
 
 void iniciarEstados() {
 	log_info(LOGGER, "Kernel:Se inician estados");
-	estadoReady = queue_create();
-	estadoNew = queue_create();
-	estadoExit = queue_create();
-	estadoExec = queue_create();
-	queue_clean(estadoReady);
-	queue_clean(estadoNew);
-	queue_clean(estadoExit);
-	queue_clean(estadoExec);
+	estadoReady = list_create();
+	estadoNew = list_create();
+	estadoExit = list_create();
+	estadoExec = list_create();
+	list_clean(estadoReady);
+	list_clean(estadoNew);
+	list_clean(estadoExit);
+	list_clean(estadoExec);
 }
 
-void planificar_programas() {
-
-}
-
-Proceso * crear_proceso(char * leido) {
-
-	Instruccion instruccion_parseada = parser_lql(leido, KERNEL);
+Proceso * crear_proceso() {
 	Proceso * proceso = malloc(sizeof(Proceso));
-	proceso->instrucciones = queue_create();
+	proceso->instrucciones = list_create();
 
-	if (instruccion_parseada.instruccion == RUN) {
-		FILE* f;
-		Run * run = instruccion_parseada.instruccion_a_realizar;
-		f = fopen("r", run->path);
-		char * line = string_new();
-		line = malloc(1024);
+	return proceso;
+}
 
-		if (f != NULL) {
-			while(fgets(line, sizeof(line), f) != NULL){
-				Instruccion instruc = parser_lql(line, KERNEL);
-				queue_push(proceso->instrucciones, &instruc);
-			}
-		} else {
-			log_error(LOGGER, "Kernel: Error al abrir el archivo");
+Proceso * asignar_instrucciones(char ** leidoSplit) {
+	Proceso * proceso = crear_proceso();
+	if (es_run(leidoSplit)) {
+		FILE * f = fopen(leidoSplit[1], "r");
+		char buffer[tamano_maximo_lectura_archivo];
+		if (f == NULL) {
+			perror("No se puede abrir archivo!");
+			log_error(LOGGER, "Kernel. error al leer el archivo");
 			exit_gracefully(1);
 		}
-		free(line);
+		while (fgets(buffer, sizeof(buffer), f) != NULL) {
+			char * line = string_new();
+			line = strtok(buffer, "\n");
+			list_add(proceso->instrucciones, &line);
+		}
+		fclose(f);
 
 	} else {
-		queue_push(proceso->instrucciones, &instruccion_parseada);
+		list_add(proceso->instrucciones, &leidoSplit);
+	}
+
+	int cantidad = cantidad_elementos(leidoSplit);
+	int i = 0;
+	while (i < cantidad) {
+		free(leidoSplit[i]);
+		i++;
 	}
 	return proceso;
 }
 
-
+void liberarProceso(Proceso * proceso){
+	free(proceso);
+}
 

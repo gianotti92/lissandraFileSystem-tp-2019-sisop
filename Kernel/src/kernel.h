@@ -6,8 +6,10 @@
 #include <utilguenguencha/parser.h>
 #include <utilguenguencha/utils.h>
 
+int tamano_maximo_lectura_archivo = 128;
+
 typedef struct{
-	t_queue * instrucciones;
+	t_list * instrucciones;
 }Proceso;
 
 
@@ -18,15 +20,16 @@ void retornarControl(Instruction_set instruccion, int socket_cliente);
 void iniciarEstados();
 
 void leerArchivo(char * path);
-void planificar_programas();
-Proceso * crear_proceso(char * leido);
+Proceso * crear_proceso();
+Proceso * asignar_instrucciones(char ** leidoSplit);
+void liberarProceso(Proceso * proceso);
 
 
 // Variables del proceso
-t_queue *estadoReady;
-t_queue *estadoNew;
-t_queue *estadoExit;
-t_queue *estadoExec;
+t_list *estadoReady;
+t_list *estadoNew;
+t_list *estadoExit;
+t_list *estadoExec;
 int PUERTO_DE_ESCUCHA;
 char * IP_MEMORIA_PPAL;
 int PUERTO_MEMORIA_PPAL;
