@@ -24,6 +24,8 @@ void configuracion_inicial(void) {
 	IP_MEMORIA_PPAL = config_get_string_value(CONFIG, "IP_MEMORIA_PPAL");
 	PUERTO_MEMORIA_PPAL = config_get_int_value(CONFIG, "PUERTO_MEMORIA_PPAL");
 	QUANTUM = config_get_int_value(CONFIG, "QUANTUM");
+	TAMANO_MAXIMO_LECTURA_ARCHIVO = config_get_int_value(CONFIG, "TAMANO_MAXIMO_LECTURA_ARCHIVO");
+	HILOS_KERNEL= config_get_int_value(CONFIG, "TAMANO_MAXIMO_LECTURA_ARCHIVO");
 	config_destroy(CONFIG);
 }
 
@@ -33,34 +35,7 @@ void retorno_consola(char* leido) {
 
 	char ** leidoSplit = string_split(leido, " ");
 	Proceso * proceso = asignar_instrucciones(leidoSplit);
-//	Proceso * proceso = crear_proceso();
-//
-//	if (es_run(leidoSplit)) {
-//		FILE * f = fopen(leidoSplit[1], "r");
-//		char buffer[tamano_maximo_lectura_archivo];
-//		if (f == NULL) {
-//			perror("No se puede abrir archivo!");
-//			log_error(LOGGER, "Kernel. error al leer el archivo");
-//			exit_gracefully(1);
-//		}
-//		while (fgets(buffer, sizeof(buffer), f) != NULL) {
-//			fputs(buffer, stdout);
-//			char * line = string_new();
-//			line = strtok(buffer, "\n");
-//			list_add(proceso->instrucciones, &line);
-//		}
-//		fclose(f);
-//
-//	} else {
-//		list_add(proceso->instrucciones, &leidoSplit);
-//	}
-//
-//	int cantidad = cantidad_elementos(leidoSplit);
-//	int i = 0;
-//	while (i < cantidad) {
-//		free(leidoSplit[i]);
-//		i++;
-//	}
+	encolar(estadoReady, proceso);
 	liberarProceso(proceso);
 
 }
@@ -88,7 +63,7 @@ Proceso * asignar_instrucciones(char ** leidoSplit) {
 	Proceso * proceso = crear_proceso();
 	if (es_run(leidoSplit)) {
 		FILE * f = fopen(leidoSplit[1], "r");
-		char buffer[tamano_maximo_lectura_archivo];
+		char buffer[TAMANO_MAXIMO_LECTURA_ARCHIVO];
 		if (f == NULL) {
 			perror("No se puede abrir archivo!");
 			log_error(LOGGER, "Kernel. error al leer el archivo");
@@ -118,3 +93,6 @@ void liberarProceso(Proceso * proceso){
 	free(proceso);
 }
 
+void encolar(t_list * cola, Proceso * proceso){
+	list_add(cola, proceso);
+}

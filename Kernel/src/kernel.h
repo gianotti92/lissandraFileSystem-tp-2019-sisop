@@ -6,7 +6,7 @@
 #include <utilguenguencha/parser.h>
 #include <utilguenguencha/utils.h>
 
-int tamano_maximo_lectura_archivo = 128;
+
 
 typedef struct{
 	t_list * instrucciones;
@@ -23,6 +23,7 @@ void leerArchivo(char * path);
 Proceso * crear_proceso();
 Proceso * asignar_instrucciones(char ** leidoSplit);
 void liberarProceso(Proceso * proceso);
+void encolar(t_list * cola, Proceso * proceso);
 
 
 // Variables del proceso
@@ -37,5 +38,7 @@ int QUANTUM;
 int MULTIPROCESAMIENTO;
 uint32_t REFRESH_METADATA;
 uint32_t RETARDO;
+int TAMANO_MAXIMO_LECTURA_ARCHIVO;
+int HILOS_KERNEL;
 
 #endif /* KERNEL_H_ */
