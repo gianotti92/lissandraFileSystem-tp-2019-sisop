@@ -24,6 +24,8 @@ Proceso * crear_proceso();
 Proceso * asignar_instrucciones(char ** leidoSplit);
 void liberarProceso(Proceso * proceso);
 void encolar(t_list * cola, Proceso * proceso);
+void planificar();
+void pasarProcesoAReady();
 
 
 // Variables del proceso
