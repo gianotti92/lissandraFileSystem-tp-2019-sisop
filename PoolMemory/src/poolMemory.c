@@ -5,7 +5,7 @@ int main(void) {
 	configuracion_inicial();
 	pthread_t consolaKernel;
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
-	conectar_y_crear_hilo(retornarControl,"127.0.0.1", PUERTO_DE_ESCUCHA);
+	for(;;);
 }
 
 void configuracion_inicial(void){
@@ -15,14 +15,13 @@ void configuracion_inicial(void){
 		printf("No encuentro el archivo config\n");
 		exit_gracefully(EXIT_FAILURE);
 	}
-	PUERTO_DE_ESCUCHA = config_get_int_value(CONFIG,"PUERTO_DE_ESCUCHA");
+	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
 	IP_FS = config_get_string_value(CONFIG,"IP_FS");
 	PUERTO_FS = config_get_int_value(CONFIG,"PUERTO_FS");
-	config_destroy(CONFIG);
 }
 
 void retorno_consola(char* leido){
-	printf("Lo leido es: %s",leido);
+	printf("Lo leido es: %s\n",leido);
 
 	/*
 	 * METO LO QUE LLEGA POR CONSOLA EN LA PLANIFICACION DE "NEW"

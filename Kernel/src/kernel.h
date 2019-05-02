@@ -2,7 +2,6 @@
 #define KERNEL_H_
 
 #include <utilguenguencha/comunicacion.h>
-#include <utilguenguencha/conexion.h>
 #include <utilguenguencha/parser.h>
 #include <utilguenguencha/utils.h>
 
@@ -27,7 +26,7 @@ t_dictionary *estadoReady;
 t_dictionary *estadoNew;
 t_dictionary *estadoExit;
 t_dictionary *estadoExec;
-int PUERTO_DE_ESCUCHA;
+char* PUERTO_DE_ESCUCHA;
 char * IP_MEMORIA_PPAL;
 int PUERTO_MEMORIA_PPAL;
 int QUANTUM;
