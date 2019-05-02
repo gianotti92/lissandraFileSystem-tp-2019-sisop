@@ -19,9 +19,7 @@ void servidor_comunicacion(void (*funcion_retorno) (Instruccion*, int), char* pu
 				if(aux1 == server_socket){
 					struct sockaddr_in client_address;
 					size_t tamanio_client_address = sizeof(client_address);
-					int socket_cliente = accept(server_socket,
-												(struct sockaddr *) &client_address,
-												&tamanio_client_address);
+					int socket_cliente = accept(server_socket, (struct sockaddr *) &client_address, &tamanio_client_address);
 					if(socket_cliente < 0){
 						exit_gracefully(EXIT_FAILURE);
 					}
@@ -396,30 +394,80 @@ Insert *desempaquetar_insert(void* stream){
 	int desplazamiento = 0;
 	Insert *insert= malloc(sizeof(Insert));
 	int tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&insert->key, stream+desplazamiento, tamanio);
+	desplazamiento+=tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&insert->nombre_tabla, stream+desplazamiento, tamanio);
+	desplazamiento+=tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&insert->timestamp, stream+desplazamiento, tamanio);
+	return select;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&insert->value, stream+desplazamiento, tamanio);
 	return insert;
 }
 Create *desempaquetar_create(void* stream){
 	int desplazamiento = 0;
 	Create *create= malloc(sizeof(Create));
 	int tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&create->compactation_time, stream+desplazamiento, tamanio);
+	desplazamiento+=tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&create->consistencia, stream+desplazamiento, tamanio);
+	desplazamiento+=tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&create->nombre_tabla, stream+desplazamiento, tamanio);
+	return select;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&create->particiones, stream+desplazamiento, tamanio);
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&create->timestamp, stream+desplazamiento, tamanio);
 	return create;
 }
 Describe *desempaquetar_describe(void* stream){
 	int desplazamiento = 0;
 	Describe *describe= malloc(sizeof(Describe));
 	int tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&describe->nombre_tabla, stream+desplazamiento, tamanio);
+	desplazamiento+=tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&describe->timestamp, stream+desplazamiento, tamanio);
 	return describe;
 }
 Drop *desempaquetar_drop(void* stream){
 	int desplazamiento = 0;
 	Drop *drop= malloc(sizeof(Drop));
 	int tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&drop->nombre_tabla, stream+desplazamiento, tamanio);
+	desplazamiento+=tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&drop->timestamp, stream+desplazamiento, tamanio);
 	return drop;
 }
 Journal *desempaquetar_journal(void* stream){
 	int desplazamiento = 0;
 	Journal *journal= malloc(sizeof(Journal));
 	int tamanio;
+	memcpy(&tamanio, stream+desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	memcpy(&journal->timestamp, stream+desplazamiento, tamanio);
 	return journal;
 }
 
