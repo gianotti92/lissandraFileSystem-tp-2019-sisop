@@ -111,7 +111,7 @@ typedef struct
 	t_buffer* buffer;
 } t_paquete;
 
-void servidor_comunicacion(void (*funcion_retorno) (Instruccion*, int), char* puerto_servidor, Procesos proceso);
+void servidor_comunicacion(void (*funcion_retorno) (Instruccion*, int), char* puerto_servidor);
 int iniciar_servidor(char* puerto);
 int crear_conexion(char* ip, char* puerto);
 t_paquete* crear_paquete(Procesos proceso_del_que_envio, Instruccion* instruccion);

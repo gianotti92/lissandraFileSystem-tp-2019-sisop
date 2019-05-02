@@ -17,19 +17,27 @@ void configuracion_inicial(void){
 	}
 	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
 	IP_FS = config_get_string_value(CONFIG,"IP_FS");
-	PUERTO_FS = config_get_int_value(CONFIG,"PUERTO_FS");
+	PUERTO_FS = config_get_string_value(CONFIG,"PUERTO_FS");
 }
 
 void retorno_consola(char* leido){
 	printf("Lo leido es: %s\n",leido);
-
-	/*
-	 * METO LO QUE LLEGA POR CONSOLA EN LA PLANIFICACION DE "NEW"
-	 *
-	 * */
+	Select *select = malloc(sizeof(Select));
+	Instruccion *instruccion = malloc(sizeof(Instruccion));
+	select->key = 1;
+	select->nombre_tabla = "PAPITA";
+	select->timestamp = 126738;
+	instruccion->instruccion = SELECT;
+	instruccion->instruccion_a_realizar = select;
+	if(enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY)){
+		printf("Envie la instruccion\n");
+	}
+	else{
+		printf("No envie la instruccion\n");
+	}
 }
 
 void retornarControl(Instruction_set instruccion, int socket_cliente){
-	printf("ME llego algo y algo deberia hacer");
-	//enviar(instruccion, IP_FS, PUERTO_FS);
+	printf("Me llego algo y algo deberia hacer");
+
 }

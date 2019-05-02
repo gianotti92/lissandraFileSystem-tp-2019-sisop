@@ -14,7 +14,7 @@ void retornarControl(Instruction_set instruccion, int socket_cliente);
 // Variables globales del proceso
 char* PUERTO_DE_ESCUCHA;
 char* IP_FS;
-int PUERTO_FS;
+char* PUERTO_FS;
 char** IP_SEEDS;
 int** PUERTOS_SEEDS;
 uint32_t RETARDO_MEM;

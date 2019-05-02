@@ -1,6 +1,6 @@
 #include "comunicacion.h"
 
-void servidor_comunicacion(void (*funcion_retorno) (Instruccion*, int), char* puerto_servidor, Procesos proceso){
+void servidor_comunicacion(void (*funcion_retorno) (Instruccion*, int), char* puerto_servidor){
 	fd_set fd_set_master, fd_set_temporal;
 	int aux1, bytes_recibidos, fd_max, server_socket;
 	server_socket = iniciar_servidor(puerto_servidor);

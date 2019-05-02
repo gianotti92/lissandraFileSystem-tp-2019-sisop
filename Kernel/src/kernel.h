@@ -28,7 +28,7 @@ t_dictionary *estadoExit;
 t_dictionary *estadoExec;
 char* PUERTO_DE_ESCUCHA;
 char * IP_MEMORIA_PPAL;
-int PUERTO_MEMORIA_PPAL;
+char* PUERTO_MEMORIA_PPAL;
 int QUANTUM;
 int MULTIPROCESAMIENTO;
 uint32_t REFRESH_METADATA;

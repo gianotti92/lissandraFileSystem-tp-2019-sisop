@@ -5,7 +5,7 @@ int main(void) {
 	configuracion_inicial();
 	pthread_t consolaFS;
 	pthread_create(&consolaFS, NULL, (void*) leer_por_consola, retorno_consola);
-	for(;;);
+	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
 }
 
 
@@ -32,13 +32,30 @@ void retorno_consola(char* leido){
 	 * */
 }
 
-void retornarControl(Instruction_set instruccion, int cliente){
-	/*
-	 * ACA LLEGA LO QUE LLEGA DESDE POOLMEMORY
-	 *
-	 * */
-
-	printf("Me llego algo y algo deberia hacer");
-
+void retornarControl(Instruccion *instruccion, int cliente){
+	switch(instruccion->instruccion){
+		case SELECT:
+			printf("SELECT\n");
+			break;
+		case INSERT:
+			printf("INSERT\n");
+			break;
+		case CREATE:
+			printf("CREATE\n");
+			break;
+		case DESCRIBE:
+			printf("DESCRIBE\n");
+			break;
+		case DROP:
+			printf("DROP\n");
+			break;
+		case JOURNAL:
+			printf("JOURNAL\n");
+			break;
+		default:
+			printf("Se supone que nunca deberia entrar aqui\n");
+			break;
+		}
+	printf("El fd del source de la instruccion es %d y no esta cerrado");
 
 }
