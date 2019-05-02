@@ -20,3 +20,7 @@ uint32_t TIEMPO_DUMP;
 uint32_t RETARDO;
 
 #endif /* FILESSYSTEM_H_ */
+
+int BLOCK_SIZE;
+int BLOCKS;
+char * MAGIC_NUMBER;
