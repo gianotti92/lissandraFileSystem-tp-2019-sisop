@@ -5,11 +5,14 @@
 #include <utilguenguencha/conexion.h>
 #include <utilguenguencha/parser.h>
 #include <utilguenguencha/utils.h>
+#include <semaphore.h>
 
 
 
 typedef struct{
 	t_list * instrucciones;
+	int file_descriptor;
+	int quantumProcesado;
 }Proceso;
 
 
@@ -25,7 +28,11 @@ Proceso * asignar_instrucciones(char ** leidoSplit);
 void liberarProceso(Proceso * proceso);
 void encolar(t_list * cola, Proceso * proceso);
 void planificar();
-void pasarProcesoAReady();
+void pasarPrimerProceso(t_list *from, t_list *to);
+void cambiarEstado(Proceso* p, t_list * estado);
+
+//MOCK value
+int enviarX(Instruccion * i, char*ip, int puerto);
 
 
 // Variables del proceso

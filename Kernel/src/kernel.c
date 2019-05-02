@@ -2,9 +2,15 @@
 #include <sys/types.h>
 
 pthread_mutex_t mutex;
+sem_t productor;
+sem_t consumidor;
 
+//averiguar bien diferencia entre estado ready y estado new
+//averigar si la funcion parser lql ya me devuelve time stamp
 int main(void) {
 	pthread_mutex_init(&mutex, NULL);
+	sem_init(&productor,0,1);
+	sem_init(&consumidor,0,0);
 	configure_logger();
 	configuracion_inicial();
 	iniciarEstados();
@@ -13,12 +19,15 @@ int main(void) {
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,
 			retorno_consola);
 
-//	pthread_t multiProcesamientoKernell;
-//	pthread_create(&multiProcesamientoKernell, NULL, (void*) planificar,
-//					NULL);
+	int cantMultiprocesamiento = 0;
+	while(cantMultiprocesamiento <=  HILOS_KERNEL){
+		pthread_t multiProcesamientoKernell;
+		pthread_create(&multiProcesamientoKernell, NULL, (void*) planificar,
+						NULL);
+	}
+
 
 	pthread_join(consolaKernel, NULL);
-//	pthread_join(&multiProcesamientoKernell, NULL);
 }
 
 void configuracion_inicial(void) {
@@ -55,7 +64,7 @@ void retorno_consola(char* leido) {
 	char ** leidoSplit = string_split(leido, " ");
 
 	Proceso * proceso = asignar_instrucciones(leidoSplit);
-	encolar(estadoNew, proceso);
+	encolar(estadoReady, proceso);
 
 	liberarProceso(proceso);
 
@@ -105,7 +114,9 @@ Proceso * asignar_instrucciones(char ** leidoSplit) {
 			line = string_from_format("%s %ju", line, (uintmax_t)echo_time);
 			pthread_mutex_lock(&mutex);
 			list_add(proceso->instrucciones, &line);
+			sem_wait(&consumidor);
 			pthread_mutex_unlock(&mutex);
+			sem_post(&productor);
 		}
 		fclose(f);
 
@@ -125,31 +136,40 @@ Proceso * asignar_instrucciones(char ** leidoSplit) {
 }
 
 void planificar() {
-	//para no hacer espera activa hay que poner un semanaforo, preguntar como..
 	while(1){
-		pasarProcesoAReady();
+		sem_wait(&productor);
+		pasarPrimerProceso(estadoReady, estadoExec);
 		Proceso * p;
-		if(list_size(estadoReady) > 0){
-			pthread_mutex_lock(&mutex);
-			p = list_get(estadoReady, 0);
-			pthread_mutex_unlock(&mutex);
+		pthread_mutex_lock(&mutex);
+		p = list_get(estadoExec, 0);
+		pthread_mutex_unlock(&mutex);
 
-			int scriptProcesado = 0;
-			while (scriptProcesado <= QUANTUM) {
+		p->quantumProcesado = 0;
+		while (p->quantumProcesado <= QUANTUM) {
+			char * instructionString = list_get(p->instrucciones, 0);
+			Instruccion *i; // = (Instruccion *) parser_lql(instructionString, KERNEL); se supone que mati t ya lo tiene
+			int fileDescriptor = enviarX(i, "127.0.0.1", 60000);
+			p->file_descriptor = fileDescriptor;
+			p->quantumProcesado +=1;
 
+			if(p->quantumProcesado == QUANTUM && list_size(p->instrucciones) != 0){
 				pthread_mutex_lock(&mutex);
-				int cantidadDeInstrucciones = list_size(p->instrucciones);
+				cambiarEstado(p, estadoReady);
 				pthread_mutex_unlock(&mutex);
-
-				if(cantidadDeInstrucciones == 1){
-					//cuando tengo un proceso con una sola intruccion, se reinicia el quantum?
-					Instruccion * i =  list_get(p->instrucciones, 0);
-
-				}else{
-
-				}
 			}
+			if(list_size(p->instrucciones) == 0){
+				pthread_mutex_lock(&mutex);
+				cambiarEstado(p, estadoExit);
+				pthread_mutex_unlock(&mutex);
+			}
+
+			free(i);
+			free(instructionString);
+
+
 		}
+		sem_post(&consumidor);
+		free(p);
 	}
 }
 
@@ -161,9 +181,18 @@ void encolar(t_list * cola, Proceso * proceso) {
 	list_add(cola, proceso);
 }
 
-void pasarProcesoAReady() {
-	if (list_size(estadoNew) > 0) {
-		Proceso * p = (Proceso *) list_get(estadoNew, 0);
-		list_add(estadoReady, p);
+void pasarPrimerProceso(t_list *from, t_list *to) {
+	if (list_size(from) > 0) {
+		Proceso * p = (Proceso *) list_get(from, 0);
+		list_add(to, p);
 	}
+}
+
+void cambiarEstado(Proceso* p, t_list * estado){
+	list_add(estado, p);
+}
+
+// mock
+int enviarX(Instruccion * i, char*ip, int puerto){
+	return 4;
 }
