@@ -11,6 +11,24 @@ void configuracion_inicial(void);
 void retorno_consola(char* leido);
 void retornarControl(Instruction_set instruccion, int socket_cliente);
 
+typedef struct{
+	uint32_t timestamp;
+	uint16_t key;
+	char* value;
+}Pagina;
+
+typedef struct{
+	int num_pagina;
+	Pagina* pagina;
+	unsigned char modificado; //es el tipo de dato que menos bytes ocupa
+}TablaPagina;
+
+typedef struct{
+	char* tabla;
+	int base;
+	int offset;
+}Segmento;
+
 
 // Variables globales del proceso
 int PUERTO_DE_ESCUCHA;
