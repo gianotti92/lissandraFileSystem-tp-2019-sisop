@@ -8,8 +8,6 @@ int main(void) {
 	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
 }
 
-
-
 void configuracion_inicial(void){
 	t_config* CONFIG;
 	CONFIG = config_create("config.cfg");
@@ -26,43 +24,17 @@ void configuracion_inicial(void){
 
 void retorno_consola(char* leido){
 
-	printf("Lo leido es: %s\n",leido);
-
 	Instruccion* instruccion_parseada = parser_lql(leido, FILESYSTEM);
-
+	printf("Lo que me llego por consola es:\n");
 	print_instruccion_parseada(instruccion_parseada);
-
 	free_consulta(instruccion_parseada);
 
 }
 
 void retornarControl(Instruccion * instruccion, int cliente){
-	switch(instruccion->instruccion){
-		case SELECT:
-			printf("SELECT\n");
-			Select *select;
-			select = instruccion->instruccion_a_realizar;
-			printf("El nombre de la tabla en el select es: %s\n", select->nombre_tabla);
-			break;
-		case INSERT:
-			printf("INSERT\n");
-			break;
-		case CREATE:
-			printf("CREATE\n");
-			break;
-		case DESCRIBE:
-			printf("DESCRIBE\n");
-			break;
-		case DROP:
-			printf("DROP\n");
-			break;
-		case JOURNAL:
-			printf("JOURNAL\n");
-			break;
-		default:
-			printf("Se supone que nunca deberia entrar aqui\n");
-			break;
-		}
-	printf("El fd del source de la instruccion es %d y no esta cerrado\n", cliente);
+
+	printf("Lo que me llego desde POOLMEMORY es:\n");
+	print_instruccion_parseada(instruccion);
+	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
 
 }

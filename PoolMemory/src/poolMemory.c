@@ -5,8 +5,7 @@ int main(void) {
 	configuracion_inicial();
 	pthread_t consolaKernel;
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
-	for(;;);
-
+	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
 }
 
 void configuracion_inicial(void){
@@ -24,14 +23,25 @@ void configuracion_inicial(void){
 void retorno_consola(char* leido){
 
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
-
-	print_instruccion_parseada(instruccion_parseada);
-
+	int fd_proceso;
+	if(instruccion_parseada->instruccion != ERROR){
+		if(fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY)){
+			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+		}
+	}
 	free_consulta(instruccion_parseada);
-
 }
 
-void retornarControl(Instruction_set instruccion, int socket_cliente){
-	printf("Me llego algo y algo deberia hacer");
+void retornarControl(Instruccion *instruccion, int cliente){
 
+	printf("Lo que me llego desde KERNEL es:\n");
+	print_instruccion_parseada(instruccion);
+	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
+	int fd_proceso;
+	if(instruccion->instruccion != ERROR){
+		if(fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY)){
+			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+		}
+	}
+	free_consulta(instruccion);
 }

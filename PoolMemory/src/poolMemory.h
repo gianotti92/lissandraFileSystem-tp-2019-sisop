@@ -8,7 +8,7 @@
 // Funciones del proceso
 void configuracion_inicial(void);
 void retorno_consola(char* leido);
-void retornarControl(Instruction_set instruccion, int socket_cliente);
+void retornarControl(Instruccion *instruccion, int cliente);
 
 
 // Variables globales del proceso
