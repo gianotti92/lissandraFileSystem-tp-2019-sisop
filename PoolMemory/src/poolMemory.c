@@ -3,6 +3,8 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
+
+	MAX_VALUE = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
 	pthread_t consolaKernel;
@@ -47,7 +49,53 @@ void retornarControl(Instruction_set instruccion, int socket_cliente){
 }
 
 void inicializar_memoria(){
-	//enviar(instruccion, IP_FS, PUERTO_FS);
+
+
+	//defino estructuras para las paginas
+	typedef struct{
+		uint32_t timestamp;
+		uint16_t key;
+		char value[MAX_VALUE];
+		unsigned char modificado; //es el tipo de dato que menos bytes ocupa
+	}Pagina;
+
+	typedef struct{
+		Pagina* pagina;
+		unsigned char en_uso;
+	}Pagina_aux;
+
+	//resevo memoria
 	void* memoria_principal = malloc(SIZE_MEM);
 
+	//formateo de memoria
+	t_list* l_maestro_paginas = list_create();
+
+	Pagina* nueva_pagina = (Pagina*) memoria_principal;
+	Pagina_aux pagina_aux;
+	Pagina_aux* nueva_pagina_aux = &pagina_aux;
+	int memoria_formateada = 0;
+
+	//inicializo una pagina en blanco
+	nueva_pagina->key = 0;
+	nueva_pagina->modificado = 0;
+	nueva_pagina->timestamp = 0;
+	nueva_pagina->value[0] = '\0';
+
+	//inicializo una pagina auxiliar para la nueva pagina
+	nueva_pagina_aux->en_uso = 0;
+	nueva_pagina_aux->pagina = nueva_pagina;
+
+	while (memoria_formateada + sizeof(Pagina) < SIZE_MEM){
+
+		list_add(l_maestro_paginas, nueva_pagina_aux); //add se encarga de crear un nuevo elemento dentro de la lista, por eso puedo usar siempre la misma pagina
+
+		nueva_pagina += sizeof(Pagina); //muevo el puntero a la pagina siguiente
+
+		memoria_formateada += sizeof(Pagina);
+
+	}
+
+	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,l_maestro_paginas->elements_count, MAX_VALUE);
+	list_destroy(l_maestro_paginas);
+	free(memoria_principal);
 }
