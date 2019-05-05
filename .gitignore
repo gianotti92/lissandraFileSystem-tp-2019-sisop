@@ -53,6 +53,12 @@ dkms.conf
 # Agreguemos acá todos los archivos que no nos sirvan de los que genera eclipse.
 # Los xml que se generan subanlos porque es donde quedan las configuraciones de los proyectos.
 # Tales como las librerías usadas.
+<<<<<<< HEAD
 
 *.project
 *.cproject
+=======
+.cproject
+.project
+
+>>>>>>> #43_Serializacion

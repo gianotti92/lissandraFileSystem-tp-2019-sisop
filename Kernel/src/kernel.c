@@ -5,7 +5,7 @@ int main(void) {
 	configuracion_inicial();
 	pthread_t consolaKernel;
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
-	for(;;){} // Para que no muera
+	for(;;);
 }
 
 void configuracion_inicial(void){
@@ -15,9 +15,9 @@ void configuracion_inicial(void){
 		log_error(LOGGER,"No encuentro el archivo config");
 		exit_gracefully(EXIT_FAILURE);
 	}
-	PUERTO_DE_ESCUCHA = config_get_int_value(CONFIG,"PUERTO_DE_ESCUCHA");
+	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
 	IP_MEMORIA_PPAL = config_get_string_value(CONFIG,"IP_MEMORIA_PPAL");
-	PUERTO_MEMORIA_PPAL = config_get_int_value(CONFIG,"PUERTO_MEMORIA_PPAL");
+	PUERTO_MEMORIA_PPAL = config_get_string_value(CONFIG,"PUERTO_MEMORIA_PPAL");
 	QUANTUM = config_get_int_value(CONFIG, "QUANTUM");
 	config_destroy(CONFIG);
 }

@@ -2,7 +2,6 @@
 #define POOLMEMORY_H_
 
 #include <utilguenguencha/comunicacion.h>
-#include <utilguenguencha/conexion.h>
 #include <utilguenguencha/parser.h>
 #include <utilguenguencha/utils.h>
 
@@ -13,9 +12,9 @@ void retornarControl(Instruction_set instruccion, int socket_cliente);
 
 
 // Variables globales del proceso
-int PUERTO_DE_ESCUCHA;
+char* PUERTO_DE_ESCUCHA;
 char* IP_FS;
-int PUERTO_FS;
+char* PUERTO_FS;
 char** IP_SEEDS;
 int** PUERTOS_SEEDS;
 uint32_t RETARDO_MEM;
