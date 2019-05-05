@@ -32,10 +32,13 @@ void retorno_consola(char* leido){
 	 * */
 }
 
-void retornarControl(Instruccion *instruccion, int cliente){
+void retornarControl(Instruccion * instruccion, int cliente){
 	switch(instruccion->instruccion){
 		case SELECT:
 			printf("SELECT\n");
+			Select *select;
+			select = instruccion->instruccion_a_realizar;
+			printf("El nombre de la tabla en el select es: %s\n", select->nombre_tabla);
 			break;
 		case INSERT:
 			printf("INSERT\n");
@@ -56,6 +59,6 @@ void retornarControl(Instruccion *instruccion, int cliente){
 			printf("Se supone que nunca deberia entrar aqui\n");
 			break;
 		}
-	printf("El fd del source de la instruccion es %d y no esta cerrado");
+	printf("El fd del source de la instruccion es %d y no esta cerrado\n", cliente);
 
 }

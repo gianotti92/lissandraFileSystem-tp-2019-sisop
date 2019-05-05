@@ -111,12 +111,11 @@ typedef struct
 	t_buffer* buffer;
 } t_paquete;
 
-void servidor_comunicacion(void (*funcion_retorno) (Instruccion*, int), char* puerto_servidor);
+void servidor_comunicacion(void (*funcion_retorno)(Instruccion*, int), char* puerto_servidor);
 int iniciar_servidor(char* puerto);
 int crear_conexion(char* ip, char* puerto);
 t_paquete* crear_paquete(Procesos proceso_del_que_envio, Instruccion* instruccion);
-void agregar_a_paquete(t_paquete* paquete, void* valor, int tamanio);
-bool enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio);
+int enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio);
 bool enviar_paquete(t_paquete* paquete, int socket_cliente);
 void liberar_conexion(int socket_cliente);
 void eliminar_paquete(t_paquete* paquete);

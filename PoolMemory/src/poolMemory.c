@@ -29,8 +29,9 @@ void retorno_consola(char* leido){
 	select->timestamp = 126738;
 	instruccion->instruccion = SELECT;
 	instruccion->instruccion_a_realizar = select;
-	if(enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY)){
-		printf("Envie la instruccion\n");
+	int servidor_fd;
+	if(servidor_fd = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY)){ // @suppress("Assignment in condition")
+		printf("Envie la instruccion al fd: %d\n", servidor_fd);
 	}
 	else{
 		printf("No envie la instruccion\n");
