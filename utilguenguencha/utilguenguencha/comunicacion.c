@@ -162,7 +162,7 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion)
 			return false;
 		}
 		stream = malloc(buffer_size);
-		if ((bytes_recibidos = recv(aux1, &stream, buffer_size, MSG_WAITALL))
+		if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
 				<= 0) {
 			return false;
 		}
@@ -177,7 +177,7 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion)
 			return false;
 		}
 		stream = malloc(buffer_size);
-		if ((bytes_recibidos = recv(aux1, &stream, buffer_size, MSG_WAITALL))
+		if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
 				<= 0) {
 			return false;
 		}
@@ -191,13 +191,13 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion)
 		MSG_WAITALL)) <= 0) {
 			return false;
 		}
-		if ((bytes_recibidos = recv(aux1, &stream, buffer_size, MSG_WAITALL))
+		stream = malloc(buffer_size);
+		if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
 				<= 0) {
 			return false;
 		}
 		Describe *describe;
-		select = desempaquetar_describe(stream);
-		instruccion = malloc(sizeof(Instruccion));
+		describe = desempaquetar_describe(stream);
 		instruccion->instruccion = DESCRIBE;
 		instruccion->instruccion_a_realizar = describe;
 		return true;
@@ -206,13 +206,13 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion)
 		MSG_WAITALL)) <= 0) {
 			return false;
 		}
-		if ((bytes_recibidos = recv(aux1, &stream, buffer_size, MSG_WAITALL))
+		stream = malloc(buffer_size);
+		if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
 				<= 0) {
 			return false;
 		}
 		Drop *drop;
 		drop = desempaquetar_drop(stream);
-		instruccion = malloc(sizeof(Instruccion));
 		instruccion->instruccion = DROP;
 		instruccion->instruccion_a_realizar = drop;
 		return true;
@@ -221,13 +221,13 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion)
 		MSG_WAITALL)) <= 0) {
 			return false;
 		}
-		if ((bytes_recibidos = recv(aux1, &stream, buffer_size, MSG_WAITALL))
+		stream = malloc(buffer_size);
+		if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
 				<= 0) {
 			return false;
 		}
 		Journal *journal;
 		journal = desempaquetar_journal(stream);
-		instruccion = malloc(sizeof(Instruccion));
 		instruccion->instruccion = JOURNAL;
 		instruccion->instruccion_a_realizar = journal;
 		return true;
@@ -355,6 +355,7 @@ t_paquete* crear_paquete(Procesos proceso_del_que_envio,
 				(Journal*) instruccion->instruccion_a_realizar);
 		break;
 	default:
+		free(paquete->buffer);
 		free(paquete);
 		return (t_paquete*) NULL;
 		break;
@@ -365,7 +366,7 @@ t_paquete* crear_paquete(Procesos proceso_del_que_envio,
 void empaquetar_select(t_paquete *paquete, Select *select) {
 	size_t tamanio_nombre_tabla = (strlen(select->nombre_tabla) + 1);
 	paquete->buffer->stream = malloc(
-			sizeof(select->key) + sizeof(int) + tamanio_nombre_tabla
+			sizeof(select->key) + sizeof(size_t) + tamanio_nombre_tabla
 					+ sizeof(select->timestamp));
 	memcpy(paquete->buffer->stream, &select->key, sizeof(select->key));
 	paquete->buffer->size += sizeof(select->key);
@@ -384,8 +385,8 @@ void empaquetar_insert(t_paquete *paquete, Insert *insert) {
 	size_t tamanio_nombre_tabla = (strlen(insert->nombre_tabla) + 1);
 	size_t tamanio_value = (strlen(insert->value) + 1);
 	paquete->buffer->stream = malloc(
-			sizeof(insert->key) + tamanio_nombre_tabla
-					+ sizeof(insert->timestamp) + tamanio_value);
+			sizeof(insert->key) + sizeof(size_t) + tamanio_nombre_tabla
+					+ sizeof(insert->timestamp) + sizeof(size_t) + tamanio_value);
 	memcpy(paquete->buffer->stream, &insert->key, sizeof(insert->key));
 	paquete->buffer->size += sizeof(insert->key);
 	memcpy(paquete->buffer->stream + paquete->buffer->size,
@@ -409,7 +410,7 @@ void empaquetar_create(t_paquete * paquete, Create *create) {
 	size_t tamanio_nombre_tabla = (strlen(create->nombre_tabla) + 1);
 	paquete->buffer->stream = malloc(
 			sizeof(create->compactation_time) + sizeof(create->consistencia)
-					+ tamanio_nombre_tabla + sizeof(create->particiones)
+					+ sizeof(size_t) + tamanio_nombre_tabla + sizeof(create->particiones)
 					+ sizeof(create->timestamp));
 	memcpy(paquete->buffer->stream, &create->compactation_time,
 			sizeof(create->compactation_time));
@@ -433,7 +434,7 @@ void empaquetar_create(t_paquete * paquete, Create *create) {
 
 void empaquetar_describe(t_paquete * paquete, Describe *describe) {
 	size_t tamanio_nombre_tabla = (strlen(describe->nombre_tabla) + 1);
-	paquete->buffer->stream = malloc(
+	paquete->buffer->stream = malloc( sizeof(size_t) +
 			tamanio_nombre_tabla + sizeof(describe->timestamp));
 	memcpy(paquete->buffer->stream, &tamanio_nombre_tabla,
 			sizeof(tamanio_nombre_tabla));
@@ -448,7 +449,7 @@ void empaquetar_describe(t_paquete * paquete, Describe *describe) {
 
 void empaquetar_drop(t_paquete * paquete, Drop * drop) {
 	size_t tamanio_nombre_tabla = (strlen(drop->nombre_tabla) + 1);
-	paquete->buffer->stream = malloc(
+	paquete->buffer->stream = malloc( sizeof(size_t) +
 			tamanio_nombre_tabla + sizeof(drop->timestamp));
 	memcpy(paquete->buffer->stream, &tamanio_nombre_tabla,
 			sizeof(tamanio_nombre_tabla));

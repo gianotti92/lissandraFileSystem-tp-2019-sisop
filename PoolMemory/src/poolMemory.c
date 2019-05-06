@@ -25,10 +25,11 @@ void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	int fd_proceso;
 	if(instruccion_parseada->instruccion != ERROR){
-		if(fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY)){
+		if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
 			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
 		}
 	}
+	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
 	free_consulta(instruccion_parseada);
 }
 
@@ -39,9 +40,11 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
 	int fd_proceso;
 	if(instruccion->instruccion != ERROR){
-		if(fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY)){
+		if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY))){
 			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
 		}
 	}
+	//liberar_conexion(cliente); // Para liberar el fd del socket
+	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
 	free_consulta(instruccion);
 }

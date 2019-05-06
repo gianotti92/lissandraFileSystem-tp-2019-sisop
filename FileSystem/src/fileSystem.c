@@ -16,7 +16,7 @@ void configuracion_inicial(void){
 		exit_gracefully(EXIT_FAILURE);
 	}
 	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
-	TAMANIO_VALUE = config_get_string_value(CONFIG,"TAMANIO_VALUE");
+	TAMANIO_VALUE = config_get_int_value(CONFIG,"TAMANIO_VALUE");
 	PUNTO_MONTAJE = config_get_string_value(CONFIG, "PUNTO_MONTAJE");
 	TIEMPO_DUMP = config_get_int_value(CONFIG, "TIEMPO_DUMP");
 	RETARDO = config_get_int_value(CONFIG,"RETARDO");
@@ -36,5 +36,6 @@ void retornarControl(Instruccion * instruccion, int cliente){
 	printf("Lo que me llego desde POOLMEMORY es:\n");
 	print_instruccion_parseada(instruccion);
 	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
+	//liberar_conexion(cliente); // Para liberar el fd del socket
 
 }
