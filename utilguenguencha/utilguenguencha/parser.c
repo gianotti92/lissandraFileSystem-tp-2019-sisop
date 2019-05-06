@@ -378,7 +378,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 
 	log_info(LOGGER, "Parser: Consulta aceptada.");
 
-	print_instruccion_parseada(consultaParseada);
+	//print_instruccion_parseada(consultaParseada);
 
 	return consultaParseada;
 }

@@ -9,6 +9,7 @@
 #include <commons/log.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 t_log * LOGGER;
 
