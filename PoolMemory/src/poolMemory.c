@@ -73,19 +73,20 @@ void inicializar_memoria(){
 	Pagina* nueva_pagina = (Pagina*) memoria_principal;
 	Pagina_aux pagina_aux;
 	Pagina_aux* nueva_pagina_aux = &pagina_aux;
+
 	int memoria_formateada = 0;
 
-	//inicializo una pagina en blanco
-	nueva_pagina->key = 0;
-	nueva_pagina->modificado = 0;
-	nueva_pagina->timestamp = 0;
-	nueva_pagina->value[0] = '\0';
-
-	//inicializo una pagina auxiliar para la nueva pagina
-	nueva_pagina_aux->en_uso = 0;
-	nueva_pagina_aux->pagina = nueva_pagina;
-
 	while (memoria_formateada + sizeof(Pagina) < SIZE_MEM){
+
+		//inicializo una pagina en blanco
+		nueva_pagina->key = 0;
+		nueva_pagina->modificado = 0;
+		nueva_pagina->timestamp = 0;
+		nueva_pagina->value[0] = '\0';
+
+		//inicializo una pagina auxiliar para la nueva pagina
+		nueva_pagina_aux->en_uso = 0;
+		nueva_pagina_aux->pagina = nueva_pagina;
 
 		list_add(l_maestro_paginas, nueva_pagina_aux); //add se encarga de crear un nuevo elemento dentro de la lista, por eso puedo usar siempre la misma pagina
 
@@ -95,7 +96,12 @@ void inicializar_memoria(){
 
 	}
 
-	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,l_maestro_paginas->elements_count, MAX_VALUE);
+	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,l_maestro_paginas->elements_count, sizeof(Pagina));
 	list_destroy(l_maestro_paginas);
 	free(memoria_principal);
 }
+
+/*
+Pagina* get_pagina( char* nombre_tabla, uint16_t key){
+
+}*/
