@@ -342,7 +342,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 
 			}
 		}
-	else if (es_journal(consulta_separada) & (procesoOrigen == POOLMEMORY)){
+	else if (es_journal(consulta_separada) & (procesoOrigen == POOLMEMORY || procesoOrigen == KERNEL)){
 
 			if (length != 1){
 				puts("ERROR: La sintaxis correcta es > JOURNAL");
@@ -358,7 +358,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
 				nuevoJournal->timestamp = timestamp;						 				 	// cargo timestamp
 
-				consultaParseada = crear_instruccion(JOURNAL, &nuevoJournal, sizeof(nuevoJournal));
+				consultaParseada = crear_instruccion(JOURNAL, nuevoJournal, sizeof(nuevoJournal));
 
 			}
 		}
@@ -366,7 +366,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 		puts("ERROR: Las operaciones disponibles son:");
 
 		switch(procesoOrigen){
-			case KERNEL: {puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD MEMORY, RUN, METRICS]"); break;}
+			case KERNEL: {puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD MEMORY, RUN, METRICS, JOURNAL]"); break;}
 			case POOLMEMORY: {puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, JOURNAL]"); break;}
 			case FILESYSTEM: {puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP]"); break;}
 		}
