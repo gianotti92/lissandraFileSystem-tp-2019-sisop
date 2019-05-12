@@ -25,8 +25,15 @@ void configuracion_inicial(void){
 void retorno_consola(char* leido){
 
 	Instruccion* instruccion_parseada = parser_lql(leido, FILESYSTEM);
-	printf("Lo que me llego por consola es:\n");
-	print_instruccion_parseada(instruccion_parseada);
+	// Filesystem solo ve sus consultas
+	if(	instruccion_parseada->instruccion != ERROR &&
+		instruccion_parseada->instruccion != ADD &&
+		instruccion_parseada->instruccion != JOURNAL &&
+		instruccion_parseada->instruccion != METRICS &&
+		instruccion_parseada->instruccion != RUN){
+		printf("Lo que me llego por consola es:\n");
+		print_instruccion_parseada(instruccion_parseada);
+	}
 	free_consulta(instruccion_parseada);
 
 }
@@ -34,7 +41,9 @@ void retorno_consola(char* leido){
 void retornarControl(Instruccion * instruccion, int cliente){
 
 	printf("Lo que me llego desde POOLMEMORY es:\n");
+
 	print_instruccion_parseada(instruccion);
+
 	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
 	//liberar_conexion(cliente); // Para liberar el fd del socket
 

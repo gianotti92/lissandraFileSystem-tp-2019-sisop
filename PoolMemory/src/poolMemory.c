@@ -24,7 +24,12 @@ void retorno_consola(char* leido){
 
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	int fd_proceso;
-	if(instruccion_parseada->instruccion != ERROR){
+	// La memoria no usa las funciones de KERNEL y JOURNAL no lo envia a filesystem
+	if(	instruccion_parseada->instruccion != ERROR &&
+		instruccion_parseada->instruccion != METRICS &&
+		instruccion_parseada->instruccion != ADD &&
+		instruccion_parseada->instruccion != RUN &&
+		instruccion_parseada->instruccion != JOURNAL){
 		if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
 			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
 		}
@@ -39,7 +44,9 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	print_instruccion_parseada(instruccion);
 	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
 	int fd_proceso;
-	if(instruccion->instruccion != ERROR){
+	// Al retornar control de poolmemory solo le llegan las que corresponden y metrics no tiene que enviarla
+	if(	instruccion->instruccion != ERROR &&
+		instruccion->instruccion != JOURNAL){
 		if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY))){
 			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
 		}

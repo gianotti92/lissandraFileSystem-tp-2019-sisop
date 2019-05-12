@@ -25,7 +25,11 @@ void retorno_consola(char* leido){
 
 	Instruccion* instruccion_parseada = parser_lql(leido, KERNEL);
 	int fd_proceso;
-	if(instruccion_parseada->instruccion != ERROR){
+	// KERNEL no envia la instruccion si es alguna de las siguientes
+	if(	instruccion_parseada->instruccion != ERROR &&
+		instruccion_parseada->instruccion != METRICS &&
+		instruccion_parseada->instruccion != ADD &&
+		instruccion_parseada->instruccion != RUN){
 		if((fd_proceso = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion_parseada, KERNEL))){
 				printf("La consulta fue enviada al fd %d de POOLMEMORY y este sigue abierto\n", fd_proceso);
 			}
