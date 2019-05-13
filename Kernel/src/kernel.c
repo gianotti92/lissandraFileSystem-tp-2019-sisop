@@ -1,12 +1,13 @@
 #include "kernel.h"
 #include <sys/types.h>
 
+//implementar cola new
+// mati me va a abrir un socket nuevo para que kernel pregunte por memorias, en memoria principal
+
 pthread_mutex_t mutex;
 sem_t productor;
 sem_t consumidor;
 
-//averiguar bien diferencia entre estado ready y estado new
-//averigar si la funcion parser lql ya me devuelve time stamp
 int main(void) {
 	pthread_mutex_init(&mutex, NULL);
 	sem_init(&productor,0,1);
@@ -26,7 +27,6 @@ int main(void) {
 						NULL);
 	}
 
-
 	pthread_join(consolaKernel, NULL);
 }
 
@@ -37,15 +37,16 @@ void configuracion_inicial(void) {
 		log_error(LOGGER, "No encuentro el archivo config");
 		exit_gracefully(EXIT_FAILURE);
 	}
-	PUERTO_DE_ESCUCHA = config_get_int_value(CONFIG, "PUERTO_DE_ESCUCHA");
-	IP_MEMORIA_PPAL = config_get_string_value(CONFIG, "IP_MEMORIA_PPAL");
-	PUERTO_MEMORIA_PPAL = config_get_int_value(CONFIG, "PUERTO_MEMORIA_PPAL");
+
+	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
+	IP_MEMORIA_PPAL = config_get_string_value(CONFIG,"IP_MEMORIA_PPAL");
+	PUERTO_MEMORIA_PPAL = config_get_string_value(CONFIG,"PUERTO_MEMORIA_PPAL");
+
 	QUANTUM = config_get_int_value(CONFIG, "QUANTUM");
 	TAMANO_MAXIMO_LECTURA_ARCHIVO = config_get_int_value(CONFIG,
 			"TAMANO_MAXIMO_LECTURA_ARCHIVO");
 	HILOS_KERNEL = config_get_int_value(CONFIG,
 			"TAMANO_MAXIMO_LECTURA_ARCHIVO");
-	config_destroy(CONFIG);
 }
 
 void retorno_consola(char* leido) {
@@ -149,6 +150,7 @@ void planificar() {
 			char * instructionString = list_get(p->instrucciones, 0);
 			Instruccion *i; // = (Instruccion *) parser_lql(instructionString, KERNEL); se supone que mati t ya lo tiene
 			int fileDescriptor = enviarX(i, "127.0.0.1", 60000);
+
 			p->file_descriptor = fileDescriptor;
 			p->quantumProcesado +=1;
 

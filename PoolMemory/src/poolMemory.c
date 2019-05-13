@@ -5,8 +5,7 @@ int main(void) {
 	configuracion_inicial();
 	pthread_t consolaKernel;
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
-	conectar_y_crear_hilo(retornarControl,"127.0.0.1", PUERTO_DE_ESCUCHA);
-
+	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
 }
 
 void configuracion_inicial(void){
@@ -16,47 +15,43 @@ void configuracion_inicial(void){
 		printf("No encuentro el archivo config\n");
 		exit_gracefully(EXIT_FAILURE);
 	}
-	PUERTO_DE_ESCUCHA = config_get_int_value(CONFIG,"PUERTO_DE_ESCUCHA");
+	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
 	IP_FS = config_get_string_value(CONFIG,"IP_FS");
-	PUERTO_FS = config_get_int_value(CONFIG,"PUERTO_FS");
-	config_destroy(CONFIG);
+	PUERTO_FS = config_get_string_value(CONFIG,"PUERTO_FS");
 }
 
 void retorno_consola(char* leido){
-	printf("Lo leido es: %s \n",leido);
 
-	/*
-	 * METO LO QUE LLEGA POR CONSOLA EN LA PLANIFICACION DE "NEW"
-	 *
-	 * */
-
-	Instruccion instruccion_parseada = parser_lql(leido, POOLMEMORY);
-
-	switch(instruccion_parseada.instruccion){
-		case SELECT: {Select * select = instruccion_parseada.instruccion_a_realizar;
-					 printf("Tabla: %s Key: %i TS: %lu \n",select->nombre_tabla, select->key, select->timestamp);
-					 break;}
-		case INSERT: {Insert * insert = instruccion_parseada.instruccion_a_realizar;
-					 printf("Tabla: %s Key: %i Valor: %s TSins: %lu TS: %lu \n",insert->nombre_tabla,insert->key, insert->value, insert->timestamp_insert, insert->timestamp);
-					 break;}
-		case CREATE: {Create * create = instruccion_parseada.instruccion_a_realizar;
-					 printf("Tabla: %s Particiones: %i Compactacion: %lu Consistencia: %i TS: %lu \n",create->nombre_tabla,create->particiones, create->compactation_time, create->consistencia, create->timestamp);
-					 break;}
-		case DESCRIBE: {Describe * describe = instruccion_parseada.instruccion_a_realizar;
-						printf("Tabla: %s TS: %lu\n",describe->nombre_tabla, describe->timestamp);
-						break;}
-		case DROP: {Drop * drop = instruccion_parseada.instruccion_a_realizar;
-					printf("Tabla: %s TS: %lu\n",drop->nombre_tabla, drop->timestamp);
-					break;}
-		case JOURNAL: {Journal * journal = instruccion_parseada.instruccion_a_realizar;
-					   printf("TS: %lu \n",journal->timestamp);
-					   break;}
-		case ERROR: printf("ERROR DE CONSULTA \n");
+	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
+	int fd_proceso;
+	// La memoria no usa las funciones de KERNEL y JOURNAL no lo envia a filesystem
+	if(	instruccion_parseada->instruccion != ERROR &&
+		instruccion_parseada->instruccion != METRICS &&
+		instruccion_parseada->instruccion != ADD &&
+		instruccion_parseada->instruccion != RUN &&
+		instruccion_parseada->instruccion != JOURNAL){
+		if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
+			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+		}
 	}
-
+	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
+	free_consulta(instruccion_parseada);
 }
 
-void retornarControl(Instruction_set instruccion, int socket_cliente){
-	printf("ME llego algo y algo deberia hacer");
-	//enviar(instruccion, IP_FS, PUERTO_FS);
+void retornarControl(Instruccion *instruccion, int cliente){
+
+	printf("Lo que me llego desde KERNEL es:\n");
+	print_instruccion_parseada(instruccion);
+	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
+	int fd_proceso;
+	// Al retornar control de poolmemory solo le llegan las que corresponden y metrics no tiene que enviarla
+	if(	instruccion->instruccion != ERROR &&
+		instruccion->instruccion != JOURNAL){
+		if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY))){
+			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+		}
+	}
+	//liberar_conexion(cliente); // Para liberar el fd del socket
+	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
+	free_consulta(instruccion);
 }

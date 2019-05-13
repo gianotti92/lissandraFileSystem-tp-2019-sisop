@@ -2,7 +2,6 @@
 #define KERNEL_H_
 
 #include <utilguenguencha/comunicacion.h>
-#include <utilguenguencha/conexion.h>
 #include <utilguenguencha/parser.h>
 #include <utilguenguencha/utils.h>
 #include <semaphore.h>
@@ -36,13 +35,14 @@ int enviarX(Instruccion * i, char*ip, int puerto);
 
 
 // Variables del proceso
-t_list *estadoReady;
-t_list *estadoNew;
-t_list *estadoExit;
-t_list *estadoExec;
-int PUERTO_DE_ESCUCHA;
+t_dictionary *estadoReady;
+t_dictionary *estadoNew;
+t_dictionary *estadoExit;
+t_dictionary *estadoExec;
+char* PUERTO_DE_ESCUCHA;
+
 char * IP_MEMORIA_PPAL;
-int PUERTO_MEMORIA_PPAL;
+char* PUERTO_MEMORIA_PPAL;
 int QUANTUM;
 int MULTIPROCESAMIENTO;
 uint32_t REFRESH_METADATA;
