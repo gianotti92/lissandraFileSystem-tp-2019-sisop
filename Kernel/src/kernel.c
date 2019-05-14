@@ -2,16 +2,22 @@
 #include <sys/types.h>
 
 //implementar cola new
-// mati me va a abrir un socket nuevo para que kernel pregunte por memorias, en memoria principal
+//mati me va a abrir un socket nuevo para que kernel pregunte por memorias, en memoria principal(armar un map con lo que me vaya a devolver esto) -> lista de memorias existentes
+//memoria principal me va a devolver todas las memorias(las guardo en el map)
+//cuando me viene add tal memoria tal criterio yo tengo que meter en el value del map de consistencias esa memoria
+//cuando me viene un create tomo la consistencia, con esa consistencia busco en el map de m que me devolvio memoria principal,
 
 pthread_mutex_t mutex;
-sem_t productor;
-sem_t consumidor;
+sem_t semaforoSePuedePlanificar;
+sem_t semaforoInicial;
+sem_t semaforoNewToReady;
 
 int main(void) {
 	pthread_mutex_init(&mutex, NULL);
-	sem_init(&productor,0,1);
-	sem_init(&consumidor,0,0);
+	sem_init(&semaforoInicial, 0, 1);
+	sem_init(&semaforoSePuedePlanificar,0,0);
+	sem_init(&semaforoNewToReady, 0 ,0);
+
 	configure_logger();
 	configuracion_inicial();
 	iniciarEstados();
@@ -50,6 +56,7 @@ void configuracion_inicial(void) {
 }
 
 void retorno_consola(char* leido) {
+	sem_wait(&semaforoInicial);
 	time_t echo_time;
 	echo_time = time(NULL);
 
@@ -63,11 +70,9 @@ void retorno_consola(char* leido) {
 
 	leido = string_from_format("%s %ju", leido, (uintmax_t)echo_time);
 	char ** leidoSplit = string_split(leido, " ");
+	encolarNew(estadoNew, leidoSplit);
+	sem_post(&semaforoNewToReady);
 
-	Proceso * proceso = asignar_instrucciones(leidoSplit);
-	encolar(estadoReady, proceso);
-
-	liberarProceso(proceso);
 
 }
 
@@ -115,9 +120,7 @@ Proceso * asignar_instrucciones(char ** leidoSplit) {
 			line = string_from_format("%s %ju", line, (uintmax_t)echo_time);
 			pthread_mutex_lock(&mutex);
 			list_add(proceso->instrucciones, &line);
-			sem_wait(&consumidor);
 			pthread_mutex_unlock(&mutex);
-			sem_post(&productor);
 		}
 		fclose(f);
 
@@ -138,7 +141,7 @@ Proceso * asignar_instrucciones(char ** leidoSplit) {
 
 void planificar() {
 	while(1){
-		sem_wait(&productor);
+		sem_wait(&semaforoSePuedePlanificar);
 		pasarPrimerProceso(estadoReady, estadoExec);
 		Proceso * p;
 		pthread_mutex_lock(&mutex);
@@ -148,7 +151,7 @@ void planificar() {
 		p->quantumProcesado = 0;
 		while (p->quantumProcesado <= QUANTUM) {
 			char * instructionString = list_get(p->instrucciones, 0);
-			Instruccion *i; // = (Instruccion *) parser_lql(instructionString, KERNEL); se supone que mati t ya lo tiene
+			Instruccion * i = parser_lql(instructionString, KERNEL);
 			int fileDescriptor = enviarX(i, "127.0.0.1", 60000);
 
 			p->file_descriptor = fileDescriptor;
@@ -170,7 +173,7 @@ void planificar() {
 
 
 		}
-		sem_post(&consumidor);
+		sem_post(&semaforoInicial);
 		free(p);
 	}
 }
@@ -180,7 +183,15 @@ void liberarProceso(Proceso * proceso) {
 }
 
 void encolar(t_list * cola, Proceso * proceso) {
+	pthread_mutex_lock(&mutex);
 	list_add(cola, proceso);
+	pthread_mutex_unlock(&mutex);
+}
+
+void encolarNew(t_list * cola, char ** split){
+	pthread_mutex_lock(&mutex);
+	list_add(cola, split);
+	pthread_mutex_unlock(&mutex);
 }
 
 void pasarPrimerProceso(t_list *from, t_list *to) {
@@ -193,6 +204,22 @@ void pasarPrimerProceso(t_list *from, t_list *to) {
 void cambiarEstado(Proceso* p, t_list * estado){
 	list_add(estado, p);
 }
+
+void ponerProcesosEneady(){
+	while(1){
+		sem_wait(&semaforoNewToReady);
+		char ** charSplit = list_get(estadoNew, 0);
+		Proceso * proceso = asignar_instrucciones(charSplit);
+
+		encolar(estadoReady, proceso);
+
+		free(charSplit);
+		liberarProceso(proceso);
+		sem_post(&semaforoSePuedePlanificar);
+	}
+
+}
+
 
 // mock
 int enviarX(Instruccion * i, char*ip, int puerto){

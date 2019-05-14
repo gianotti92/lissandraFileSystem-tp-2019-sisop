@@ -14,6 +14,14 @@ typedef struct{
 	int quantumProcesado;
 }Proceso;
 
+typedef struct{
+	char * ip;
+	char * puerto;
+	int idMemoria;
+}Memoria;
+
+
+
 
 // Funciones del proceso
 void configuracion_inicial(void);
@@ -26,19 +34,21 @@ Proceso * crear_proceso();
 Proceso * asignar_instrucciones(char ** leidoSplit);
 void liberarProceso(Proceso * proceso);
 void encolar(t_list * cola, Proceso * proceso);
+void encolarNew(t_list*lista, char ** split);
 void planificar();
 void pasarPrimerProceso(t_list *from, t_list *to);
 void cambiarEstado(Proceso* p, t_list * estado);
+void ponerProcesosEneady();
 
 //MOCK value
 int enviarX(Instruccion * i, char*ip, int puerto);
 
 
 // Variables del proceso
-t_dictionary *estadoReady;
-t_dictionary *estadoNew;
-t_dictionary *estadoExit;
-t_dictionary *estadoExec;
+t_list *estadoReady;
+t_list *estadoNew;
+t_list *estadoExit;
+t_list *estadoExec;
 char* PUERTO_DE_ESCUCHA;
 
 char * IP_MEMORIA_PPAL;
