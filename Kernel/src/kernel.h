@@ -5,6 +5,7 @@
 #include <utilguenguencha/parser.h>
 #include <utilguenguencha/utils.h>
 #include <semaphore.h>
+#include <commons/collections/dictionary.h>
 
 
 
@@ -39,6 +40,9 @@ void planificar();
 void pasarPrimerProceso(t_list *from, t_list *to);
 void cambiarEstado(Proceso* p, t_list * estado);
 void ponerProcesosEneady();
+void iniciarEstructurasAsociadas();
+void preguntarPorMemorias();
+void seleccionarMemoriaPorConsistencia(char * leido);
 
 //MOCK value
 int enviarX(Instruccion * i, char*ip, int puerto);
@@ -59,5 +63,8 @@ uint32_t REFRESH_METADATA;
 uint32_t RETARDO;
 int TAMANO_MAXIMO_LECTURA_ARCHIVO;
 int HILOS_KERNEL;
+
+t_dictionary * memoriasAsociadas;
+t_dictionary * tablasPorConsistencia;
 
 #endif /* KERNEL_H_ */

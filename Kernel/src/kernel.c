@@ -21,8 +21,9 @@ int main(void) {
 	configure_logger();
 	configuracion_inicial();
 	iniciarEstados();
+	iniciarEstructurasAsociadas();
 
-	pthread_t consolaKernel;
+	pthread_t consolaKernel, preguntarPorMemorias;
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,
 			retorno_consola);
 
@@ -32,6 +33,7 @@ int main(void) {
 		pthread_create(&multiProcesamientoKernell, NULL, (void*) planificar,
 						NULL);
 	}
+	pthread_create(&preguntarPorMemorias, NULL, (void*) preguntarPorMemorias, NULL);
 
 	pthread_join(consolaKernel, NULL);
 }
@@ -70,8 +72,19 @@ void retorno_consola(char* leido) {
 
 	leido = string_from_format("%s %ju", leido, (uintmax_t)echo_time);
 	char ** leidoSplit = string_split(leido, " ");
-	encolarNew(estadoNew, leidoSplit);
-	sem_post(&semaforoNewToReady);
+
+	if(strcmp(leidoSplit[0], "ADD")){
+		//leidoSplit[1] me va a devolver, SC, etc.. con esto puedo entrar por key al map
+		seleccionarMemoriaPorConsistencia(leidoSplit[1]);
+	}else{
+		if(strcmp(leidoSplit[0], "CREATE")){
+			//tengo que llenar la tabla de consistencia fuerte con su respectiva tabla
+		}
+		encolarNew(estadoNew, leidoSplit);
+		sem_post(&semaforoNewToReady);
+	}
+
+
 
 
 }
@@ -86,6 +99,11 @@ void iniciarEstados() {
 	list_clean(estadoNew);
 	list_clean(estadoExit);
 	list_clean(estadoExec);
+}
+
+void iniciarEstructurasAsociadas(){
+	memoriasAsociadas = dictionary_create();
+	tablasPorConsistencia = dictionary_create();
 }
 
 Proceso * crear_proceso() {
@@ -218,6 +236,27 @@ void ponerProcesosEneady(){
 		sem_post(&semaforoSePuedePlanificar);
 	}
 
+}
+
+void preguntarPorMemorias(){
+	while(1){
+		//preguntar como hicieron funcion
+		/*mock*/
+		t_list * memorias = list_create();
+		Memoria * mem_ejemplo_1 = malloc(sizeof(Memoria));
+		Memoria * mem_ejemplo_2 = malloc(sizeof(Memoria));
+		Memoria * mem_ejemplo_3 = malloc(sizeof(Memoria));
+		list_add(memorias, mem_ejemplo_1);
+		list_add(memorias, mem_ejemplo_2);
+		list_add(memorias, mem_ejemplo_3);
+		//Aca no se si va la direccion de la lista o la lista (memorias)
+		dictionary_put(memoriasAsociadas, CONSISTENCIAS_STRING[SC], memorias);
+		/*mock*/
+	}
+}
+
+void seleccionarMemoriaPorConsistencia(char * consistencia){
+	t_list * memorias = dictionary_get(memoriasAsociadas, consistencia);
 }
 
 
