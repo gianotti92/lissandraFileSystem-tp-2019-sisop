@@ -22,10 +22,6 @@ typedef enum {
 	EC, SC, SHC
 } Consistencias;
 
-char *CONSISTENCIAS_STRING[] = {
-    "EC", "SC", "SHC",
-};
-
 typedef enum {
 	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR
 } Instruction_set;

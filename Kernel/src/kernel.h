@@ -21,6 +21,9 @@ typedef struct{
 	int idMemoria;
 }Memoria;
 
+char *CONSISTENCIAS_STRING[] = {
+    "EC", "SC", "SHC",
+};
 
 
 
