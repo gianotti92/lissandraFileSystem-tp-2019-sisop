@@ -5,6 +5,13 @@
 #include <stdio.h>
 #include <stdint.h>
 
+
+//nuestros tipos de datos
+#define t_key uint16_t
+#define t_timestamp uint32_t
+#define t_flag bool
+
+
 typedef enum{
 	KERNEL,
 	POOLMEMORY,

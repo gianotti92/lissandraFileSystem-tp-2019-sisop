@@ -34,8 +34,9 @@ int SIZE_MEM;
 uint32_t TIEMPO_JOURNAL;
 uint32_t TIEMPO_GOSSIPING;
 int NUMERO_MEMORIA;
-t_list* l_maestro_paginas;
 void* memoria_principal;
+t_list* l_maestro_paginas;
+t_list* l_segmentos;
 
 
 //  estructuras
@@ -46,7 +47,7 @@ typedef struct{
 
 typedef struct{
 	void* pagina;
-	bool en_uso;
+	t_flag en_uso;
 }Pagina_general;
 
 
