@@ -4,12 +4,17 @@ int main(void) {
 	configure_logger();
 	configuracion_inicial();
 
+
 	MAX_VALUE = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
+	print_lista_paginas();
 
 	pthread_t consolaKernel;
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
 	conectar_y_crear_hilo(retornarControl,"127.0.0.1", PUERTO_DE_ESCUCHA);
+
+	list_destroy(l_maestro_paginas);
+	free(memoria_principal);
 
 }
 
@@ -50,58 +55,106 @@ void retornarControl(Instruction_set instruccion, int socket_cliente){
 
 void inicializar_memoria(){
 
+	//resevo memoria para paginas
+	memoria_principal = malloc(SIZE_MEM);
 
-	//defino estructuras para las paginas
-	typedef struct{
-		uint32_t timestamp;
-		uint16_t key;
-		char value[MAX_VALUE];
-		unsigned char modificado; //es el tipo de dato que menos bytes ocupa
-	}Pagina;
+	//calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF
+	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VALUE + sizeof(bool);
 
-	typedef struct{
-		Pagina* pagina;
-		unsigned char en_uso;
-	}Pagina_aux;
-
-	//resevo memoria
-	void* memoria_principal = malloc(SIZE_MEM);
-
-	//formateo de memoria
-	t_list* l_maestro_paginas = list_create();
-
-	Pagina* nueva_pagina = (Pagina*) memoria_principal;
-	Pagina_aux pagina_aux;
-	Pagina_aux* nueva_pagina_aux = &pagina_aux;
+	//creo la tabla maestra de paginas
+	l_maestro_paginas = list_create();
 
 	int memoria_formateada = 0;
+	void* comienzo_pagina = memoria_principal;
 
-	while (memoria_formateada + sizeof(Pagina) < SIZE_MEM){
+	int a = 0; //para pruebas
 
-		//inicializo una pagina en blanco
-		nueva_pagina->key = 0;
-		nueva_pagina->modificado = 0;
-		nueva_pagina->timestamp = 0;
-		nueva_pagina->value[0] = '\0';
 
-		//inicializo una pagina auxiliar para la nueva pagina
-		nueva_pagina_aux->en_uso = 0;
-		nueva_pagina_aux->pagina = nueva_pagina;
 
-		list_add(l_maestro_paginas, nueva_pagina_aux); //add se encarga de crear un nuevo elemento dentro de la lista, por eso puedo usar siempre la misma pagina
 
-		nueva_pagina += sizeof(Pagina); //muevo el puntero a la pagina siguiente
+	while (memoria_formateada + tamanio_pagina < SIZE_MEM){
 
-		memoria_formateada += sizeof(Pagina);
+		Pagina_general* nueva_pagina_general = malloc(sizeof(Pagina_general));
+
+		nueva_pagina_general->en_uso = false;
+		nueva_pagina_general->pagina = comienzo_pagina;
+
+		list_add(l_maestro_paginas, nueva_pagina_general);
+
+		//lugar de key
+		*(uint16_t*) comienzo_pagina = a;
+		comienzo_pagina += sizeof(uint16_t);
+
+		//lugar de timestamp
+		*(uint32_t*) comienzo_pagina = 0;
+		comienzo_pagina += sizeof(uint32_t);
+
+		//lugar de value
+		char* palabra = "Lo paginaste todo chinguenguencha";
+		memcpy(comienzo_pagina, palabra, MAX_VALUE);
+		comienzo_pagina += MAX_VALUE;
+
+		//lugar de modificado
+		*(unsigned char*) comienzo_pagina = 0;
+		comienzo_pagina += sizeof(unsigned char);
+
+		memoria_formateada += tamanio_pagina;
+
+		a++;
 
 	}
 
-	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,l_maestro_paginas->elements_count, sizeof(Pagina));
-	list_destroy(l_maestro_paginas);
-	free(memoria_principal);
+	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,l_maestro_paginas->elements_count, tamanio_pagina);
+
 }
 
 /*
-Pagina* get_pagina( char* nombre_tabla, uint16_t key){
+void* get_pagina( char* nombre_tabla, uint16_t key){
 
 }*/
+
+
+uint16_t* get_key_pagina( void* p_pagina){
+	void* p_key =  p_pagina;
+	return (uint16_t*) p_key;
+}
+
+uint32_t* get_timestamp_pagina( void* p_pagina){
+	void* p_timestamp =  p_pagina;
+	p_timestamp += sizeof(uint16_t);
+	return (uint32_t*) p_timestamp;
+}
+
+char* get_value_pagina( void* p_pagina){
+	void* p_value =  p_pagina;
+	p_value += (sizeof(uint16_t) + sizeof(uint32_t));
+	return (char*) p_value;
+}
+
+unsigned char* get_modificado_pagina( void* p_pagina){
+	void* p_modif = p_pagina;
+	p_modif += (sizeof(uint16_t) + sizeof(uint32_t) + MAX_VALUE);
+	return (unsigned char*) p_modif;
+}
+
+void print_lista_paginas(){
+	int nro_pagina = 0;
+	int size_lista = l_maestro_paginas->elements_count;
+	Pagina_general* pagina_general;
+	void* pagina;
+
+	while (nro_pagina < size_lista){
+		pagina_general = list_get(l_maestro_paginas, nro_pagina);
+		pagina = pagina_general->pagina;
+
+		uint32_t timestamp = *get_timestamp_pagina(pagina);
+		uint16_t key = *get_key_pagina(pagina);
+		char* value = get_value_pagina(pagina);
+		unsigned char modificado = *get_modificado_pagina(pagina);
+
+		printf("Index: %i Pagina: %i Key: %i Timestamp: %lu Valor: %s  \n", nro_pagina, pagina, key, timestamp, value);
+
+		nro_pagina++;
+	}
+}
+
