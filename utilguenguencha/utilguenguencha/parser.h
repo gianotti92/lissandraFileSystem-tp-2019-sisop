@@ -17,6 +17,7 @@
 #include <commons/string.h>
 #include <math.h>
 #include <time.h>
+#include <sys/mman.h>
 #include "utils.h"
 #include "comunicacion.h"
 
@@ -43,3 +44,4 @@ unsigned long int string_to_ulint(char*);
 void* leer_por_consola(void (*f) (char*));
 void free_consulta(Instruccion*);
 uintmax_t get_timestamp();
+Instruccion dame_siguiente(char* path, uint16_t numero_instruccion);

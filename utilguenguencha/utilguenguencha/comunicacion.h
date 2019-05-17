@@ -27,6 +27,10 @@ typedef enum {
 } Instruction_set;
 
 typedef enum {
+	BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE
+} Error_set;
+
+typedef enum {
 	KERNEL, FILESYSTEM, POOLMEMORY
 } Procesos;
 
@@ -85,6 +89,10 @@ typedef struct {
 	Instruction_set instruccion;
 	void * instruccion_a_realizar;
 } Instruccion;
+
+typedef struct{
+	Error_set error;
+} Error;
 
 typedef struct {
 	size_t size;

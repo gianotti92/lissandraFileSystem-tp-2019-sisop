@@ -557,3 +557,19 @@ uintmax_t get_timestamp(){
 
 }
 
+Instruccion *dame_siguiente(char* path, uint16_t numero_instruccion){
+	Instruccion * instruccion = malloc(sizeof(Instruccion));
+	FILE *file;
+	if((file = open(path, "r"))){
+		char* buffer;
+		mmap(buffer,)
+		return instruccion;
+	}
+	char error_value[] = ("No exixste el archivo %s", path);
+	log_error(LOGGER, error_value);
+	instruccion->instruccion = ERROR;
+	Error *error = malloc(sizeof(Error));
+	error->error = MISSING_FILE;
+	instruccion->instruccion_a_realizar = (void*) error;
+	return instruccion;
+}
