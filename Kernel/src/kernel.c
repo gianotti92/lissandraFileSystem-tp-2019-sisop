@@ -2,10 +2,24 @@
 #include <sys/types.h>
 
 //implementar cola new
-//mati me va a abrir un socket nuevo para que kernel pregunte por memorias, en memoria principal(armar un map con lo que me vaya a devolver esto) -> lista de memorias existentes
+//mati me va a abhorrer un socket nuevo para que kernel pregunte por memorias, en memoria principal(armar un map con lo que me vaya a devolver esto) -> lista de memorias existentes
 //memoria principal me va a devolver todas las memorias(las guardo en el map)
 //cuando me viene add tal memoria tal criterio yo tengo que meter en el value del map de consistencias esa memoria
 //cuando me viene un create tomo la consistencia, con esa consistencia busco en el map de m que me devolvio memoria principal,
+
+/*
+ *
+ *
+Discriminar
+JOURNAL
+ADD
+RUN
+METRICS
+ *
+ *
+ *
+ *
+ * */
 
 pthread_mutex_t mutex;
 sem_t semaforoSePuedePlanificar;
@@ -59,29 +73,50 @@ void configuracion_inicial(void) {
 
 void retorno_consola(char* leido) {
 	sem_wait(&semaforoInicial);
-	time_t echo_time;
-	echo_time = time(NULL);
 
 	log_info(LOGGER, "Kernel. Se retorno a consola");
 	log_info(LOGGER, leido);
-	if (echo_time == ((time_t)-1)){
-		puts ("ERROR: Fallo al obtener la hora.");
-		log_error(LOGGER, "Kernel: Fallo al obtener la hora.");
-	exit_gracefully(0);
+
+	Instruccion * instruccion = malloc(sizeof(Instruccion));
+	Proceso * proceso = malloc(sizeof(Proceso));
+	Memoria * memoriaAsociada = malloc(sizeof(Memoria));
+
+	instruccion = parser_lql(leido, KERNEL);
+
+	proceso->quantumProcesado = 0;
+	proceso->instruccionActual = instruccion;
+
+	memoriaAsociada = seleccionarMemoriaPorConsistencia(SC);
+
+	switch(instruccion->instruccion){
+		case ADD:;
+			Add * add = malloc(sizeof(Add));
+			add = (Add*)instruccion->instruccion_a_realizar;
+			memoriaAsociada = seleccionarMemoriaPorConsistencia(add->consistencia);
+			break;
+		case JOURNAL:
+			break;
+		case RUN:
+			break;
+		case METRICS:
+			break;
+		default:
+			break;
+
 	}
 
-	leido = string_from_format("%s %ju", leido, (uintmax_t)echo_time);
-	char ** leidoSplit = string_split(leido, " ");
+	if(strcmp(instruccion->, "ADD")){
 
-	if(strcmp(leidoSplit[0], "ADD")){
-		//leidoSplit[1] me va a devolver, SC, etc.. con esto puedo entrar por key al map
-		seleccionarMemoriaPorConsistencia(leidoSplit[1]);
+	}else if(leidoSplit[0], "JOURNAL"){
+		//TODO: logica de journal
+	}else if(leidoSplit[0], "RUN"){
+		Instruccion * instruccion = dameSiguiente(leidoSplit[1], proceso->quantumProcesado);
+		proceso->instruccionActual = instruccion;
+
+	}else if(leidoSplit[0], "METRICS"){
+		//TODO: logica de metrics
 	}else{
-		if(strcmp(leidoSplit[0], "CREATE")){
-			//tengo que llenar la tabla de consistencia fuerte con su respectiva tabla
-		}
-		encolarNew(estadoNew, leidoSplit);
-		sem_post(&semaforoNewToReady);
+		//TODO: logica de mandar instruccion
 	}
 
 
@@ -206,10 +241,11 @@ void encolar(t_list * cola, Proceso * proceso) {
 	pthread_mutex_unlock(&mutex);
 }
 
-void encolarNew(t_list * cola, char ** split){
+void encolarNew(t_list * cola, Memoria * memoriaAsociada){
 	pthread_mutex_lock(&mutex);
-	list_add(cola, split);
+	list_add(cola, memoriaAsociada);
 	pthread_mutex_unlock(&mutex);
+	free(memoriaAsociada);
 }
 
 void pasarPrimerProceso(t_list *from, t_list *to) {
@@ -255,10 +291,22 @@ void preguntarPorMemorias(){
 	}
 }
 
-void seleccionarMemoriaPorConsistencia(char * consistencia){
-	t_list * memorias = dictionary_get(memoriasAsociadas, consistencia);
+Memoria* seleccionarMemoriaPorConsistencia(Consistencias consistencia){
+	t_list * memorias = dictionary_get(memoriasAsociadas,CONSISTENCIAS_STRING[consistencia]);
 }
 
+void llenarTablasPorConsistencia(char * key, char * value){
+	dictionary_put(tablasPorConsistencia, key, value);
+	free(key);
+	free(value);
+}
+
+Proceso * crearProceso(char ** leidoSplit){
+	Proceso * proceso = malloc(sizeof(Proceso));
+	proceso->instruccionActual
+	return proceso;
+
+}
 
 // mock
 int enviarX(Instruccion * i, char*ip, int puerto){

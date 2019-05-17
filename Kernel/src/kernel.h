@@ -8,24 +8,24 @@
 #include <commons/collections/dictionary.h>
 
 
-
-typedef struct{
-	t_list * instrucciones;
-	int file_descriptor;
-	int quantumProcesado;
-}Proceso;
-
 typedef struct{
 	char * ip;
 	char * puerto;
 	int idMemoria;
 }Memoria;
 
+typedef struct{
+	Instruccion* instruccionActual;
+	int file_descriptor;
+	int quantumProcesado;
+	Memoria * memoriaAsignada;
+}Proceso;
+
+
+
 char *CONSISTENCIAS_STRING[] = {
     "EC", "SC", "SHC",
 };
-
-
 
 // Funciones del proceso
 void configuracion_inicial(void);
@@ -45,7 +45,9 @@ void cambiarEstado(Proceso* p, t_list * estado);
 void ponerProcesosEneady();
 void iniciarEstructurasAsociadas();
 void preguntarPorMemorias();
-void seleccionarMemoriaPorConsistencia(char * leido);
+Memoria* seleccionarMemoriaPorConsistencia(Consistencias leido);
+Memoria* llenarTablasPorConsistencia(char * key, char * value);
+Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 
 //MOCK value
 int enviarX(Instruccion * i, char*ip, int puerto);
