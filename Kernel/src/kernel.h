@@ -34,11 +34,8 @@ void retornarControl(Instruction_set instruccion, int socket_cliente);
 void iniciarEstados();
 
 void leerArchivo(char * path);
-Proceso * crear_proceso();
-Proceso * asignar_instrucciones(char ** leidoSplit);
 void liberarProceso(Proceso * proceso);
 void encolar(t_list * cola, Proceso * proceso);
-void encolarNew(t_list*lista, char ** split);
 void planificar();
 void pasarPrimerProceso(t_list *from, t_list *to);
 void cambiarEstado(Proceso* p, t_list * estado);
@@ -46,7 +43,7 @@ void ponerProcesosEneady();
 void iniciarEstructurasAsociadas();
 void preguntarPorMemorias();
 Memoria* seleccionarMemoriaPorConsistencia(Consistencias leido);
-Memoria* llenarTablasPorConsistencia(char * key, char * value);
+Memoria* llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 
 //MOCK value

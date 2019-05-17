@@ -21,13 +21,13 @@ METRICS
  *
  * */
 
-pthread_mutex_t mutex;
+pthread_mutex_t mutexEstados;
 sem_t semaforoSePuedePlanificar;
 sem_t semaforoInicial;
 sem_t semaforoNewToReady;
 
 int main(void) {
-	pthread_mutex_init(&mutex, NULL);
+	pthread_mutex_init(&mutexEstados, NULL);
 	sem_init(&semaforoInicial, 0, 1);
 	sem_init(&semaforoSePuedePlanificar,0,0);
 	sem_init(&semaforoNewToReady, 0 ,0);
@@ -82,45 +82,89 @@ void retorno_consola(char* leido) {
 	Memoria * memoriaAsociada = malloc(sizeof(Memoria));
 
 	instruccion = parser_lql(leido, KERNEL);
+	memoriaAsociada = seleccionarMemoriaPorConsistencia(SC);
 
 	proceso->quantumProcesado = 0;
 	proceso->instruccionActual = instruccion;
+	proceso->memoriaAsignada = memoriaAsociada;
 
-	memoriaAsociada = seleccionarMemoriaPorConsistencia(SC);
+
 
 	switch(instruccion->instruccion){
 		case ADD:;
 			Add * add = malloc(sizeof(Add));
 			add = (Add*)instruccion->instruccion_a_realizar;
 			memoriaAsociada = seleccionarMemoriaPorConsistencia(add->consistencia);
+			dictionary_put(memoriasAsociadas, CONSISTENCIAS_STRING[add->consistencia], memoriaAsociada);
+			free(instruccion);
+			free(add);
+			free(memoriaAsociada);
+			free(proceso);
 			break;
+
 		case JOURNAL:
 			break;
-		case RUN:
+
+		case RUN:;
+			Run * run = malloc(sizeof(Run));
+			run = (Run*)instruccion->instruccion_a_realizar;
+			instruccion = dameSiguiente(run->path, proceso->quantumProcesado);
+			proceso->instruccionActual = instruccion;
+			encolar(estadoNew, proceso);
+			free(run);
+			free(proceso);
+			free(instruccion);
+			free(memoriaAsociada);
 			break;
-		case METRICS:
+
+		case METRICS:;
 			break;
+
+		case SELECT:;
+			Select * select = malloc(sizeof(Select));
+			proceso->instruccionActual = instruccion->instruccion_a_realizar;
+			encolar(estadoNew, proceso);
+			free(select);
+			free(proceso);
+			free(instruccion);
+			free(memoriaAsociada);
+		break;
+
+		case INSERT:;
+			Insert * insert = malloc(sizeof(Insert));
+			proceso->instruccionActual = instruccion->instruccion_a_realizar;
+			encolar(estadoNew, proceso);
+			free(insert);
+			free(proceso);
+			free(instruccion);
+			free(memoriaAsociada);
+			break;
+
+		case CREATE:;
+			Create * create = malloc(sizeof(Create));
+			create = (Create*) instruccion->instruccion_a_realizar;
+			memoriaAsociada = llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
+			proceso->memoriaAsignada = memoriaAsociada;
+			proceso->instruccionActual = instruccion->instruccion_a_realizar;
+			encolar(estadoNew, proceso);
+			free(create);
+			free(proceso);
+			free(instruccion);
+			free(memoriaAsociada);
+			break;
+
+		case DESCRIBE:;
+			break;
+
+		case DROP:;
+			break;
+
+
 		default:
+
 			break;
 
 	}
-
-	if(strcmp(instruccion->, "ADD")){
-
-	}else if(leidoSplit[0], "JOURNAL"){
-		//TODO: logica de journal
-	}else if(leidoSplit[0], "RUN"){
-		Instruccion * instruccion = dameSiguiente(leidoSplit[1], proceso->quantumProcesado);
-		proceso->instruccionActual = instruccion;
-
-	}else if(leidoSplit[0], "METRICS"){
-		//TODO: logica de metrics
-	}else{
-		//TODO: logica de mandar instruccion
-	}
-
-
-
 
 }
 
@@ -141,65 +185,15 @@ void iniciarEstructurasAsociadas(){
 	tablasPorConsistencia = dictionary_create();
 }
 
-Proceso * crear_proceso() {
-	Proceso * proceso = malloc(sizeof(Proceso));
-	proceso->instrucciones = list_create();
-
-	return proceso;
-}
-
-Proceso * asignar_instrucciones(char ** leidoSplit) {
-
-	time_t echo_time;
-	echo_time = time(NULL);
-
-	if (echo_time == ((time_t)-1)){
-		puts ("ERROR: Fallo al obtener la hora.");
-		log_error(LOGGER, "Kernel: Fallo al obtener la hora.");
-	exit_gracefully(0);
-	}
-	Proceso * proceso = crear_proceso();
-	if (es_run(leidoSplit)) {
-		FILE * f = fopen(leidoSplit[1], "r");
-		char buffer[TAMANO_MAXIMO_LECTURA_ARCHIVO];
-		if (f == NULL) {
-			perror("No se puede abrir archivo!");
-			log_error(LOGGER, "Kernel. error al leer el archivo");
-			exit_gracefully(1);
-		}
-		while (fgets(buffer, sizeof(buffer), f) != NULL) {
-			char * line = string_new();
-			line = strtok(buffer, "\n");
-			line = string_from_format("%s %ju", line, (uintmax_t)echo_time);
-			pthread_mutex_lock(&mutex);
-			list_add(proceso->instrucciones, &line);
-			pthread_mutex_unlock(&mutex);
-		}
-		fclose(f);
-
-	} else {
-		pthread_mutex_lock(&mutex);
-		list_add(proceso->instrucciones, &leidoSplit);
-		pthread_mutex_unlock(&mutex);
-	}
-
-	int cantidad = cantidad_elementos(leidoSplit);
-	int i = 0;
-	while (i < cantidad) {
-		free(leidoSplit[i]);
-		i++;
-	}
-	return proceso;
-}
 
 void planificar() {
 	while(1){
 		sem_wait(&semaforoSePuedePlanificar);
 		pasarPrimerProceso(estadoReady, estadoExec);
 		Proceso * p;
-		pthread_mutex_lock(&mutex);
+		pthread_mutex_lock(&mutexEstados);
 		p = list_get(estadoExec, 0);
-		pthread_mutex_unlock(&mutex);
+		pthread_mutex_unlock(&mutexEstados);
 
 		p->quantumProcesado = 0;
 		while (p->quantumProcesado <= QUANTUM) {
@@ -211,14 +205,14 @@ void planificar() {
 			p->quantumProcesado +=1;
 
 			if(p->quantumProcesado == QUANTUM && list_size(p->instrucciones) != 0){
-				pthread_mutex_lock(&mutex);
+				pthread_mutex_lock(&mutexEstados);
 				cambiarEstado(p, estadoReady);
-				pthread_mutex_unlock(&mutex);
+				pthread_mutex_unlock(&mutexEstados);
 			}
 			if(list_size(p->instrucciones) == 0){
-				pthread_mutex_lock(&mutex);
+				pthread_mutex_lock(&mutexEstados);
 				cambiarEstado(p, estadoExit);
-				pthread_mutex_unlock(&mutex);
+				pthread_mutex_unlock(&mutexEstados);
 			}
 
 			free(i);
@@ -236,16 +230,9 @@ void liberarProceso(Proceso * proceso) {
 }
 
 void encolar(t_list * cola, Proceso * proceso) {
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutexEstados);
 	list_add(cola, proceso);
-	pthread_mutex_unlock(&mutex);
-}
-
-void encolarNew(t_list * cola, Memoria * memoriaAsociada){
-	pthread_mutex_lock(&mutex);
-	list_add(cola, memoriaAsociada);
-	pthread_mutex_unlock(&mutex);
-	free(memoriaAsociada);
+	pthread_mutex_unlock(&mutexEstados);
 }
 
 void pasarPrimerProceso(t_list *from, t_list *to) {
@@ -295,10 +282,13 @@ Memoria* seleccionarMemoriaPorConsistencia(Consistencias consistencia){
 	t_list * memorias = dictionary_get(memoriasAsociadas,CONSISTENCIAS_STRING[consistencia]);
 }
 
-void llenarTablasPorConsistencia(char * key, char * value){
-	dictionary_put(tablasPorConsistencia, key, value);
-	free(key);
-	free(value);
+Memoria* llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
+	Memoria *mem = malloc(sizeof(Memoria));
+	dictionary_put(tablasPorConsistencia, nombreTable, consistencia);
+	mem = (Memoria*) dictionary_get(tablasPorConsistencia, nombreTable);
+	free(nombreTable);
+	free(consistencia);
+	return mem;
 }
 
 Proceso * crearProceso(char ** leidoSplit){
