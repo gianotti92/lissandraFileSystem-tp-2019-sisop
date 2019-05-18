@@ -3,19 +3,19 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
-
-
 	MAX_VALUE = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
-	//print_lista_paginas();
 
-	pthread_t consolaKernel;
+	pthread_t consolaKernel, gossiping;
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
+	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
 	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
 
 	pthread_join(consolaKernel, NULL);
+	pthread_join(gossiping, NULL);
 
 	list_destroy(l_maestro_paginas); //entender el list_destroy_and_destroy_elements()
+	list_destroy(l_memorias);
 	free(memoria_principal);
 
 }
@@ -31,11 +31,13 @@ void configuracion_inicial(void){
 	IP_FS = config_get_string_value(CONFIG,"IP_FS");
 	PUERTO_FS = config_get_string_value(CONFIG,"PUERTO_FS");
 	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
-	config_destroy(CONFIG);
+	IP_SEEDS = config_get_string_value(CONFIG,"IP_SEEDS");
+	PUERTOS_SEEDS = config_get_string_value(CONFIG,"PUERTOS_SEEDS");
+
+
 }
 
 void retorno_consola(char* leido){
-
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	int fd_proceso;
 	// La memoria no usa las funciones de KERNEL y JOURNAL no lo envia a filesystem
@@ -127,10 +129,75 @@ void inicializar_memoria(){
 
 }
 
-/*
-void* buscar_pagina( char* nombre_tabla, uint16_t key){
 
-}*/
+void* buscar_pagina( char* nombre_segmento, t_key key){
+
+	//busco el segmento
+	//void *list_find(l_segmentos, bool(*closure)(void*)); --necesito aplicacion parcial para la condicion y no puedo
+
+	Segmento* segmento_encontrado = buscar_segmento(nombre_segmento);
+
+	if (segmento_encontrado == NULL){
+		return NULL;
+	}
+
+	void* pagina = buscar_pagina_en_segmento(segmento_encontrado, key);
+
+	if (pagina == NULL){
+		return NULL;
+	}
+
+	return pagina;
+
+}
+
+void* buscar_segmento(char* nombre_segmento){
+
+	int posicion = 0;
+	Segmento* segmento = list_get(l_segmentos, posicion);
+
+	while (!coincide_segmento(nombre_segmento, segmento) && (posicion < l_segmentos->elements_count)){
+		segmento = list_get(l_segmentos, posicion);
+		posicion ++;
+	}
+
+	if (coincide_segmento(nombre_segmento, segmento)) {
+		return segmento;
+	}
+
+	return NULL;
+}
+
+void* buscar_pagina_en_segmento(Segmento* segmento, t_key key){
+
+	t_list* l_paginas = segmento->paginas;
+
+	int posicion = 0;
+	void* pagina = list_get(l_paginas, posicion);
+
+	while (!coincide_pagina(key, pagina) && ((posicion + 1) < l_paginas->elements_count)){
+		posicion ++;
+		pagina = list_get(l_paginas, posicion);
+	}
+
+	if (coincide_pagina(key, pagina)) {
+		return pagina;
+	}
+
+	return NULL;
+
+}
+
+bool coincide_segmento (char* nombre_segmento, Segmento* segmento){
+	int resultado = strcmp(nombre_segmento, segmento->nombre);
+	return resultado == 0;
+
+}
+
+bool coincide_pagina (t_key key, void* pagina){
+	t_key key_en_pagina = *get_key_pagina(pagina);
+	return key == key_en_pagina;
+}
 
 
 t_key* get_key_pagina( void* p_pagina){
@@ -150,10 +217,34 @@ char* get_value_pagina( void* p_pagina){
 	return (char*) p_value;
 }
 
-unsigned char* get_modificado_pagina( void* p_pagina){   //no me funciona el bool*
+t_flag* get_modificado_pagina( void* p_pagina){
 	void* p_modif = p_pagina;
 	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VALUE);
-	return (unsigned char*) p_modif;
+	return (t_flag*) p_modif;
+}
+
+
+void set_key_pagina( void* p_pagina, t_key key){
+	void* p_key =  p_pagina;
+	*(t_key*) p_key = key;
+}
+
+void set_timestamp_pagina( void* p_pagina, t_timestamp timestamp){
+	void* p_timestamp =  p_pagina;
+	p_timestamp += sizeof(t_key);
+	*(t_timestamp*) p_timestamp = timestamp;
+}
+
+void set_value_pagina( void* p_pagina, char* value){
+	void* p_value =  p_pagina;
+	p_value += (sizeof(t_key) + sizeof(t_timestamp));
+	memcpy(p_value, value, MAX_VALUE);
+}
+
+void set_modificado_pagina( void* p_pagina, t_flag estado){
+	void* p_modif = p_pagina;
+	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VALUE);
+	*(t_flag*) p_modif = estado;
 }
 
 void print_lista_paginas(){
@@ -176,4 +267,65 @@ void print_lista_paginas(){
 		nro_pagina++;
 	}
 }
+
+void print_pagina(void* pagina){
+
+		t_timestamp timestamp = *get_timestamp_pagina(pagina);
+		t_key key = *get_key_pagina(pagina);
+		char* value = get_value_pagina(pagina);
+		t_flag modificado = *get_modificado_pagina(pagina);
+
+		printf("Pagina: %i Key: %i Timestamp: %lu Valor: %s  \n", pagina, key, timestamp, value);
+
+}
+
+
+void* lanzar_gossiping(){
+
+	//IP_SEEDS
+	//PUERTOS_SEEDS
+
+	l_memorias = list_create();
+
+	IP_SEEDS = string_substring(IP_SEEDS, 1, string_length(IP_SEEDS)-2);
+	PUERTOS_SEEDS = string_substring(PUERTOS_SEEDS, 1, string_length(PUERTOS_SEEDS)-2);
+
+	char** ips = string_split(IP_SEEDS, ",");
+	char** puertos = string_split(PUERTOS_SEEDS, ",");
+
+	int posicion = 0;
+
+	while (ips[posicion] != NULL && puertos[posicion] != NULL){
+
+		char* puerto = puertos[posicion];
+		char* ip = ips[posicion];
+
+		Memoria* nueva_memoria = malloc(sizeof(Memoria));
+		nueva_memoria->ip = ip;
+		nueva_memoria->puerto = puerto;
+		nueva_memoria->idMemoria = posicion;
+
+		list_add(l_memorias, nueva_memoria);
+
+		posicion++;
+	}
+
+}
+
+void print_memorias (){
+
+	int posicion = 0;
+	int size = l_memorias->elements_count;
+	Memoria* memoria;
+
+	while (posicion < size){
+		memoria = list_get(l_memorias, posicion);
+
+
+		printf("ID: %i IP: %s PUERTO: %s \n", memoria->idMemoria, memoria->ip, memoria->puerto);
+		posicion++;
+	}
+
+}
+
 
