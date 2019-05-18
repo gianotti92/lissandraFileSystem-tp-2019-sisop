@@ -15,8 +15,8 @@ char* PUERTO_DE_ESCUCHA;
 int MAX_VALUE;
 char* IP_FS;
 char* PUERTO_FS;
-char** IP_SEEDS;
-int** PUERTOS_SEEDS;
+char* IP_SEEDS;
+char* PUERTOS_SEEDS;
 uint32_t RETARDO_MEM;
 uint32_t RETARDO_FS;
 int SIZE_MEM;
@@ -26,6 +26,7 @@ int NUMERO_MEMORIA;
 void* memoria_principal;
 t_list* l_maestro_paginas;
 t_list* l_segmentos;
+t_list* l_memorias;
 
 
 //  estructuras
@@ -60,6 +61,8 @@ void set_value_pagina( void*, char*);
 void set_modificado_pagina( void*, t_flag);
 void print_lista_paginas();
 void print_pagina(void*);
+void * lanzar_gossiping();
+void print_memorias ();
 
 
 #endif

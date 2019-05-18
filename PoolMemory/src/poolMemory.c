@@ -3,43 +3,19 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
-
-
 	MAX_VALUE = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
-	/* para testear
-	t_list* lista_paginas = list_create();
-
-	Pagina_general* pagina = list_get(l_maestro_paginas,1);
-	pagina = pagina->pagina;
-	set_key_pagina(pagina, 153);
-	list_add(lista_paginas, pagina);
-
-	Pagina_general* pagina2 = list_get(l_maestro_paginas,3);
-	pagina2 = pagina2->pagina;
-	set_key_pagina(pagina2, 298);
-	list_add(lista_paginas, pagina2);
-
-	Segmento* segmento;
-	segmento->paginas = lista_paginas;
-	segmento->nombre = "tb_papita";
-	list_add(l_segmentos, segmento);
-
-	void* pagina_r = buscar_pagina("tb_papita", 153);
-
-	print_pagina(pagina_r);
-	*/
-
-	//print_lista_paginas();
-
-	pthread_t consolaKernel;
+	pthread_t consolaKernel, gossiping;
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
+	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
 	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
 
 	pthread_join(consolaKernel, NULL);
+	pthread_join(gossiping, NULL);
 
 	list_destroy(l_maestro_paginas); //entender el list_destroy_and_destroy_elements()
+	list_destroy(l_memorias);
 	free(memoria_principal);
 
 }
@@ -55,11 +31,13 @@ void configuracion_inicial(void){
 	IP_FS = config_get_string_value(CONFIG,"IP_FS");
 	PUERTO_FS = config_get_string_value(CONFIG,"PUERTO_FS");
 	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
-	config_destroy(CONFIG);
+	IP_SEEDS = config_get_string_value(CONFIG,"IP_SEEDS");
+	PUERTOS_SEEDS = config_get_string_value(CONFIG,"PUERTOS_SEEDS");
+
+
 }
 
 void retorno_consola(char* leido){
-
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	int fd_proceso;
 	// La memoria no usa las funciones de KERNEL y JOURNAL no lo envia a filesystem
@@ -300,4 +278,54 @@ void print_pagina(void* pagina){
 		printf("Pagina: %i Key: %i Timestamp: %lu Valor: %s  \n", pagina, key, timestamp, value);
 
 }
+
+
+void* lanzar_gossiping(){
+
+	//IP_SEEDS
+	//PUERTOS_SEEDS
+
+	l_memorias = list_create();
+
+	IP_SEEDS = string_substring(IP_SEEDS, 1, string_length(IP_SEEDS)-2);
+	PUERTOS_SEEDS = string_substring(PUERTOS_SEEDS, 1, string_length(PUERTOS_SEEDS)-2);
+
+	char** ips = string_split(IP_SEEDS, ",");
+	char** puertos = string_split(PUERTOS_SEEDS, ",");
+
+	int posicion = 0;
+
+	while (ips[posicion] != NULL && puertos[posicion] != NULL){
+
+		char* puerto = puertos[posicion];
+		char* ip = ips[posicion];
+
+		Memoria* nueva_memoria = malloc(sizeof(Memoria));
+		nueva_memoria->ip = ip;
+		nueva_memoria->puerto = puerto;
+		nueva_memoria->idMemoria = posicion;
+
+		list_add(l_memorias, nueva_memoria);
+
+		posicion++;
+	}
+
+}
+
+void print_memorias (){
+
+	int posicion = 0;
+	int size = l_memorias->elements_count;
+	Memoria* memoria;
+
+	while (posicion < size){
+		memoria = list_get(l_memorias, posicion);
+
+
+		printf("ID: %i IP: %s PUERTO: %s \n", memoria->idMemoria, memoria->ip, memoria->puerto);
+		posicion++;
+	}
+
+}
+
 
