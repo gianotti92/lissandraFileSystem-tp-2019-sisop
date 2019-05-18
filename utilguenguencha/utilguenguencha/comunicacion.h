@@ -18,6 +18,11 @@
 
 #define BACKLOG 10     // Cuántas conexiones pendientes se mantienen en cola
 
+//nuestros tipos de datos
+#define t_key uint16_t
+#define t_timestamp uint32_t
+#define t_flag bool
+
 typedef enum {
 	EC, SC, SHC
 } Consistencias;
@@ -34,7 +39,8 @@ typedef enum {
 	KERNEL, FILESYSTEM, POOLMEMORY
 } Procesos;
 
-typedef struct {
+
+typedef struct{
 	char* nombre_tabla;
 	uint16_t key;
 	uint32_t timestamp;
