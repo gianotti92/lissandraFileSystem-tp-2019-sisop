@@ -20,11 +20,15 @@ int leer_linea(char* path, int linea){
 					c = fgetc(fileptr);
 					continue;
 				}else{
-					char *retorno = malloc(desplazamiento);
-					memcpy(retorno, buffer, desplazamiento);
-					free(buffer);
-					fclose(fileptr);
-					return retorno;
+					if(strlen(buffer) == desplazamiento){
+						return buffer;
+					}else{
+						char *retorno = malloc(desplazamiento);
+						memcpy(retorno, buffer, desplazamiento);
+						free(buffer);
+						fclose(fileptr);
+						return retorno;
+					}
 				}
 			}else{
 				if(c == '\n'){
@@ -37,15 +41,18 @@ int leer_linea(char* path, int linea){
 			fclose(fileptr);
 					return -1;
 		}else{
-			char *retorno = malloc(desplazamiento);
-			memcpy(retorno, buffer, desplazamiento);
-			free(buffer);
-			fclose(fileptr);
-			return retorno;
+			if(strlen(buffer) == desplazamiento){
+				return buffer;
+			}else{
+				char *retorno = malloc(desplazamiento);
+				memcpy(retorno, buffer, desplazamiento);
+				free(buffer);
+				fclose(fileptr);
+				return retorno;
+			}
 		}
 
 	}else{
 		return -1;
 	}
 }
-
