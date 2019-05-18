@@ -7,6 +7,30 @@ int main(void) {
 
 	MAX_VALUE = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
+
+	/* para testear
+	t_list* lista_paginas = list_create();
+
+	Pagina_general* pagina = list_get(l_maestro_paginas,1);
+	pagina = pagina->pagina;
+	set_key_pagina(pagina, 153);
+	list_add(lista_paginas, pagina);
+
+	Pagina_general* pagina2 = list_get(l_maestro_paginas,3);
+	pagina2 = pagina2->pagina;
+	set_key_pagina(pagina2, 298);
+	list_add(lista_paginas, pagina2);
+
+	Segmento* segmento;
+	segmento->paginas = lista_paginas;
+	segmento->nombre = "tb_papita";
+	list_add(l_segmentos, segmento);
+
+	void* pagina_r = buscar_pagina("tb_papita", 153);
+
+	print_pagina(pagina_r);
+	*/
+
 	//print_lista_paginas();
 
 	pthread_t consolaKernel;
@@ -127,10 +151,75 @@ void inicializar_memoria(){
 
 }
 
-/*
-void* buscar_pagina( char* nombre_tabla, uint16_t key){
 
-}*/
+void* buscar_pagina( char* nombre_segmento, t_key key){
+
+	//busco el segmento
+	//void *list_find(l_segmentos, bool(*closure)(void*)); --necesito aplicacion parcial para la condicion y no puedo
+
+	Segmento* segmento_encontrado = buscar_segmento(nombre_segmento);
+
+	if (segmento_encontrado == NULL){
+		return NULL;
+	}
+
+	void* pagina = buscar_pagina_en_segmento(segmento_encontrado, key);
+
+	if (pagina == NULL){
+		return NULL;
+	}
+
+	return pagina;
+
+}
+
+void* buscar_segmento(char* nombre_segmento){
+
+	int posicion = 0;
+	Segmento* segmento = list_get(l_segmentos, posicion);
+
+	while (!coincide_segmento(nombre_segmento, segmento) && (posicion < l_segmentos->elements_count)){
+		segmento = list_get(l_segmentos, posicion);
+		posicion ++;
+	}
+
+	if (coincide_segmento(nombre_segmento, segmento)) {
+		return segmento;
+	}
+
+	return NULL;
+}
+
+void* buscar_pagina_en_segmento(Segmento* segmento, t_key key){
+
+	t_list* l_paginas = segmento->paginas;
+
+	int posicion = 0;
+	void* pagina = list_get(l_paginas, posicion);
+
+	while (!coincide_pagina(key, pagina) && ((posicion + 1) < l_paginas->elements_count)){
+		posicion ++;
+		pagina = list_get(l_paginas, posicion);
+	}
+
+	if (coincide_pagina(key, pagina)) {
+		return pagina;
+	}
+
+	return NULL;
+
+}
+
+bool coincide_segmento (char* nombre_segmento, Segmento* segmento){
+	int resultado = strcmp(nombre_segmento, segmento->nombre);
+	return resultado == 0;
+
+}
+
+bool coincide_pagina (t_key key, void* pagina){
+	t_key key_en_pagina = *get_key_pagina(pagina);
+	return key == key_en_pagina;
+}
 
 
 t_key* get_key_pagina( void* p_pagina){
@@ -150,10 +239,34 @@ char* get_value_pagina( void* p_pagina){
 	return (char*) p_value;
 }
 
-unsigned char* get_modificado_pagina( void* p_pagina){   //no me funciona el bool*
+t_flag* get_modificado_pagina( void* p_pagina){
 	void* p_modif = p_pagina;
 	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VALUE);
-	return (unsigned char*) p_modif;
+	return (t_flag*) p_modif;
+}
+
+
+void set_key_pagina( void* p_pagina, t_key key){
+	void* p_key =  p_pagina;
+	*(t_key*) p_key = key;
+}
+
+void set_timestamp_pagina( void* p_pagina, t_timestamp timestamp){
+	void* p_timestamp =  p_pagina;
+	p_timestamp += sizeof(t_key);
+	*(t_timestamp*) p_timestamp = timestamp;
+}
+
+void set_value_pagina( void* p_pagina, char* value){
+	void* p_value =  p_pagina;
+	p_value += (sizeof(t_key) + sizeof(t_timestamp));
+	memcpy(p_value, value, MAX_VALUE);
+}
+
+void set_modificado_pagina( void* p_pagina, t_flag estado){
+	void* p_modif = p_pagina;
+	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VALUE);
+	*(t_flag*) p_modif = estado;
 }
 
 void print_lista_paginas(){
@@ -175,5 +288,16 @@ void print_lista_paginas(){
 
 		nro_pagina++;
 	}
+}
+
+void print_pagina(void* pagina){
+
+		t_timestamp timestamp = *get_timestamp_pagina(pagina);
+		t_key key = *get_key_pagina(pagina);
+		char* value = get_value_pagina(pagina);
+		t_flag modificado = *get_modificado_pagina(pagina);
+
+		printf("Pagina: %i Key: %i Timestamp: %lu Valor: %s  \n", pagina, key, timestamp, value);
+
 }
 

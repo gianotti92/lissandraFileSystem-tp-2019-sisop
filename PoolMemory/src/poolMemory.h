@@ -7,23 +7,11 @@
 
 
 
-// Funciones del proceso
-void configuracion_inicial(void);
-void retorno_consola(char* leido);
-void retornarControl(Instruccion *instruccion, int cliente);
+
 
 
 // Variables globales del proceso
 char* PUERTO_DE_ESCUCHA;
-void inicializar_memoria();
-uint32_t* get_timestamp_pagina( void*);
-uint16_t* get_key_pagina( void*);
-char* get_value_pagina( void*);
-unsigned char* get_modificado_pagina( void*);
-void print_lista_paginas();
-
-
-// Variables globales del proceso
 int MAX_VALUE;
 char* IP_FS;
 char* PUERTO_FS;
@@ -42,7 +30,7 @@ t_list* l_segmentos;
 
 //  estructuras
 typedef struct{
-	char* tabla;
+	char* nombre;
 	t_list* paginas;
 }Segmento;
 
@@ -50,6 +38,28 @@ typedef struct{
 	void* pagina;
 	t_flag en_uso;
 }Pagina_general;
+
+
+// Funciones del proceso
+void configuracion_inicial(void);
+void retorno_consola(char* leido);
+void retornarControl(Instruccion *instruccion, int cliente);
+void inicializar_memoria();
+void* buscar_pagina( char*, t_key);
+void* buscar_pagina_en_segmento(Segmento*, t_key);
+void* buscar_segmento(char*);
+bool coincide_segmento (char*, Segmento*);
+bool coincide_pagina (t_key, void*);
+t_timestamp* get_timestamp_pagina( void*);
+t_key* get_key_pagina( void*);
+char* get_value_pagina( void*);
+t_flag* get_modificado_pagina( void*);
+void set_timestamp_pagina( void*, t_timestamp);
+void set_key_pagina( void*, t_key);
+void set_value_pagina( void*, char*);
+void set_modificado_pagina( void*, t_flag);
+void print_lista_paginas();
+void print_pagina(void*);
 
 
 #endif
