@@ -25,10 +25,11 @@ int main(void) {
 			retorno_consola);
 
 	int cantMultiprocesamiento = 0;
-	while(cantMultiprocesamiento <=  HILOS_KERNEL){
+	while(cantMultiprocesamiento <  HILOS_KERNEL){
 		pthread_t multiProcesamientoKernell;
 		pthread_create(&multiProcesamientoKernell, NULL, (void*) planificar,
 						NULL);
+		cantMultiprocesamiento++;
 	}
 
 	pthread_join(consolaKernel, NULL);
@@ -50,7 +51,7 @@ void configuracion_inicial(void) {
 	TAMANO_MAXIMO_LECTURA_ARCHIVO = config_get_int_value(CONFIG,
 			"TAMANO_MAXIMO_LECTURA_ARCHIVO");
 	HILOS_KERNEL = config_get_int_value(CONFIG,
-			"TAMANO_MAXIMO_LECTURA_ARCHIVO");
+			"HILOS_KERNEL");
 }
 
 void retorno_consola(char* leido) {
@@ -173,7 +174,6 @@ void planificar() {
 				case SELECT:;
 					Select * select = malloc(sizeof(Select));
 					select = (Select*) proceso->instruccionActual->instruccion_a_realizar;
-
 
 					pthread_mutex_lock(&mutexEstados);
 					Consistencias consistencia =(Consistencias) dictionary_get(tablasPorConsistencia, select->nombre_tabla);
@@ -298,8 +298,8 @@ void preguntarPorMemoriasDisponibles(){
 		char * puerto = string_new();
 		string_append(&ip, "127.0.0.1");
 		string_append(&puerto, "8080");
-		string_append(&m->puerto, puerto);
-		string_append(&m->ip, ip);
+		m->puerto = puerto;
+		m->ip = ip;
 		free(ip);
 		free(puerto);
 		/* funcion de conexiones que me devuelve memoria disponible */
