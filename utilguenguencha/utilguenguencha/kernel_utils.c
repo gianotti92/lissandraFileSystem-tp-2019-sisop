@@ -20,7 +20,9 @@ int leer_linea(char* path, int linea){
 					c = fgetc(fileptr);
 					continue;
 				}else{
-					if(strlen(buffer) == desplazamiento){
+					if(c == '\n' && strlen(buffer) == 0){
+						return -1;
+					}else if(strlen(buffer) == desplazamiento){
 						return buffer;
 					}else{
 						char *retorno = malloc(desplazamiento);
@@ -43,6 +45,8 @@ int leer_linea(char* path, int linea){
 		}else{
 			if(strlen(buffer) == desplazamiento){
 				return buffer;
+			}else if(c == '\n' && strlen(buffer) == 1){
+				return -1;
 			}else{
 				char *retorno = malloc(desplazamiento);
 				memcpy(retorno, buffer, desplazamiento);
