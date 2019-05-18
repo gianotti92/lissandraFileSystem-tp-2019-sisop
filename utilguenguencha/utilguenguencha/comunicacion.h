@@ -111,6 +111,14 @@ typedef struct {
 	t_buffer* buffer;
 } t_paquete;
 
+typedef struct {
+	char* ip;
+	char* puerto;
+	int idMemoria;
+} Memoria;
+
+
+
 void servidor_comunicacion(void (*funcion_retorno)(Instruccion*, int),
 		char* puerto_servidor);
 int iniciar_servidor(char* puerto);
