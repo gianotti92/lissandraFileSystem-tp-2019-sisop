@@ -1,96 +1,304 @@
 #include "kernel.h"
+#include <sys/types.h>
+
+pthread_mutex_t mutexEstados;
+sem_t semaforoSePuedePlanificar;
+sem_t semaforoInicial;
+sem_t semaforoNewToReady;
 
 int main(void) {
+	pthread_mutex_init(&mutexEstados, NULL);
+	sem_init(&semaforoInicial, 0, 1);
+	sem_init(&semaforoSePuedePlanificar,0,0);
+	sem_init(&semaforoNewToReady, 0 ,0);
+
 	configure_logger();
 	configuracion_inicial();
-	pthread_t consolaKernel;
-	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
-	for(;;);
+	iniciarEstados();
+	iniciarEstructurasAsociadas();
+
+	pthread_t consolaKernel, memoriasDisponibles;
+
+	pthread_create(&memoriasDisponibles, NULL, (void*) preguntarPorMemoriasDisponibles, NULL);
+
+	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,
+			retorno_consola);
+
+	int cantMultiprocesamiento = 0;
+	while(cantMultiprocesamiento <  HILOS_KERNEL){
+		pthread_t multiProcesamientoKernell;
+		pthread_create(&multiProcesamientoKernell, NULL, (void*) planificar,
+						NULL);
+		cantMultiprocesamiento++;
+	}
+
+	pthread_join(consolaKernel, NULL);
 }
 
-void configuracion_inicial(void){
+void configuracion_inicial(void) {
 	t_config* CONFIG;
 	CONFIG = config_create("config.cfg");
 	if (!CONFIG) {
-		log_error(LOGGER,"No encuentro el archivo config");
+		log_error(LOGGER, "No encuentro el archivo config");
 		exit_gracefully(EXIT_FAILURE);
 	}
+
 	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
 	IP_MEMORIA_PPAL = config_get_string_value(CONFIG,"IP_MEMORIA_PPAL");
 	PUERTO_MEMORIA_PPAL = config_get_string_value(CONFIG,"PUERTO_MEMORIA_PPAL");
+
 	QUANTUM = config_get_int_value(CONFIG, "QUANTUM");
+	TAMANO_MAXIMO_LECTURA_ARCHIVO = config_get_int_value(CONFIG,
+			"TAMANO_MAXIMO_LECTURA_ARCHIVO");
+	HILOS_KERNEL = config_get_int_value(CONFIG,
+			"HILOS_KERNEL");
 }
 
-void retorno_consola(char* leido){
+void retorno_consola(char* leido) {
+	sem_wait(&semaforoInicial);
 
-	Instruccion* instruccion_parseada = parser_lql(leido, KERNEL);
-	int fd_proceso;
-	// KERNEL no envia la instruccion si es alguna de las siguientes
-	if(	instruccion_parseada->instruccion != ERROR &&
-		instruccion_parseada->instruccion != METRICS &&
-		instruccion_parseada->instruccion != ADD &&
-		instruccion_parseada->instruccion != RUN){
-		if((fd_proceso = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion_parseada, KERNEL))){
-				printf("La consulta fue enviada al fd %d de POOLMEMORY y este sigue abierto\n", fd_proceso);
+	Instruccion * instruccion = malloc(sizeof(Instruccion));
+	Proceso * proceso = malloc(sizeof(Proceso));
+
+	instruccion = parser_lql(leido, KERNEL);
+
+	proceso->quantumProcesado = 0;
+	proceso->numeroInstruccion = 0;
+	proceso->instruccionActual = instruccion;
+
+
+
+	switch(instruccion->instruccion){
+		case ADD:;
+			Add * add = malloc(sizeof(Add));
+			add = (Add*)instruccion->instruccion_a_realizar;
+			asignarConsistenciaAMemoria(add->memoria, add->consistencia);
+			free(instruccion);
+			free(add);
+			free(proceso);
+			break;
+
+		case JOURNAL:
+			break;
+
+		case RUN:;
+			Run * run = malloc(sizeof(Run));
+			run = (Run*)instruccion->instruccion_a_realizar;
+			char * inst = leer_linea(run->path, proceso->numeroInstruccion);
+			if( (int)inst != -1 ){
+				instruccion = parser_lql(inst, KERNEL);
+			}else{
+				//TODO: logica de error
 			}
+
+			proceso->instruccionActual = instruccion->instruccion_a_realizar;
+			encolar(estadoNew, proceso);
+			free(inst);
+			free(run);
+			free(proceso);
+			free(instruccion);
+			break;
+
+		case METRICS:;
+			break;
+
+		case SELECT:;
+			Select * select = malloc(sizeof(Select));
+			proceso->instruccionActual = instruccion->instruccion_a_realizar;
+			encolar(estadoNew, proceso);
+			free(select);
+			free(proceso);
+			free(instruccion);
+		break;
+
+		case INSERT:;
+			Insert * insert = malloc(sizeof(Insert));
+			proceso->instruccionActual = instruccion->instruccion_a_realizar;
+			encolar(estadoNew, proceso);
+			free(insert);
+			free(proceso);
+			free(instruccion);
+			break;
+
+		case CREATE:;
+			Create * create = malloc(sizeof(Create));
+			create = (Create*) instruccion->instruccion_a_realizar;
+			llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
+			proceso->instruccionActual = instruccion->instruccion_a_realizar;
+			encolar(estadoNew, proceso);
+			free(create);
+			free(proceso);
+			free(instruccion);
+			break;
+
+		case DESCRIBE:;
+			break;
+
+		case DROP:;
+			break;
+
+
+		default:
+
+			break;
+
+	}
+
+}
+
+void iniciarEstados() {
+	log_info(LOGGER, "Kernel:Se inician estados");
+	estadoReady = list_create();
+	estadoNew = list_create();
+	estadoExit = list_create();
+	estadoExec = list_create();
+	list_clean(estadoReady);
+	list_clean(estadoNew);
+	list_clean(estadoExit);
+	list_clean(estadoExec);
+}
+
+void iniciarEstructurasAsociadas(){
+	memoriasAsociadas = dictionary_create();
+	tablasPorConsistencia = dictionary_create();
+	memoriasDisponibles = list_create();
+}
+
+
+void planificar() {
+	while(1){
+		int posicion = 0;
+		sem_wait(&semaforoSePuedePlanificar);
+		pasarProceso(posicion, estadoReady, estadoExec);
+		Proceso * proceso = malloc(sizeof(Proceso));
+
+		pthread_mutex_lock(&mutexEstados);
+		proceso = (Proceso*)list_remove(estadoExec, 0);
+		pthread_mutex_unlock(&mutexEstados);
+
+		while (proceso->quantumProcesado <= QUANTUM) {
+			switch(proceso->instruccionActual->instruccion){
+				case SELECT:;
+					Select * select = malloc(sizeof(Select));
+					select = (Select*) proceso->instruccionActual->instruccion_a_realizar;
+
+					pthread_mutex_lock(&mutexEstados);
+					Consistencias consistencia =(Consistencias) dictionary_get(tablasPorConsistencia, select->nombre_tabla);
+					Memoria * m = (Memoria*)dictionary_get(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia]);
+					pthread_mutex_unlock(&mutexEstados);
+					int fileDescriptor = enviar_instruccion(m->ip,m->puerto, proceso->instruccionActual->instruccion_a_realizar, KERNEL);
+					proceso->file_descriptor = fileDescriptor;
+					free(select);
+					free(m);
+
+					break;
+
+				case INSERT:;
+
+
+					break;
+
+				case CREATE:;
+
+
+					break;
+
+				case DROP:;
+					break;
+
+				default:
+					break;
+			}
+
+			/* pedir siguiente instruccion */
+			proceso->numeroInstruccion += 1;
+			proceso->quantumProcesado += 1;
+			//TODO: logica de salojo o fin de proceso o error
 		}
-	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
-	free_consulta(instruccion_parseada);
-}
-
-void iniciarEstados(){
-	log_info(LOGGER,"Kernel:Se inician estados");
-	estadoReady = dictionary_create();
-	estadoNew = dictionary_create();
-	estadoExit = dictionary_create();
-	estadoExec = dictionary_create();
-	dictionary_clean(estadoReady);
-	dictionary_clean(estadoNew);
-	dictionary_clean(estadoExit);
-	dictionary_clean(estadoExec);
-}
-
-CategoriaDeMensaje categoria(char ** mensaje){
-	log_info(LOGGER,"Kernel:Se asigna categoria del mensaje");
-	char * msj = string_new();
-	strcpy(mensaje[0], msj);
-	if(string_contains(msj,"run")){
-		log_info(LOGGER,"Kernel:Categoria RUN. Se asigna categoria del mensaje");
-		return RUN_MESSAGE;
-	}else if(string_contains(msj,"error")){
-		log_info(LOGGER,"Kernel:Categoria ERROR. Se asigna categoria del mensaje");
-		return ERROR;
-	}else{
-		log_info(LOGGER,"Kernel:Categoria QUERY. Se asigna categoria del mensaje");
-		return QUERY;
+		sem_post(&semaforoInicial);
+		free(proceso);
 	}
 }
 
-void moverAEstado(CategoriaDeMensaje categoria, char** mensaje){
-	switch(categoria){
-	char * v;
-	u_int32_t k;
-	case RUN_MESSAGE:
-			log_info(LOGGER,"Kernel:Categoria RUN. Se mueve el mensaje a nuevos");
-			v = string_new();
-			k = 1;
-			string_append(&v, mensaje);
-			dictionary_put(estadoNew, k, v);
-			free(v);
-		break;
-	case ERROR_MESSAGE:
-		log_info(LOGGER,"Kernel:Categoria ERROR. Esta mal escrita la query, no se continua");
-		break;
-	case QUERY:
-		log_info(LOGGER,"Kernel:Categoria QUERY. Se mueve el mensaje a listos");
-		v = string_new();
-		k = 1;
-		string_append(&v, mensaje);
-		dictionary_put(estadoNew, k, v);
-		free(v);
-		break;
-	default:
-		log_info(LOGGER,"Kernel:Categoria NADA. Esto no deberia pasar nunca ajaj..");
-		break;
+void liberarProceso(Proceso * proceso) {
+	free(proceso);
+}
+
+void encolar(t_list * cola, Proceso * proceso) {
+	pthread_mutex_lock(&mutexEstados);
+	list_add(cola, proceso);
+	pthread_mutex_unlock(&mutexEstados);
+}
+
+void pasarProceso(int posicion, t_list *from, t_list *to) {
+	if (list_size(from) > 0) {
+		pthread_mutex_lock(&mutexEstados);
+		Proceso * p = (Proceso *) list_get(from, posicion);
+		list_add(to, p);
+		pthread_mutex_unlock(&mutexEstados);
+	}
+}
+
+void cambiarEstado(Proceso* p, t_list * estado){
+	pthread_mutex_lock(&mutexEstados);
+	list_add(estado, p);
+	pthread_mutex_unlock(&mutexEstados);
+}
+
+void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia){
+	Memoria * m = malloc(sizeof(Memoria));
+	/*probar que el get no saque el elemento de la lista*/
+	m = (Memoria*) list_get(memoriasDisponibles, idMemoria);
+	if(m != NULL){
+		pthread_mutex_lock(&mutexEstados);
+		dictionary_put(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], m);
+		pthread_mutex_unlock(&mutexEstados);
+	}else{
+		/*Fallo el log*/
+		printf("Fallo el ADD");
+	}
+	free(m);
+}
+
+void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
+	Memoria *mem = malloc(sizeof(Memoria));
+	pthread_mutex_lock(&mutexEstados);
+	mem = (Memoria*)dictionary_get(memoriasAsociadas, consistencia);
+	pthread_mutex_unlock(&mutexEstados);
+
+	if(mem != NULL){
+		pthread_mutex_lock(&mutexEstados);
+		dictionary_put(tablasPorConsistencia, nombreTable, consistencia);
+		pthread_mutex_unlock(&mutexEstados);
+	}else{
+		printf("fallo create, no existe memoria con dicha consistencia");
+	}
+}
+
+// mock
+int enviarX(Instruccion * i, char * ip, char *  puerto){
+	return 4;
+}
+
+void preguntarPorMemoriasDisponibles(){
+	while(true){
+		Memoria * m = malloc(sizeof(Memoria));
+
+		/* funcion de conexiones que me devuelve memoria disponible */
+		m->idMemoria = 1;
+		char * ip = string_new();
+		char * puerto = string_new();
+		string_append(&ip, "127.0.0.1");
+		string_append(&puerto, "8080");
+		m->puerto = puerto;
+		m->ip = ip;
+		free(ip);
+		free(puerto);
+		/* funcion de conexiones que me devuelve memoria disponible */
+		pthread_mutex_lock(&mutexEstados);
+		list_add_in_index(memoriasDisponibles, m->idMemoria, m);
+		pthread_mutex_unlock(&mutexEstados);
+
+		sleep(5);
 	}
 }
