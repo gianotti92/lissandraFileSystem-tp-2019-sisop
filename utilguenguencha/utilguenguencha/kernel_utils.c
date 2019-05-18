@@ -43,10 +43,10 @@ int leer_linea(char* path, int linea){
 			fclose(fileptr);
 					return -1;
 		}else{
-			if(strlen(buffer) == desplazamiento){
-				return buffer;
-			}else if(c == '\n' && strlen(buffer) == 1){
+			if(c == '\n' && strlen(buffer) == 0){
 				return -1;
+			}else if(strlen(buffer) == desplazamiento){
+				return buffer;
 			}else{
 				char *retorno = malloc(desplazamiento);
 				memcpy(retorno, buffer, desplazamiento);
