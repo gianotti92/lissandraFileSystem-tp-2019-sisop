@@ -84,9 +84,16 @@ void retorno_consola(char* leido) {
 		case RUN:;
 			Run * run = malloc(sizeof(Run));
 			run = (Run*)instruccion->instruccion_a_realizar;
-			instruccion = dameSiguiente(run->path, proceso->numeroInstruccion);
+			char * inst = leer_linea(run->path, proceso->numeroInstruccion);
+			if( (int)inst != -1 ){
+				instruccion = parser_lql(inst, KERNEL);
+			}else{
+				//TODO: logica de error
+			}
+
 			proceso->instruccionActual = instruccion->instruccion_a_realizar;
 			encolar(estadoNew, proceso);
+			free(inst);
 			free(run);
 			free(proceso);
 			free(instruccion);
@@ -206,7 +213,6 @@ void planificar() {
 			/* pedir siguiente instruccion */
 			proceso->numeroInstruccion += 1;
 			proceso->quantumProcesado += 1;
-			dameSiguiente("", proceso->numeroInstruccion);
 			//TODO: logica de salojo o fin de proceso o error
 		}
 		sem_post(&semaforoInicial);
@@ -272,20 +278,6 @@ void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
 // mock
 int enviarX(Instruccion * i, char * ip, char *  puerto){
 	return 4;
-}
-
-Instruccion * dameSiguiente(char * path, int numeroLinea){
-	Instruccion * i = malloc(sizeof(Instruccion));
-	Select * s = malloc(sizeof(Select));
-
-	s->nombre_tabla = "pepe";
-	s->key = 1;
-	s->timestamp = 123;
-
-	i->instruccion = SELECT;
-	i->instruccion_a_realizar = (void *) s;
-
-	return i;
 }
 
 void preguntarPorMemoriasDisponibles(){
