@@ -556,4 +556,3 @@ uintmax_t get_timestamp(){
 	return echo_time;
 
 }
-
