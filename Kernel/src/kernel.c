@@ -10,19 +10,21 @@ int main(void) {
 	pthread_mutex_init(&mutexEstados, NULL);
 	sem_init(&semaforoInicial, 0, 1);
 	sem_init(&semaforoSePuedePlanificar,0,0);
-	sem_init(&semaforoNewToReady, 0 ,0);
+	sem_init(&semaforoNewToReady, 0, 0);
 
 	configure_logger();
 	configuracion_inicial();
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
 
-	pthread_t consolaKernel, memoriasDisponibles;
+	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady;
 
 	pthread_create(&memoriasDisponibles, NULL, (void*) preguntarPorMemoriasDisponibles, NULL);
 
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,
 			retorno_consola);
+
+	pthread_create(&pasarNewToReady, NULL, (void*) newToReady, NULL);
 
 	int cantMultiprocesamiento = 0;
 	while(cantMultiprocesamiento <  HILOS_KERNEL){
@@ -57,95 +59,42 @@ void configuracion_inicial(void) {
 void retorno_consola(char* leido) {
 	sem_wait(&semaforoInicial);
 
-	Instruccion * instruccion = malloc(sizeof(Instruccion));
 	Proceso * proceso = malloc(sizeof(Proceso));
+	Instruccion * instruccion = malloc(sizeof(Instruccion));
 
 	instruccion = parser_lql(leido, KERNEL);
 
-	proceso->quantumProcesado = 0;
+	proceso->instruccion = instruccion;
 	proceso->numeroInstruccion = 0;
-	proceso->instruccionActual = instruccion;
+	proceso->quantumProcesado = 0;
+	proceso->file_descriptor = -1;
 
+	pthread_mutex_lock(&mutexEstados);
+	list_add(estadoNew, proceso);
+	pthread_mutex_unlock(&mutexEstados);
 
+	free(leido);
+	free(proceso);
+	free(instruccion);
 
-	switch(instruccion->instruccion){
-		case ADD:;
-			Add * add = malloc(sizeof(Add));
-			add = (Add*)instruccion->instruccion_a_realizar;
-			asignarConsistenciaAMemoria(add->memoria, add->consistencia);
-			free(instruccion);
-			free(add);
-			free(proceso);
-			break;
+	sem_post(&semaforoNewToReady);
+}
 
-		case JOURNAL:
-			break;
+void newToReady(){
+	while(true){
+		sem_wait(&semaforoNewToReady);
 
-		case RUN:;
-			Run * run = malloc(sizeof(Run));
-			run = (Run*)instruccion->instruccion_a_realizar;
-			char * inst = leer_linea(run->path, proceso->numeroInstruccion);
-			if( (int)inst != -1 ){
-				instruccion = parser_lql(inst, KERNEL);
-			}else{
-				//TODO: logica de error
-			}
+		Proceso * proceso = malloc(sizeof(Proceso));
 
-			proceso->instruccionActual = instruccion->instruccion_a_realizar;
-			encolar(estadoNew, proceso);
-			free(inst);
-			free(run);
-			free(proceso);
-			free(instruccion);
-			break;
+		pthread_mutex_lock(&mutexEstados);
+		proceso = list_remove(estadoNew, 0);
+		list_add(estadoReady, proceso);
+		pthread_mutex_unlock(&mutexEstados);
 
-		case METRICS:;
-			break;
-
-		case SELECT:;
-			Select * select = malloc(sizeof(Select));
-			proceso->instruccionActual = instruccion->instruccion_a_realizar;
-			encolar(estadoNew, proceso);
-			free(select);
-			free(proceso);
-			free(instruccion);
-		break;
-
-		case INSERT:;
-			Insert * insert = malloc(sizeof(Insert));
-			proceso->instruccionActual = instruccion->instruccion_a_realizar;
-			encolar(estadoNew, proceso);
-			free(insert);
-			free(proceso);
-			free(instruccion);
-			break;
-
-		case CREATE:;
-			Create * create = malloc(sizeof(Create));
-			create = (Create*) instruccion->instruccion_a_realizar;
-			llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
-			proceso->instruccionActual = instruccion->instruccion_a_realizar;
-			encolar(estadoNew, proceso);
-			free(create);
-			free(proceso);
-			free(instruccion);
-			break;
-
-		case DESCRIBE:;
-			break;
-
-		case DROP:;
-			break;
-
-
-		default:
-
-			break;
-
+		sem_post(&semaforoSePuedePlanificar);
 	}
 
 }
-
 void iniciarEstados() {
 	log_info(LOGGER, "Kernel:Se inician estados");
 	estadoReady = list_create();
@@ -167,53 +116,122 @@ void iniciarEstructurasAsociadas(){
 
 void planificar() {
 	while(1){
-		int posicion = 0;
 		sem_wait(&semaforoSePuedePlanificar);
-		pasarProceso(posicion, estadoReady, estadoExec);
+
 		Proceso * proceso = malloc(sizeof(Proceso));
+		Instruccion * instruccion = malloc(sizeof(Instruccion));
 
 		pthread_mutex_lock(&mutexEstados);
-		proceso = (Proceso*)list_remove(estadoExec, 0);
+		proceso = (Proceso*)list_remove(estadoReady, 0);
 		pthread_mutex_unlock(&mutexEstados);
+		instruccion = proceso->instruccion;
 
 		while (proceso->quantumProcesado <= QUANTUM) {
-			switch(proceso->instruccionActual->instruccion){
+
+			switch(proceso->instruccion->instruccion){
+				case RUN:;
+					Run * run = malloc(sizeof(Run));
+					run = (Run*)instruccion->instruccion_a_realizar;
+
+					char * inst = leer_linea(run->path, proceso->numeroInstruccion);
+					Instruccion * instruccionAProcesar = malloc(sizeof(Instruccion));
+
+					if( (int)inst != -1 ){
+						instruccionAProcesar = parser_lql(inst, KERNEL);
+						proceso->instruccionAProcesar = instruccionAProcesar;
+
+						switch(proceso->instruccionAProcesar->instruccion){
+							case CREATE:;
+								break;
+
+							case SELECT:;
+								Select * select = malloc(sizeof(Select));
+								Memoria * mem = malloc(sizeof(Memoria));
+								select = (Select*) proceso->instruccionAProcesar->instruccion_a_realizar;
+
+								char * nombreTabla = string_new();
+								string_append(&nombreTabla, select->nombre_tabla);
+
+								mem = (Memoria*)dictionary_get(tablasPorConsistencia,nombreTabla);
+
+								int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
+
+								proceso->file_descriptor = fd;
+
+
+								free(mem);
+								free(select);
+								free(nombreTabla);
+								break;
+
+							case INSERT:;
+								break;
+
+							case DROP:;
+								break;
+
+							case ERROR:;
+								break;
+
+							default:
+								break;
+
+						}
+
+						proceso->numeroInstruccion += 1;
+						proceso->quantumProcesado += 1;
+
+						if(proceso->quantumProcesado == 2){
+							pthread_mutex_lock(&mutexEstados);
+							list_add(estadoReady, proceso);
+							pthread_mutex_unlock(&mutexEstados);
+						}
+
+					}else{
+						pthread_mutex_lock(&mutexEstados);
+						encolar(estadoExit, proceso);
+						pthread_mutex_unlock(&mutexEstados);
+						return;
+					}
+
+					free(inst);
+					free(run);
+					free(proceso);
+					free(instruccion);
+					free(instruccionAProcesar);
+					break;
+
+				case METRICS:;
+					break;
+
 				case SELECT:;
-					Select * select = malloc(sizeof(Select));
-					select = (Select*) proceso->instruccionActual->instruccion_a_realizar;
-
-					pthread_mutex_lock(&mutexEstados);
-					Consistencias consistencia =(Consistencias) dictionary_get(tablasPorConsistencia, select->nombre_tabla);
-					Memoria * m = (Memoria*)dictionary_get(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia]);
-					pthread_mutex_unlock(&mutexEstados);
-					int fileDescriptor = enviar_instruccion(m->ip,m->puerto, proceso->instruccionActual->instruccion_a_realizar, KERNEL);
-					proceso->file_descriptor = fileDescriptor;
-					free(select);
-					free(m);
-
 					break;
 
 				case INSERT:;
 
-
 					break;
 
 				case CREATE:;
-
 
 					break;
 
 				case DROP:;
 					break;
 
+				case ADD:;
+
+					break;
+
+				case DESCRIBE:;
+					break;
+
+				case JOURNAL:
+					break;
+
 				default:
 					break;
 			}
 
-			/* pedir siguiente instruccion */
-			proceso->numeroInstruccion += 1;
-			proceso->quantumProcesado += 1;
-			//TODO: logica de salojo o fin de proceso o error
 		}
 		sem_post(&semaforoInicial);
 		free(proceso);
@@ -233,7 +251,7 @@ void encolar(t_list * cola, Proceso * proceso) {
 void pasarProceso(int posicion, t_list *from, t_list *to) {
 	if (list_size(from) > 0) {
 		pthread_mutex_lock(&mutexEstados);
-		Proceso * p = (Proceso *) list_get(from, posicion);
+		Proceso * p = (Proceso *) list_remove(from, posicion);
 		list_add(to, p);
 		pthread_mutex_unlock(&mutexEstados);
 	}
@@ -273,11 +291,6 @@ void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
 	}else{
 		printf("fallo create, no existe memoria con dicha consistencia");
 	}
-}
-
-// mock
-int enviarX(Instruccion * i, char * ip, char *  puerto){
-	return 4;
 }
 
 void preguntarPorMemoriasDisponibles(){

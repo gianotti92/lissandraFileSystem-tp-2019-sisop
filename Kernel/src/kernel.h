@@ -16,7 +16,8 @@ typedef struct{
 }Memoria;
 
 typedef struct{
-	Instruccion* instruccionActual;
+	Instruccion* instruccion;
+	Instruccion* instruccionAProcesar;
 	int file_descriptor;
 	int quantumProcesado;
 	int numeroInstruccion;
@@ -45,7 +46,7 @@ void asignarConsistenciaAMemoria(uint32_t id, Consistencias leido);
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void preguntarPorMemoriasDisponibles();
-
+void newToReady();
 
 
 // Variables del proceso
