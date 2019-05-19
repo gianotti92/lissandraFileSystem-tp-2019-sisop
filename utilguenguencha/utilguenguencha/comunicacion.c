@@ -490,28 +490,27 @@ void empaquetar_journal(t_paquete * paquete, Journal * journal) {
 
 void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
 	int cantidad_memorias = list_size(gossip->lista_memorias);
+	paquete->buffer->stream = malloc(sizeof(int));
+	memcpy(paquete->buffer->stream, &cantidad_memorias, sizeof(int));
+	paquete->buffer->size += sizeof(int);
 	while(cantidad_memorias > 0){
 		Memoria *memoria = malloc(sizeof(Memoria));
 		memoria = list_get(gossip->lista_memorias, cantidad_memorias - 1);
-		size_t tamanio_ip = (strlen(memoria->ip) + 1 + sizeof(size_t));
-		size_t tamanio_puerto = (strlen(memoria->puerto) + 1 + sizeof(size_t));
+		size_t tamanio_ip = (strlen(memoria->ip) + 1 );
+		size_t tamanio_puerto = (strlen(memoria->puerto) + 1 );
 		size_t tamanio_id = sizeof(memoria->idMemoria);
-		size_t tamanio = tamanio_ip + tamanio_puerto + tamanio_id;
-		if(cantidad_memorias == list_size(gossip->lista_memorias)){
-			paquete->buffer->stream = malloc(tamanio);
-		}else{
-			paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio);
-		}
-		memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_ip, sizeof(tamanio_ip));
-		paquete->buffer->size += sizeof(tamanio_ip);
-		memcpy(paquete->buffer->stream + paquete->buffer->size, memoria->ip, tamanio_ip);
-		paquete->buffer->size += tamanio_ip;
-		memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_puerto, sizeof(tamanio_puerto));
-		paquete->buffer->size += sizeof(tamanio_puerto);
-		memcpy(paquete->buffer->stream + paquete->buffer->size, memoria->puerto, tamanio_puerto);
-		paquete->buffer->size += tamanio_puerto;
-		memcpy(paquete->buffer->stream + paquete->buffer->size, &memoria->idMemoria, tamanio_id);
-		paquete->buffer->size += tamanio_id;
+		size_t tamanio = tamanio_ip + sizeof(size_t) + tamanio_puerto + sizeof(size_t) + tamanio_id;
+		paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_ip, sizeof(size_t));
+		paquete->buffer->size += sizeof(size_t);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, memoria->ip, (strlen(memoria->ip)+1));
+		paquete->buffer->size += strlen(memoria->ip) + 1;
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_puerto, sizeof(size_t));
+		paquete->buffer->size += sizeof(size_t);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, memoria->puerto, (strlen(memoria->puerto)+1));
+		paquete->buffer->size += strlen(memoria->puerto) + 1;
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &memoria->idMemoria, sizeof(memoria->idMemoria));
+		paquete->buffer->size += sizeof(memoria->idMemoria);
 		cantidad_memorias--;
 		free(memoria);
 	}
@@ -609,7 +608,7 @@ Journal *desempaquetar_journal(void* stream) {
 
 Gossip *desempaquetar_gossip(void* stream){
 	int desplazamiento = 0;
-	Gossip *gossip = malloc(sizeof(gossip));
+	Gossip *gossip = malloc(sizeof(Gossip));
 	gossip->lista_memorias = list_create();
 	size_t cantidad_memorias, tamanio;
 	memcpy(&cantidad_memorias, stream, sizeof(cantidad_memorias));
@@ -627,7 +626,11 @@ Gossip *desempaquetar_gossip(void* stream){
 		memcpy(memoria->puerto, stream + desplazamiento, tamanio);
 		desplazamiento += tamanio;
 		memcpy(&memoria->idMemoria, stream + desplazamiento, sizeof(int));
-		desplazamiento += tamanio;
+		desplazamiento += sizeof(int);
+		list_add(gossip->lista_memorias, memoria);
+		free(memoria->ip);
+		free(memoria->puerto);
+		free(memoria);
 		cantidad_memorias--;
 	}
 	return gossip;
