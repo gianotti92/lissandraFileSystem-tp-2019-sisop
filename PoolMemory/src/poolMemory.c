@@ -41,15 +41,52 @@ void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	int fd_proceso;
 	// La memoria no usa las funciones de KERNEL y JOURNAL no lo envia a filesystem
-	if(	instruccion_parseada->instruccion != ERROR &&
-		instruccion_parseada->instruccion != METRICS &&
-		instruccion_parseada->instruccion != ADD &&
-		instruccion_parseada->instruccion != RUN &&
-		instruccion_parseada->instruccion != JOURNAL){
+	if (instruccion_parseada->instruccion == SELECT){
+
+		Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
+		void* pagina = buscar_pagina(instruccion_select->nombre_tabla, instruccion_select->key);
+
+		if(pagina == NULL){
+			printf("No existe la pagina. Por ahora chinguenguencha!! \n");
+		}
+		else{
+			print_pagina(pagina);
+		}
+
+	}
+	else if (instruccion_parseada->instruccion == INSERT){
+
+		Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
+		void* pagina = buscar_pagina(instruccion_insert->nombre_tabla, instruccion_insert->key);
+
+		if(pagina == NULL){
+			pagina = pedir_pagina();
+			crear_segmento(instruccion_insert->nombre_tabla, pagina);
+		}
+
+		printf("Pagina antes del insert: ");
+		print_pagina(pagina);
+
+		set_key_pagina(pagina, instruccion_insert->key);
+		set_value_pagina(pagina, instruccion_insert->value);
+		set_timestamp_pagina(pagina, instruccion_insert->timestamp_insert);
+		set_modificado_pagina(pagina, true);
+
+		printf("Pagina despues del insert: ");
+		print_pagina(pagina);
+
+	}
+	else if(instruccion_parseada->instruccion != ERROR &&
+			instruccion_parseada->instruccion != METRICS &&
+			instruccion_parseada->instruccion != ADD &&
+			instruccion_parseada->instruccion != RUN &&
+			instruccion_parseada->instruccion != JOURNAL){
 		if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
 			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
 		}
 	}
+
+
 	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
 	free_consulta(instruccion_parseada);
 }
@@ -67,6 +104,8 @@ void retornarControl(Instruccion *instruccion, int cliente){
 			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
 		}
 	}
+
+
 	//liberar_conexion(cliente); // Para liberar el fd del socket
 	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
 	free_consulta(instruccion);
@@ -76,6 +115,12 @@ void inicializar_memoria(){
 
 
 	memoria_principal = malloc(SIZE_MEM); //resevo memoria para paginar
+
+
+	if (memoria_principal == NULL){
+		log_error(LOGGER, "Memoria: No se pudo malloquear la memoria principal.");
+		exit_gracefully(-1);
+	}
 
 	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VALUE + sizeof(bool); //calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF
 
@@ -92,6 +137,7 @@ void inicializar_memoria(){
 		Pagina_general* registro_maestra = malloc(sizeof(Pagina_general)); //registro para la tabla maestra de paginas
 
 		if (registro_maestra == NULL){
+			log_error(LOGGER, "Memoria: Fallo malloc para Pagina_general.");
 			exit_gracefully(-1);
 		}
 
@@ -110,7 +156,7 @@ void inicializar_memoria(){
 		desplazamiento += sizeof(t_timestamp);		//lugar de timestamp
 
 
-		char* palabra = "Lo paginaste todo chinguenguencha";
+		char* palabra = "\0";
 		memcpy(desplazamiento, palabra, MAX_VALUE);
 		desplazamiento += MAX_VALUE;				//lugar de value
 
@@ -126,21 +172,20 @@ void inicializar_memoria(){
 	}
 
 	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,l_maestro_paginas->elements_count, tamanio_pagina);
-
+	log_info(LOGGER, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,l_maestro_paginas->elements_count, tamanio_pagina);
 }
 
 
 void* buscar_pagina( char* nombre_segmento, t_key key){
 
 	//busco el segmento
-	//void *list_find(l_segmentos, bool(*closure)(void*)); --necesito aplicacion parcial para la condicion y no puedo
-
 	Segmento* segmento_encontrado = buscar_segmento(nombre_segmento);
 
 	if (segmento_encontrado == NULL){
 		return NULL;
 	}
 
+	//busco la pagina
 	void* pagina = buscar_pagina_en_segmento(segmento_encontrado, key);
 
 	if (pagina == NULL){
@@ -154,14 +199,20 @@ void* buscar_pagina( char* nombre_segmento, t_key key){
 void* buscar_segmento(char* nombre_segmento){
 
 	int posicion = 0;
-	Segmento* segmento = list_get(l_segmentos, posicion);
+	Segmento* segmento;
+	bool encontrado = false;
 
-	while (!coincide_segmento(nombre_segmento, segmento) && (posicion < l_segmentos->elements_count)){
+	while (posicion < l_segmentos->elements_count && !encontrado){
+
 		segmento = list_get(l_segmentos, posicion);
+
+		if(coincide_segmento(nombre_segmento, segmento)){
+			encontrado = true;
+		}
 		posicion ++;
 	}
 
-	if (coincide_segmento(nombre_segmento, segmento)) {
+	if (encontrado) {
 		return segmento;
 	}
 
@@ -280,12 +331,10 @@ void print_pagina(void* pagina){
 }
 
 
-void* lanzar_gossiping(){
-
-	//IP_SEEDS
-	//PUERTOS_SEEDS
+void lanzar_gossiping(){
 
 	l_memorias = list_create();
+	log_info(LOGGER, "Memoria: Se lanza el proceso de gossiping.");
 
 	IP_SEEDS = string_substring(IP_SEEDS, 1, string_length(IP_SEEDS)-2);
 	PUERTOS_SEEDS = string_substring(PUERTOS_SEEDS, 1, string_length(PUERTOS_SEEDS)-2);
@@ -321,11 +370,38 @@ void print_memorias (){
 	while (posicion < size){
 		memoria = list_get(l_memorias, posicion);
 
-
 		printf("ID: %i IP: %s PUERTO: %s \n", memoria->idMemoria, memoria->ip, memoria->puerto);
 		posicion++;
 	}
 
 }
 
+void* pedir_pagina(){
+ //aca iria el algoritmo para reemplazar paginas
+	void* pagina = seleccionar_pagina();
+	return pagina;
 
+}
+
+void* seleccionar_pagina (){
+
+	int posicion = 0;
+	Pagina_general* pagina_general = list_get(l_maestro_paginas, posicion);
+
+	while(pagina_general->en_uso == true){
+		posicion++;
+		pagina_general = list_get(l_maestro_paginas, posicion);
+	}
+
+	return pagina_general->pagina;
+}
+
+void crear_segmento(char* nombre_segmento, void* pagina){
+
+	Segmento* nuevo_segmento = malloc(sizeof(Segmento));
+	nuevo_segmento->nombre = nombre_segmento;
+	nuevo_segmento->paginas = list_create();
+	list_add(nuevo_segmento->paginas, pagina);
+	list_add(l_segmentos, nuevo_segmento);
+
+}

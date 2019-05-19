@@ -61,8 +61,10 @@ void set_value_pagina( void*, char*);
 void set_modificado_pagina( void*, t_flag);
 void print_lista_paginas();
 void print_pagina(void*);
-void * lanzar_gossiping();
+void lanzar_gossiping();
 void print_memorias ();
-
+void* pedir_pagina();
+void* seleccionar_pagina ();
+void crear_segmento(char*, void*);
 
 #endif
