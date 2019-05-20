@@ -46,6 +46,7 @@ void configuracion_inicial(void);
 void retorno_consola(char* leido);
 void retornarControl(Instruccion *instruccion, int cliente);
 void inicializar_memoria();
+void atender_consulta (Instruccion*);
 void* buscar_pagina( char*, t_key);
 void* buscar_pagina_en_segmento(Segmento*, t_key);
 void* buscar_segmento(char*);

@@ -39,56 +39,8 @@ void configuracion_inicial(void){
 
 void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
-	int fd_proceso;
-	// La memoria no usa las funciones de KERNEL y JOURNAL no lo envia a filesystem
-	if (instruccion_parseada->instruccion == SELECT){
+	atender_consulta(instruccion_parseada);
 
-		Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
-		void* pagina = buscar_pagina(instruccion_select->nombre_tabla, instruccion_select->key);
-
-		if(pagina == NULL){
-			printf("No existe la pagina. Por ahora chinguenguencha!! \n");
-		}
-		else{
-			print_pagina(pagina);
-		}
-
-	}
-	else if (instruccion_parseada->instruccion == INSERT){
-
-		Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
-		void* pagina = buscar_pagina(instruccion_insert->nombre_tabla, instruccion_insert->key);
-
-		if(pagina == NULL){
-			pagina = pedir_pagina();
-			crear_segmento(instruccion_insert->nombre_tabla, pagina);
-		}
-
-		printf("Pagina antes del insert: ");
-		print_pagina(pagina);
-
-		set_key_pagina(pagina, instruccion_insert->key);
-		set_value_pagina(pagina, instruccion_insert->value);
-		set_timestamp_pagina(pagina, instruccion_insert->timestamp_insert);
-		set_modificado_pagina(pagina, true);
-
-		printf("Pagina despues del insert: ");
-		print_pagina(pagina);
-
-	}
-	else if(instruccion_parseada->instruccion != ERROR &&
-			instruccion_parseada->instruccion != METRICS &&
-			instruccion_parseada->instruccion != ADD &&
-			instruccion_parseada->instruccion != RUN &&
-			instruccion_parseada->instruccion != JOURNAL){
-		if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
-			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
-		}
-	}
-
-
-	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
-	free_consulta(instruccion_parseada);
 }
 
 void retornarControl(Instruccion *instruccion, int cliente){
@@ -173,6 +125,59 @@ void inicializar_memoria(){
 
 	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,l_maestro_paginas->elements_count, tamanio_pagina);
 	log_info(LOGGER, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,l_maestro_paginas->elements_count, tamanio_pagina);
+}
+
+void atender_consulta (Instruccion* instruccion_parseada){
+
+		int fd_proceso;
+		// La memoria no usa las funciones de KERNEL y JOURNAL no lo envia a filesystem
+		if (instruccion_parseada->instruccion == SELECT){
+
+			Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
+			void* pagina = buscar_pagina(instruccion_select->nombre_tabla, instruccion_select->key);
+
+			if(pagina == NULL){
+				printf("No existe la pagina. Por ahora chinguenguencha!! \n");
+			}
+			else{
+				print_pagina(pagina);
+			}
+
+		}
+		else if (instruccion_parseada->instruccion == INSERT){
+
+			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
+			void* pagina = buscar_pagina(instruccion_insert->nombre_tabla, instruccion_insert->key);
+
+			if(pagina == NULL){
+				pagina = pedir_pagina();
+				crear_segmento(instruccion_insert->nombre_tabla, pagina);
+			}
+
+			printf("Pagina antes del insert: ");
+			print_pagina(pagina);
+
+			set_key_pagina(pagina, instruccion_insert->key);
+			set_value_pagina(pagina, instruccion_insert->value);
+			set_timestamp_pagina(pagina, instruccion_insert->timestamp_insert);
+			set_modificado_pagina(pagina, true);
+
+			printf("Pagina despues del insert: ");
+			print_pagina(pagina);
+
+		}
+		else if(instruccion_parseada->instruccion != ERROR &&
+				instruccion_parseada->instruccion != METRICS &&
+				instruccion_parseada->instruccion != ADD &&
+				instruccion_parseada->instruccion != RUN &&
+				instruccion_parseada->instruccion != JOURNAL){
+			if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
+				printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+			}
+		}
+
+		//liberar_conexion(fd_proceso); // Para liberar el fd del socket
+		free_consulta(instruccion_parseada);
 }
 
 
