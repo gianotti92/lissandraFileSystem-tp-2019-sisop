@@ -1,6 +1,6 @@
 #include "kernel_utils.h"
 
-int leer_linea(char* path, int linea){
+char* leer_linea(char* path, int linea){
 	FILE *fileptr;
 	if((fileptr = fopen(path, "r"))){
 		char *buffer = "";
@@ -21,7 +21,7 @@ int leer_linea(char* path, int linea){
 					continue;
 				}else{
 					if(c == '\n' && strlen(buffer) == 0){
-						return -1;
+						return NULL;
 					}else if(strlen(buffer) == desplazamiento){
 						return buffer;
 					}else{
@@ -41,10 +41,10 @@ int leer_linea(char* path, int linea){
 		}
 		if(desplazamiento==0){
 			fclose(fileptr);
-					return -1;
+					return NULL;
 		}else{
 			if(c == '\n' && strlen(buffer) == 0){
-				return -1;
+				return NULL;
 			}else if(strlen(buffer) == desplazamiento){
 				return buffer;
 			}else{
@@ -57,6 +57,6 @@ int leer_linea(char* path, int linea){
 		}
 
 	}else{
-		return -1;
+		return NULL;
 	}
 }

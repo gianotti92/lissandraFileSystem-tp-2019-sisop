@@ -1,19 +1,13 @@
 #ifndef KERNEL_H_
 #define KERNEL_H_
 
-#include <utilguenguencha/comunicacion.h>
-#include <utilguenguencha/kernel_utils.h>
-#include <utilguenguencha/parser.h>
-#include <utilguenguencha/utils.h>
+#include "../../utilguenguencha/comunicacion.h"
+#include "../../utilguenguencha/kernel_utils.h"
+#include "../../utilguenguencha/parser.h"
+#include "../../utilguenguencha/utils.h"
 #include <semaphore.h>
 #include <commons/collections/dictionary.h>
 
-
-typedef struct{
-	char * ip;
-	char * puerto;
-	int idMemoria;
-}Memoria;
 
 typedef struct{
 	Instruccion* instruccionActual;

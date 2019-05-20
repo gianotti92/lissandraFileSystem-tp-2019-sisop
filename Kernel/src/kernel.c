@@ -85,7 +85,7 @@ void retorno_consola(char* leido) {
 			Run * run = malloc(sizeof(Run));
 			run = (Run*)instruccion->instruccion_a_realizar;
 			char * inst = leer_linea(run->path, proceso->numeroInstruccion);
-			if( (int)inst != -1 ){
+			if( inst != NULL ){
 				instruccion = parser_lql(inst, KERNEL);
 			}else{
 				//TODO: logica de error
