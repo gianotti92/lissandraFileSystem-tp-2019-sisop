@@ -38,7 +38,8 @@ int leer_linea(char* path, int linea){
 			fclose(fileptr);
 					return -1;
 		}else{
-			char *retorno = malloc(desplazamiento);
+			char *retorno = string_new();
+			string_append(&retorno, buffer);
 			memcpy(retorno, buffer, desplazamiento);
 			free(buffer);
 			fclose(fileptr);

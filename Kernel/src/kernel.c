@@ -73,10 +73,6 @@ void retorno_consola(char* leido) {
 	list_add(estadoNew, proceso);
 	pthread_mutex_unlock(&mutexEstados);
 
-	free(leido);
-	free(proceso);
-	free(instruccion);
-
 	sem_post(&semaforoNewToReady);
 }
 
@@ -84,10 +80,8 @@ void newToReady(){
 	while(true){
 		sem_wait(&semaforoNewToReady);
 
-		Proceso * proceso = malloc(sizeof(Proceso));
-
 		pthread_mutex_lock(&mutexEstados);
-		proceso = list_remove(estadoNew, 0);
+		Proceso * proceso = list_remove(estadoNew, 0);
 		list_add(estadoReady, proceso);
 		pthread_mutex_unlock(&mutexEstados);
 
@@ -118,50 +112,40 @@ void planificar() {
 	while(1){
 		sem_wait(&semaforoSePuedePlanificar);
 
-		Proceso * proceso = malloc(sizeof(Proceso));
-		Instruccion * instruccion = malloc(sizeof(Instruccion));
-
 		pthread_mutex_lock(&mutexEstados);
-		proceso = (Proceso*)list_remove(estadoReady, 0);
+		Proceso * proceso = (Proceso*)list_remove(estadoReady, 0);
 		pthread_mutex_unlock(&mutexEstados);
-		instruccion = proceso->instruccion;
+		Instruccion * instruccion = proceso->instruccion;
 
 		while (proceso->quantumProcesado <= QUANTUM) {
 
 			switch(proceso->instruccion->instruccion){
 				case RUN:;
-					Run * run = malloc(sizeof(Run));
-					run = (Run*)instruccion->instruccion_a_realizar;
+					Run * run = (Run*)instruccion->instruccion_a_realizar;
 
-					char * inst = leer_linea(run->path, proceso->numeroInstruccion);
-					Instruccion * instruccionAProcesar = malloc(sizeof(Instruccion));
+					char * inst = (char *)leer_linea(run->path, proceso->numeroInstruccion);
 
-					if( (int)inst != -1 ){
-						instruccionAProcesar = parser_lql(inst, KERNEL);
+					while((int)inst != -1){
+						Instruccion * instruccionAProcesar = parser_lql(inst, KERNEL);
 						proceso->instruccionAProcesar = instruccionAProcesar;
+
 
 						switch(proceso->instruccionAProcesar->instruccion){
 							case CREATE:;
 								break;
 
 							case SELECT:;
-								Select * select = malloc(sizeof(Select));
-								Memoria * mem = malloc(sizeof(Memoria));
-								select = (Select*) proceso->instruccionAProcesar->instruccion_a_realizar;
+								Select * select = (Select*) proceso->instruccionAProcesar->instruccion_a_realizar;
 
 								char * nombreTabla = string_new();
 								string_append(&nombreTabla, select->nombre_tabla);
 
-								mem = (Memoria*)dictionary_get(tablasPorConsistencia,nombreTabla);
+								Memoria * mem = (Memoria*)dictionary_get(tablasPorConsistencia,nombreTabla);
 
-								int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
-
+								//int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
+								int fd = 5;
 								proceso->file_descriptor = fd;
 
-
-								free(mem);
-								free(select);
-								free(nombreTabla);
 								break;
 
 							case INSERT:;
@@ -181,24 +165,29 @@ void planificar() {
 						proceso->numeroInstruccion += 1;
 						proceso->quantumProcesado += 1;
 
-						if(proceso->quantumProcesado == 2){
+						inst = (char *)leer_linea(run->path, proceso->numeroInstruccion);
+
+						if(proceso->quantumProcesado == 2 && (int)inst != -1 ){
 							pthread_mutex_lock(&mutexEstados);
 							list_add(estadoReady, proceso);
 							pthread_mutex_unlock(&mutexEstados);
+						}else{
+							pthread_mutex_lock(&mutexEstados);
+							free(proceso->instruccionAProcesar);
+							free(proceso);
+							encolar(estadoExit, proceso);
+							pthread_mutex_unlock(&mutexEstados);
+							return;
 						}
 
-					}else{
-						pthread_mutex_lock(&mutexEstados);
-						encolar(estadoExit, proceso);
-						pthread_mutex_unlock(&mutexEstados);
-						return;
 					}
-
-					free(inst);
-					free(run);
+					pthread_mutex_lock(&mutexEstados);
+					free(proceso->instruccionAProcesar);
 					free(proceso);
-					free(instruccion);
-					free(instruccionAProcesar);
+					encolar(estadoExit, proceso);
+					pthread_mutex_unlock(&mutexEstados);
+					return;
+
 					break;
 
 				case METRICS:;
@@ -279,9 +268,9 @@ void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia)
 }
 
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
-	Memoria *mem = malloc(sizeof(Memoria));
+
 	pthread_mutex_lock(&mutexEstados);
-	mem = (Memoria*)dictionary_get(memoriasAsociadas, consistencia);
+	Memoria * mem = (Memoria*)dictionary_get(memoriasAsociadas, consistencia);
 	pthread_mutex_unlock(&mutexEstados);
 
 	if(mem != NULL){
@@ -305,13 +294,10 @@ void preguntarPorMemoriasDisponibles(){
 		string_append(&puerto, "8080");
 		m->puerto = puerto;
 		m->ip = ip;
-		free(ip);
-		free(puerto);
 		/* funcion de conexiones que me devuelve memoria disponible */
 		pthread_mutex_lock(&mutexEstados);
 		list_add_in_index(memoriasDisponibles, m->idMemoria, m);
 		pthread_mutex_unlock(&mutexEstados);
-
 		sleep(5);
 	}
 }
