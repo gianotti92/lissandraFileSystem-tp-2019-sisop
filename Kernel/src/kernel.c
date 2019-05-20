@@ -119,14 +119,14 @@ void planificar() {
 
 		while (proceso->quantumProcesado <= QUANTUM) {
 
-			switch(proceso->instruccion->instruccion){
+			switch(proceso->instruccion->instruccion	){
 				case RUN:;
 					Run * run = (Run*)instruccion->instruccion_a_realizar;
 
-					char * inst = (char *)leer_linea(run->path, proceso->numeroInstruccion);
+					char * inst = leer_linea(run->path, proceso->numeroInstruccion);
 
-					while((int)inst != -1){
-						Instruccion * instruccionAProcesar = parser_lql(inst, KERNEL);
+					while(!strcmp(inst, "ERROR")){
+						Instruccion * instruccionAProcesar = parser_lql((char*)inst, KERNEL);
 						proceso->instruccionAProcesar = instruccionAProcesar;
 
 
@@ -165,9 +165,9 @@ void planificar() {
 						proceso->numeroInstruccion += 1;
 						proceso->quantumProcesado += 1;
 
-						inst = (char *)leer_linea(run->path, proceso->numeroInstruccion);
+						inst = leer_linea(run->path, proceso->numeroInstruccion);
 
-						if(proceso->quantumProcesado == 2 && (int)inst != -1 ){
+						if(proceso->quantumProcesado == 2 && strcmp(inst, "ERROR") ){
 							pthread_mutex_lock(&mutexEstados);
 							list_add(estadoReady, proceso);
 							pthread_mutex_unlock(&mutexEstados);
