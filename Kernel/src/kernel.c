@@ -1,6 +1,10 @@
 #include "kernel.h"
 #include <sys/types.h>
 
+//revisar semaforos para que siga ejecutando planificador
+//hacer otro hilo que vaya generando las metrics (sacando de estado exit) y haciendo free de los proceso
+//cambiar los if de desalojo, el numero 2 por QUANTUM levantado de archivo config
+
 pthread_mutex_t mutexEstados;
 sem_t semaforoSePuedePlanificar;
 sem_t semaforoInicial;
@@ -125,7 +129,7 @@ void planificar() {
 
 					char * inst = leer_linea(run->path, proceso->numeroInstruccion);
 
-					while(!strcmp(inst, "ERROR")){
+					while(inst != NULL){
 						Instruccion * instruccionAProcesar = parser_lql((char*)inst, KERNEL);
 						proceso->instruccionAProcesar = instruccionAProcesar;
 
@@ -167,25 +171,19 @@ void planificar() {
 
 						inst = leer_linea(run->path, proceso->numeroInstruccion);
 
-						if(proceso->quantumProcesado == 2 && strcmp(inst, "ERROR") ){
-							pthread_mutex_lock(&mutexEstados);
-							list_add(estadoReady, proceso);
-							pthread_mutex_unlock(&mutexEstados);
-						}else{
-							pthread_mutex_lock(&mutexEstados);
-							free(proceso->instruccionAProcesar);
-							free(proceso);
+						if(proceso->quantumProcesado == 2 && inst != NULL){
+							encolar(estadoReady, proceso);
+							return;
+						}else if(proceso->quantumProcesado == 2 && inst == NULL){
 							encolar(estadoExit, proceso);
-							pthread_mutex_unlock(&mutexEstados);
+							return;
+						}else if(inst == NULL){
+							encolar(estadoExit, proceso);
 							return;
 						}
 
 					}
-					pthread_mutex_lock(&mutexEstados);
-					free(proceso->instruccionAProcesar);
-					free(proceso);
 					encolar(estadoExit, proceso);
-					pthread_mutex_unlock(&mutexEstados);
 					return;
 
 					break;

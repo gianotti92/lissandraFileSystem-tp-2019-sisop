@@ -20,12 +20,18 @@ char* leer_linea(char* path, int linea){
 					c = fgetc(fileptr);
 					continue;
 				}else{
-					char *retorno = string_new();
-					string_append(&retorno, buffer);
-					memcpy(retorno, buffer, desplazamiento);
-					free(buffer);
-					fclose(fileptr);
-					return retorno;
+					if(c == '\n' && strlen(buffer) == 0){
+						return NULL;
+					}else if(strlen(buffer) == desplazamiento){
+						return buffer;
+					}else{
+						char *retorno = string_new();
+						string_append(&retorno, buffer);
+						memcpy(retorno, buffer, desplazamiento);
+						free(buffer);
+						fclose(fileptr);
+						return retorno;
+					}
 				}
 			}else{
 				if(c == '\n'){
@@ -36,22 +42,24 @@ char* leer_linea(char* path, int linea){
 		}
 		if(desplazamiento==0 || (c == EOF && desplazamiento != 0)){
 			fclose(fileptr);
-			char *retorno = string_new();
-			string_append(&retorno, "ERROR");
-			return retorno;
+			return NULL;
 		}else{
-			char *retorno = string_new();
-			string_append(&retorno, buffer);
-			memcpy(retorno, buffer, desplazamiento);
-			free(buffer);
-			fclose(fileptr);
-			return retorno;
+			if(c == '\n' && strlen(buffer) == 0){
+				return NULL;
+			}else if(strlen(buffer) == desplazamiento){
+				return buffer;
+			}else{
+				char *retorno = string_new();
+				string_append(&retorno, buffer);
+				memcpy(retorno, buffer, desplazamiento);
+				free(buffer);
+				fclose(fileptr);
+				return retorno;
+			}
 		}
 
 	}else{
-		char *retorno = string_new();
-		string_append(&retorno, "ERROR");
-		return retorno;
+		return NULL;
 	}
 }
 
