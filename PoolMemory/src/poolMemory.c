@@ -39,7 +39,7 @@ void configuracion_inicial(void){
 
 void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
-	atender_consulta(instruccion_parseada);
+	atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
 
 }
 
@@ -48,15 +48,8 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	printf("Lo que me llego desde KERNEL es:\n");
 	print_instruccion_parseada(instruccion);
 	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
-	int fd_proceso;
-	// Al retornar control de poolmemory solo le llegan las que corresponden y metrics no tiene que enviarla
-	if(	instruccion->instruccion != ERROR &&
-		instruccion->instruccion != JOURNAL){
-		if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY))){
-			printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
-		}
-	}
 
+	atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
 
 	//liberar_conexion(cliente); // Para liberar el fd del socket
 	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
@@ -130,17 +123,23 @@ void inicializar_memoria(){
 void atender_consulta (Instruccion* instruccion_parseada){
 
 		int fd_proceso;
-		// La memoria no usa las funciones de KERNEL y JOURNAL no lo envia a filesystem
+
 		if (instruccion_parseada->instruccion == SELECT){
 
 			Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
 			void* pagina = buscar_pagina(instruccion_select->nombre_tabla, instruccion_select->key);
 
 			if(pagina == NULL){
-				printf("No existe la pagina. Por ahora chinguenguencha!! \n");
+			// no tenemos la tabla-key en memoria
+				if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
+					printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+				}
+
+			//esperar respuesta y devolver un paquete value/error
 			}
 			else{
-				print_pagina(pagina);
+			// tenemos la tabla-key en memoria
+				print_pagina(pagina); //devolver un paquete value/error
 			}
 
 		}
@@ -150,21 +149,17 @@ void atender_consulta (Instruccion* instruccion_parseada){
 			void* pagina = buscar_pagina(instruccion_insert->nombre_tabla, instruccion_insert->key);
 
 			if(pagina == NULL){
+			//no tenemos la pagina en memoria, pido una
 				pagina = pedir_pagina();
 				crear_segmento(instruccion_insert->nombre_tabla, pagina);
 			}
-
-			printf("Pagina antes del insert: ");
-			print_pagina(pagina);
 
 			set_key_pagina(pagina, instruccion_insert->key);
 			set_value_pagina(pagina, instruccion_insert->value);
 			set_timestamp_pagina(pagina, instruccion_insert->timestamp_insert);
 			set_modificado_pagina(pagina, true);
 
-			printf("Pagina despues del insert: ");
-			print_pagina(pagina);
-
+		//devolver un ok/error
 		}
 		else if(instruccion_parseada->instruccion != ERROR &&
 				instruccion_parseada->instruccion != METRICS &&
@@ -173,6 +168,8 @@ void atender_consulta (Instruccion* instruccion_parseada){
 				instruccion_parseada->instruccion != JOURNAL){
 			if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
 				printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+
+			//captar respuesta y devolver paquete
 			}
 		}
 
