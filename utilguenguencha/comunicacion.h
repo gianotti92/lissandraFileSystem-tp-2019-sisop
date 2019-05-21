@@ -28,7 +28,7 @@ typedef enum {
 } Consistencias;
 
 typedef enum {
-	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR
+	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR, GOSSIP
 } Instruction_set;
 
 typedef enum {
@@ -111,6 +111,16 @@ typedef struct {
 	t_buffer* buffer;
 } t_paquete;
 
+typedef struct {
+	char* ip;
+	char* puerto;
+	int idMemoria;
+} Memoria;
+
+typedef struct {
+	t_list *lista_memorias;
+} Gossip;
+
 void servidor_comunicacion(void (*funcion_retorno)(Instruccion*, int),
 		char* puerto_servidor);
 int iniciar_servidor(char* puerto);
@@ -128,6 +138,7 @@ void empaquetar_create(t_paquete * paquete, Create *create);
 void empaquetar_describe(t_paquete * paquete, Describe *describe);
 void empaquetar_drop(t_paquete * paquete, Drop * drop);
 void empaquetar_journal(t_paquete * paquete, Journal * journal);
+void empaquetar_gossip(t_paquete * paquete, Gossip * gossip);
 void* serializar_paquete(t_paquete* paquete, int bytes);
 bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion);
 Select *desempaquetar_select(void* stream);
@@ -136,6 +147,7 @@ Create *desempaquetar_create(void* stream);
 Describe *desempaquetar_describe(void* stream);
 Drop *desempaquetar_drop(void* stream);
 Journal *desempaquetar_journal(void* stream);
+Gossip *desempaquetar_gossip(void* stream);
 
 
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */

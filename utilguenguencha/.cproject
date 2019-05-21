@@ -60,23 +60,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<folderInfo id="cdt.managedbuild.config.gnu.so.debug.1782514473.1732955406" name="/" resourcePath="utilguenguencha">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.so.debug.493287607" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.so.debug" unusedChildren="">
-							<targetPlatform id="cdt.managedbuild.target.gnu.platform.so.debug" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.so.debug"/>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1699470566" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.86946467"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug.919289149" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug.1190665767"/>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.so.debug.503179575" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.so.debug.610980820">
-								<option id="gnu.c.compiler.option.dialect.std.2128728800" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.misc.pic.1655000773" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.523987605" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.so.debug.862507708" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.so.debug.2045342523"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.so.debug.569012878" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.so.debug.1348642658"/>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.so.debug.1205155780" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.so.debug.950699345">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.344216970" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
-							</tool>
-						</toolChain>
-					</folderInfo>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>

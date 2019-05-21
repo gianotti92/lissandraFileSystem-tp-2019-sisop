@@ -27,7 +27,7 @@ char* leer_linea(char* path, int linea){
 					}else{
 						char *retorno = string_new();
 						string_append(&retorno, buffer);
-						memcpy(retorno, buffer, desplazamiento);
+
 						free(buffer);
 						fclose(fileptr);
 						return retorno;
@@ -42,7 +42,7 @@ char* leer_linea(char* path, int linea){
 		}
 		if(desplazamiento==0 || (c == EOF && desplazamiento != 0)){
 			fclose(fileptr);
-			return NULL;
+					return NULL;
 		}else{
 			if(c == '\n' && strlen(buffer) == 0){
 				return NULL;
@@ -51,7 +51,6 @@ char* leer_linea(char* path, int linea){
 			}else{
 				char *retorno = string_new();
 				string_append(&retorno, buffer);
-				memcpy(retorno, buffer, desplazamiento);
 				free(buffer);
 				fclose(fileptr);
 				return retorno;
@@ -62,4 +61,3 @@ char* leer_linea(char* path, int linea){
 		return NULL;
 	}
 }
-

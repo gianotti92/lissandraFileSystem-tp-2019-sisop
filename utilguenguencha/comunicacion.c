@@ -231,6 +231,21 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion)
 		instruccion->instruccion = JOURNAL;
 		instruccion->instruccion_a_realizar = journal;
 		return true;
+	case GOSSIP:
+		if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t),
+		MSG_WAITALL)) <= 0) {
+			return false;
+		}
+		stream = malloc(buffer_size);
+		if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
+				<= 0) {
+			return false;
+		}
+		Gossip *gossip;
+		gossip = desempaquetar_gossip(stream);
+		instruccion->instruccion = GOSSIP;
+		instruccion->instruccion_a_realizar = gossip;
+		return true;
 	default:
 		return false;
 	}
@@ -354,6 +369,10 @@ t_paquete* crear_paquete(Procesos proceso_del_que_envio,
 		empaquetar_journal(paquete,
 				(Journal*) instruccion->instruccion_a_realizar);
 		break;
+	case GOSSIP:
+		empaquetar_gossip(paquete,
+				(Gossip*) instruccion->instruccion_a_realizar);
+		break;
 	default:
 		free(paquete->buffer);
 		free(paquete);
@@ -469,6 +488,34 @@ void empaquetar_journal(t_paquete * paquete, Journal * journal) {
 	paquete->buffer->size += sizeof(journal->timestamp);
 }
 
+void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
+	int cantidad_memorias = list_size(gossip->lista_memorias);
+	paquete->buffer->stream = malloc(sizeof(int));
+	memcpy(paquete->buffer->stream, &cantidad_memorias, sizeof(int));
+	paquete->buffer->size += sizeof(int);
+	while(cantidad_memorias > 0){
+		Memoria *memoria = malloc(sizeof(Memoria));
+		memoria = list_get(gossip->lista_memorias, cantidad_memorias - 1);
+		size_t tamanio_ip = (strlen(memoria->ip) + 1 );
+		size_t tamanio_puerto = (strlen(memoria->puerto) + 1 );
+		size_t tamanio_id = sizeof(memoria->idMemoria);
+		size_t tamanio = tamanio_ip + sizeof(size_t) + tamanio_puerto + sizeof(size_t) + tamanio_id;
+		paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_ip, sizeof(size_t));
+		paquete->buffer->size += sizeof(size_t);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, memoria->ip, (strlen(memoria->ip)+1));
+		paquete->buffer->size += strlen(memoria->ip) + 1;
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_puerto, sizeof(size_t));
+		paquete->buffer->size += sizeof(size_t);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, memoria->puerto, (strlen(memoria->puerto)+1));
+		paquete->buffer->size += strlen(memoria->puerto) + 1;
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &memoria->idMemoria, sizeof(memoria->idMemoria));
+		paquete->buffer->size += sizeof(memoria->idMemoria);
+		cantidad_memorias--;
+		free(memoria);
+	}
+}
+
 Select *desempaquetar_select(void* stream) {
 	int desplazamiento = 0;
 	Select *select = malloc(sizeof(Select));
@@ -557,4 +604,34 @@ Journal *desempaquetar_journal(void* stream) {
 	Journal *journal = malloc(sizeof(Journal));
 	memcpy(&journal->timestamp, stream, sizeof(journal->timestamp));
 	return journal;
+}
+
+Gossip *desempaquetar_gossip(void* stream){
+	int desplazamiento = 0;
+	Gossip *gossip = malloc(sizeof(Gossip));
+	gossip->lista_memorias = list_create();
+	size_t cantidad_memorias, tamanio;
+	memcpy(&cantidad_memorias, stream, sizeof(cantidad_memorias));
+	desplazamiento += sizeof(cantidad_memorias);
+	while(cantidad_memorias != 0){
+		Memoria *memoria = malloc(sizeof(Memoria));
+		memcpy(&tamanio, stream + desplazamiento, sizeof(tamanio));
+		desplazamiento += sizeof(tamanio);
+		memoria->ip = malloc(tamanio);
+		memcpy(memoria->ip, stream + desplazamiento, tamanio);
+		desplazamiento += tamanio;
+		memcpy(&tamanio, stream + desplazamiento, sizeof(tamanio));
+		desplazamiento += sizeof(tamanio);
+		memoria->puerto = malloc(tamanio);
+		memcpy(memoria->puerto, stream + desplazamiento, tamanio);
+		desplazamiento += tamanio;
+		memcpy(&memoria->idMemoria, stream + desplazamiento, sizeof(int));
+		desplazamiento += sizeof(int);
+		list_add(gossip->lista_memorias, memoria);
+		free(memoria->ip);
+		free(memoria->puerto);
+		free(memoria);
+		cantidad_memorias--;
+	}
+	return gossip;
 }
