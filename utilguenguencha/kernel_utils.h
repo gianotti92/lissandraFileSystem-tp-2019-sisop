@@ -7,6 +7,6 @@
 #include <unistd.h>
 #include <string.h>
 
-int leer_linea(char* path, int linea);
+char* leer_linea(char* path, int linea);
 
 #endif /* UTILGUENGUENCHA_KERNEL_UTILS_H_ */

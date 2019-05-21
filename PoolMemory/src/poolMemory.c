@@ -360,7 +360,13 @@ void lanzar_gossiping(){
 
 		posicion++;
 	}
+	Instruccion *instruccion = malloc(sizeof(Instruccion));
+	Gossip * gossip = malloc(sizeof(Gossip));
+	gossip->lista_memorias = l_memorias;
+	instruccion->instruccion = GOSSIP;
+	instruccion->instruccion_a_realizar = gossip;
 
+	enviar_instruccion(IP_FS,PUERTO_FS,instruccion, POOLMEMORY);
 }
 
 void print_memorias (){
