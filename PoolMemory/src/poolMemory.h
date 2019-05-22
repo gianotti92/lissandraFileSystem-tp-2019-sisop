@@ -43,8 +43,9 @@ void retorno_consola(char* leido);
 void retornarControl(Instruccion *instruccion, int cliente);
 void inicializar_memoria();
 void atender_consulta (Instruccion*);
-void* buscar_pagina( char*, t_key);
 void* buscar_pagina_en_segmento(Segmento*, t_key);
+void insertar_en_memoria(char*, t_key, char*, t_timestamp, t_flag);
+void agregar_pagina_en_segmento(Segmento*, void*);
 void* buscar_segmento(char*);
 bool coincide_segmento (char*, Segmento*);
 bool coincide_pagina (t_key, void*);
@@ -62,6 +63,6 @@ void lanzar_gossiping();
 void print_memorias ();
 void* pedir_pagina();
 void* seleccionar_pagina ();
-void crear_segmento(char*, void*);
+Segmento* crear_segmento(char*);
 
 #endif

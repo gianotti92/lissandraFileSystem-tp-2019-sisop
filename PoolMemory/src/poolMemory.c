@@ -127,37 +127,36 @@ void atender_consulta (Instruccion* instruccion_parseada){
 		if (instruccion_parseada->instruccion == SELECT){
 
 			Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
-			void* pagina = buscar_pagina(instruccion_select->nombre_tabla, instruccion_select->key);
+
+			Segmento* segmento = buscar_segmento(instruccion_select->nombre_tabla);
+			void* pagina = NULL;
+
+			if (segmento != NULL){
+				pagina = buscar_pagina_en_segmento(segmento, instruccion_select->key);
+			}
 
 			if(pagina == NULL){
 			// no tenemos la tabla-key en memoria
 				if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
 					printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+
+					//hacer un insert con la respuesta
+					//insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, value, timestamp, false);
 				}
 
-			//esperar respuesta y devolver un paquete value/error
+			//devolver un paquete value/error
 			}
 			else{
 			// tenemos la tabla-key en memoria
-				print_pagina(pagina); //devolver un paquete value/error
+				print_pagina(pagina);
+				//devolver un paquete value/error
 			}
-
 		}
 		else if (instruccion_parseada->instruccion == INSERT){
 
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
-			void* pagina = buscar_pagina(instruccion_insert->nombre_tabla, instruccion_insert->key);
 
-			if(pagina == NULL){
-			//no tenemos la pagina en memoria, pido una
-				pagina = pedir_pagina();
-				crear_segmento(instruccion_insert->nombre_tabla, pagina);
-			}
-
-			set_key_pagina(pagina, instruccion_insert->key);
-			set_value_pagina(pagina, instruccion_insert->value);
-			set_timestamp_pagina(pagina, instruccion_insert->timestamp_insert);
-			set_modificado_pagina(pagina, true);
+			insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
 
 		//devolver un ok/error
 		}
@@ -172,30 +171,42 @@ void atender_consulta (Instruccion* instruccion_parseada){
 			//captar respuesta y devolver paquete
 			}
 		}
+		else {
+			printf("La consulta enviada no puede ser procesada por la memoria. \n");
+		}
 
 		//liberar_conexion(fd_proceso); // Para liberar el fd del socket
 		free_consulta(instruccion_parseada);
 }
 
 
-void* buscar_pagina( char* nombre_segmento, t_key key){
+void insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp timestamp_insert, t_flag modificado){
 
-	//busco el segmento
-	Segmento* segmento_encontrado = buscar_segmento(nombre_segmento);
+	Segmento* segmento = buscar_segmento(nombre_tabla);
 
-	if (segmento_encontrado == NULL){
-		return NULL;
+	if(segmento == NULL){
+		//no tenemos el segmento, creo uno
+		segmento = crear_segmento(nombre_tabla);
 	}
 
-	//busco la pagina
-	void* pagina = buscar_pagina_en_segmento(segmento_encontrado, key);
+	void* pagina = buscar_pagina_en_segmento(segmento, key);
 
-	if (pagina == NULL){
-		return NULL;
+	if(pagina == NULL){
+		//no tenemos la pagina
+		pagina = seleccionar_pagina();
+		agregar_pagina_en_segmento(segmento, pagina);
 	}
 
-	return pagina;
+	set_key_pagina(pagina, key);
+	set_value_pagina(pagina, value);
+	set_timestamp_pagina(pagina, timestamp_insert);
+	set_modificado_pagina(pagina, modificado);
 
+	//devolver un ok
+}
+
+void agregar_pagina_en_segmento(Segmento* segmento, void* pagina){
+	list_add(segmento->paginas, pagina);
 }
 
 void* buscar_segmento(char* nombre_segmento){
@@ -228,13 +239,16 @@ void* buscar_pagina_en_segmento(Segmento* segmento, t_key key){
 	int posicion = 0;
 	void* pagina = list_get(l_paginas, posicion);
 
-	while (!coincide_pagina(key, pagina) && ((posicion + 1) < l_paginas->elements_count)){
-		posicion ++;
-		pagina = list_get(l_paginas, posicion);
-	}
+	if (pagina != NULL){
 
-	if (coincide_pagina(key, pagina)) {
-		return pagina;
+		while (!coincide_pagina(key, pagina) && ((posicion + 1) < l_paginas->elements_count)){
+			posicion ++;
+			pagina = list_get(l_paginas, posicion);
+		}
+
+		if (coincide_pagina(key, pagina)) {
+			return pagina;
+		}
 	}
 
 	return NULL;
@@ -292,6 +306,8 @@ void set_value_pagina( void* p_pagina, char* value){
 	void* p_value =  p_pagina;
 	p_value += (sizeof(t_key) + sizeof(t_timestamp));
 	memcpy(p_value, value, MAX_VALUE);
+	int largo = string_length(value);
+
 }
 
 void set_modificado_pagina( void* p_pagina, t_flag estado){
@@ -384,15 +400,8 @@ void print_memorias (){
 
 }
 
-void* pedir_pagina(){
- //aca iria el algoritmo para reemplazar paginas
-	void* pagina = seleccionar_pagina();
-	return pagina;
-
-}
-
 void* seleccionar_pagina (){
-
+	 //aca iria el algoritmo para reemplazar paginas
 	int posicion = 0;
 	Pagina_general* pagina_general = list_get(l_maestro_paginas, posicion);
 
@@ -401,15 +410,18 @@ void* seleccionar_pagina (){
 		pagina_general = list_get(l_maestro_paginas, posicion);
 	}
 
+	pagina_general->en_uso = true;
+
 	return pagina_general->pagina;
 }
 
-void crear_segmento(char* nombre_segmento, void* pagina){
+Segmento* crear_segmento(char* nombre_segmento){
 
 	Segmento* nuevo_segmento = malloc(sizeof(Segmento));
 	nuevo_segmento->nombre = nombre_segmento;
 	nuevo_segmento->paginas = list_create();
-	list_add(nuevo_segmento->paginas, pagina);
 	list_add(l_segmentos, nuevo_segmento);
+
+	return nuevo_segmento;
 
 }
