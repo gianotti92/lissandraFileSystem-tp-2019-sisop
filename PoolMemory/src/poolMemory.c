@@ -160,6 +160,15 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 		//devolver un ok/error
 		}
+		else if (instruccion_parseada->instruccion == DROP){
+
+			Drop* instruccion_drop = (Drop*) instruccion_parseada->instruccion_a_realizar;
+
+			eliminar_de_memoria(instruccion_drop->nombre_tabla);
+
+		//devolver un ok/error
+		}
+
 		else if(instruccion_parseada->instruccion != ERROR &&
 				instruccion_parseada->instruccion != METRICS &&
 				instruccion_parseada->instruccion != ADD &&
@@ -205,6 +214,37 @@ void insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp
 	//devolver un ok
 }
 
+void eliminar_de_memoria(char* nombre_tabla){
+	Segmento* segmento = buscar_segmento(nombre_tabla);
+
+	if (segmento != NULL){
+		t_list* paginas = segmento->paginas;
+		int posicion = (paginas->elements_count -1);
+		Pagina_general* pagina_general_liberar;
+		void* pagina_liberar;
+
+		while (posicion >= 0){
+			pagina_liberar = list_get(paginas, posicion);
+			pagina_general_liberar = buscar_pagina_general(pagina_liberar);
+
+			if(pagina_general_liberar != NULL){
+				pagina_general_liberar->en_uso = false;
+			}
+
+			posicion --;
+
+		}
+
+		list_destroy(paginas);
+
+		int index = index_segmento(nombre_tabla);
+		list_remove(l_segmentos, index);
+
+
+	}
+}
+
+
 void agregar_pagina_en_segmento(Segmento* segmento, void* pagina){
 	list_add(segmento->paginas, pagina);
 }
@@ -232,6 +272,29 @@ void* buscar_segmento(char* nombre_segmento){
 	return NULL;
 }
 
+int index_segmento(char* nombre_segmento){
+
+	int posicion = 0;
+	Segmento* segmento;
+	bool encontrado = false;
+
+	while (posicion < l_segmentos->elements_count && !encontrado){
+
+		segmento = list_get(l_segmentos, posicion);
+
+		if(coincide_segmento(nombre_segmento, segmento)){
+			encontrado = true;
+		}
+		posicion ++;
+	}
+
+	if (encontrado) {
+		return posicion;
+	}
+
+	return -1;
+}
+
 void* buscar_pagina_en_segmento(Segmento* segmento, t_key key){
 
 	t_list* l_paginas = segmento->paginas;
@@ -253,6 +316,25 @@ void* buscar_pagina_en_segmento(Segmento* segmento, t_key key){
 
 	return NULL;
 
+}
+
+Pagina_general* buscar_pagina_general(void* pagina){
+
+	int posicion = (l_maestro_paginas->elements_count -1);
+	Pagina_general* pagina_general = list_get(l_maestro_paginas, posicion);
+	Pagina_general* pagina_encontrada = NULL;
+
+	while (posicion >= 0){
+		pagina_general = list_get(l_maestro_paginas, posicion);
+
+		if(pagina_general->pagina == pagina){
+			pagina_encontrada = pagina_general;
+		}
+
+		posicion --;
+	}
+
+	return pagina_encontrada;
 }
 
 bool coincide_segmento (char* nombre_segmento, Segmento* segmento){
