@@ -405,7 +405,7 @@ void* seleccionar_pagina (){
 	int posicion = 0;
 	Pagina_general* pagina_general = list_get(l_maestro_paginas, posicion);
 
-	while(pagina_general->en_uso == true){
+	while(pagina_en_uso(pagina_general)){
 		posicion++;
 		pagina_general = list_get(l_maestro_paginas, posicion);
 	}
@@ -423,5 +423,16 @@ Segmento* crear_segmento(char* nombre_segmento){
 	list_add(l_segmentos, nuevo_segmento);
 
 	return nuevo_segmento;
+
+}
+
+bool pagina_en_uso(Pagina_general* pagina_general){
+	return pagina_general->en_uso == true;
+}
+
+
+bool memoria_full(){
+
+	return list_all_satisfy(l_maestro_paginas, pagina_en_uso);
 
 }

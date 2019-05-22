@@ -64,5 +64,7 @@ void print_memorias ();
 void* pedir_pagina();
 void* seleccionar_pagina ();
 Segmento* crear_segmento(char*);
+bool pagina_en_uso(Pagina_general*);
+bool memoria_full();
 
 #endif
