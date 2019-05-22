@@ -166,6 +166,11 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 			eliminar_de_memoria(instruccion_drop->nombre_tabla);
 
+			if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
+				printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+				//captar respuesta y devolver paquete
+			}
+
 		//devolver un ok/error
 		}
 
@@ -238,9 +243,10 @@ void eliminar_de_memoria(char* nombre_tabla){
 		list_destroy(paginas);
 
 		int index = index_segmento(nombre_tabla);
-		list_remove(l_segmentos, index);
 
-
+		if (index >= 0){
+			list_remove(l_segmentos, index);
+		}
 	}
 }
 
@@ -289,7 +295,7 @@ int index_segmento(char* nombre_segmento){
 	}
 
 	if (encontrado) {
-		return posicion;
+		return (posicion -1);
 	}
 
 	return -1;
