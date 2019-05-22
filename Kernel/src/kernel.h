@@ -7,6 +7,7 @@
 #include "../../utilguenguencha/utils.h"
 #include <semaphore.h>
 #include <commons/collections/dictionary.h>
+#include <stdlib.h>
 
 typedef struct{
 	Instruccion* instruccion;
@@ -49,7 +50,7 @@ t_list *estadoExit;
 t_list *estadoExec;
 
 // tablas del proceso
-t_list * memoriasDisponibles;
+t_dictionary * memoriasDisponibles;
 t_dictionary * memoriasAsociadas;
 t_dictionary * tablasPorConsistencia;
 

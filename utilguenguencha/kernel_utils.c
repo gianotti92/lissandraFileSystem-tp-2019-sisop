@@ -40,7 +40,7 @@ char* leer_linea(char* path, int linea){
 				c = fgetc(fileptr);
 			}
 		}
-		if(desplazamiento==0 || (c == EOF && desplazamiento != 0)){
+		if((desplazamiento==0 && strlen(buffer) == 0)|| (c == EOF && desplazamiento != 0 &&  strlen(buffer) == 0)){
 			fclose(fileptr);
 					return NULL;
 		}else{

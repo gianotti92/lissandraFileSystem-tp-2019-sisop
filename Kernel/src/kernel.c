@@ -7,12 +7,10 @@
 
 pthread_mutex_t mutexEstados;
 sem_t semaforoSePuedePlanificar;
-sem_t semaforoInicial;
 sem_t semaforoNewToReady;
 
 int main(void) {
 	pthread_mutex_init(&mutexEstados, NULL);
-	sem_init(&semaforoInicial, 0, 1);
 	sem_init(&semaforoSePuedePlanificar,0,0);
 	sem_init(&semaforoNewToReady, 0, 0);
 
@@ -61,7 +59,6 @@ void configuracion_inicial(void) {
 }
 
 void retorno_consola(char* leido) {
-	sem_wait(&semaforoInicial);
 
 	Proceso * proceso = malloc(sizeof(Proceso));
 	Instruccion * instruccion = malloc(sizeof(Instruccion));
@@ -108,7 +105,7 @@ void iniciarEstados() {
 void iniciarEstructurasAsociadas(){
 	memoriasAsociadas = dictionary_create();
 	tablasPorConsistencia = dictionary_create();
-	memoriasDisponibles = list_create();
+	memoriasDisponibles = dictionary_create();
 }
 
 
@@ -206,6 +203,22 @@ void planificar() {
 					break;
 
 				case ADD:;
+					Add * add = (Add *)instruccion->instruccion_a_realizar;
+					Memoria * memoria;
+					int tamTabla = dictionary_size(memoriasDisponibles);
+					int i;
+
+					for(i = 0; i <= tamTabla; i++){
+						char * key = string_new();
+						sprintf(key, "%d", i);
+						memoria = (Memoria*)dictionary_get(memoriasDisponibles, key);
+						if(memoria != NULL){
+							break;
+						}
+					}
+					asignarConsistenciaAMemoria(memoria->idMemoria, add->consistencia);
+
+					list_add(estadoExit, proceso);
 
 					break;
 
@@ -220,8 +233,6 @@ void planificar() {
 			}
 
 		}
-		sem_post(&semaforoInicial);
-		free(proceso);
 	}
 }
 
@@ -251,9 +262,11 @@ void cambiarEstado(Proceso* p, t_list * estado){
 }
 
 void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia){
-	Memoria * m = malloc(sizeof(Memoria));
+	char * key = string_new();
+	sprintf(key, "%d", idMemoria);
 	/*probar que el get no saque el elemento de la lista*/
-	m = (Memoria*) list_get(memoriasDisponibles, idMemoria);
+	Memoria * m = malloc(sizeof(Memoria));
+	m = (Memoria*) dictionary_get(memoriasDisponibles, key);
 	if(m != NULL){
 		pthread_mutex_lock(&mutexEstados);
 		dictionary_put(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], m);
@@ -293,9 +306,15 @@ void preguntarPorMemoriasDisponibles(){
 		m->puerto = puerto;
 		m->ip = ip;
 		/* funcion de conexiones que me devuelve memoria disponible */
+
+		char * key = string_new();
+		sprintf(key, "%d", m->idMemoria);
 		pthread_mutex_lock(&mutexEstados);
-		list_add_in_index(memoriasDisponibles, m->idMemoria, m);
+		dictionary_put(memoriasDisponibles, key , m);
 		pthread_mutex_unlock(&mutexEstados);
+
+
+
 		sleep(5);
 	}
 }
