@@ -65,16 +65,19 @@ void retorno_consola(char* leido) {
 
 	instruccion = parser_lql(leido, KERNEL);
 
-	proceso->instruccion = instruccion;
-	proceso->numeroInstruccion = 0;
-	proceso->quantumProcesado = 0;
-	proceso->file_descriptor = -1;
 
-	pthread_mutex_lock(&mutexEstados);
-	list_add(estadoNew, proceso);
-	pthread_mutex_unlock(&mutexEstados);
+	if(instruccion->instruccion != ERROR){
+		proceso->instruccion = instruccion;
+		proceso->numeroInstruccion = 0;
+		proceso->quantumProcesado = 0;
+		proceso->file_descriptor = -1;
 
-	sem_post(&semaforoNewToReady);
+		pthread_mutex_lock(&mutexEstados);
+		list_add(estadoNew, proceso);
+		pthread_mutex_unlock(&mutexEstados);
+
+		sem_post(&semaforoNewToReady);
+	}
 }
 
 void newToReady(){
@@ -244,12 +247,8 @@ void planificar() {
 				default:
 					break;
 			}
-			proceso->numeroInstruccion += 1;
-			proceso->quantumProcesado += 1;
 			encolar(estadoExit, proceso);
-
-
-
+			return;
 
 		}
 	}
