@@ -275,7 +275,6 @@ void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia)
 		/*Fallo el log*/
 		printf("Fallo el ADD");
 	}
-	free(m);
 }
 
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
