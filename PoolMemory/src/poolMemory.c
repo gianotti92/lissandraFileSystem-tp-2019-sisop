@@ -3,15 +3,15 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
-	MAX_VALUE = 10; // esto hay que reemplazarlo por el valor del FS
+	MAX_VALUE = 100; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
-	pthread_t consolaKernel, gossiping;
-	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
+	pthread_t consolaPoolMemory, gossiping;
+	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);
 	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
 	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
 
-	pthread_join(consolaKernel, NULL);
+	pthread_join(consolaPoolMemory, NULL);
 	pthread_join(gossiping, NULL);
 
 	list_destroy(l_maestro_paginas); //entender el list_destroy_and_destroy_elements()
@@ -402,17 +402,26 @@ void print_memorias (){
 
 void* seleccionar_pagina (){
 	 //aca iria el algoritmo para reemplazar paginas
-	int posicion = 0;
-	Pagina_general* pagina_general = list_get(l_maestro_paginas, posicion);
 
-	while(pagina_en_uso(pagina_general)){
-		posicion++;
-		pagina_general = list_get(l_maestro_paginas, posicion);
+	if(!memoria_full()){
+
+		int posicion = 0;
+		Pagina_general* pagina_general = list_get(l_maestro_paginas, posicion);
+
+		while(pagina_en_uso(pagina_general)){
+			posicion++;
+			pagina_general = list_get(l_maestro_paginas, posicion);
+		}
+
+		pagina_general->en_uso = true;
+
+		return pagina_general->pagina;
 	}
-
-	pagina_general->en_uso = true;
-
-	return pagina_general->pagina;
+	else {
+		printf("No hay mas memoria chinguenguencha!");
+		log_info(LOGGER,"Memoria - La memoria esta FULL.");
+		return (void*) NULL;
+	}
 }
 
 Segmento* crear_segmento(char* nombre_segmento){
@@ -432,7 +441,6 @@ bool pagina_en_uso(Pagina_general* pagina_general){
 
 
 bool memoria_full(){
-
 	return list_all_satisfy(l_maestro_paginas, pagina_en_uso);
 
 }
