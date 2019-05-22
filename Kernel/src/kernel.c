@@ -130,9 +130,17 @@ void planificar() {
 						Instruccion * instruccionAProcesar = parser_lql((char*)inst, KERNEL);
 						proceso->instruccionAProcesar = instruccionAProcesar;
 
-
+						Memoria * mem = NULL;
+						int fd = -1;
 						switch(proceso->instruccionAProcesar->instruccion){
 							case CREATE:;
+								Create * create = (Create *) proceso->instruccionAProcesar->instruccion_a_realizar;
+								llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
+
+								mem = (Memoria*) dictionary_get(tablasPorConsistencia, create->nombre_tabla);
+								fd = 6;
+								proceso->file_descriptor = fd;
+
 								break;
 
 							case SELECT:;
@@ -141,10 +149,10 @@ void planificar() {
 								char * nombreTabla = string_new();
 								string_append(&nombreTabla, select->nombre_tabla);
 
-								Memoria * mem = (Memoria*)dictionary_get(tablasPorConsistencia,nombreTabla);
+								mem = (Memoria*)dictionary_get(tablasPorConsistencia,nombreTabla);
 
 								//int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
-								int fd = 5;
+								fd = 5;
 								proceso->file_descriptor = fd;
 
 								break;
@@ -196,6 +204,12 @@ void planificar() {
 					break;
 
 				case CREATE:;
+					Create * create = (Create *) proceso->instruccionAProcesar->instruccion_a_realizar;
+					llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
+
+					Memoria * mem = (Memoria*) dictionary_get(tablasPorConsistencia, create->nombre_tabla);
+					int fd = 6;
+					proceso->file_descriptor = fd;
 
 					break;
 
@@ -218,7 +232,6 @@ void planificar() {
 					}
 					asignarConsistenciaAMemoria(memoria->idMemoria, add->consistencia);
 
-					list_add(estadoExit, proceso);
 
 					break;
 
@@ -231,6 +244,12 @@ void planificar() {
 				default:
 					break;
 			}
+			proceso->numeroInstruccion += 1;
+			proceso->quantumProcesado += 1;
+			encolar(estadoExit, proceso);
+
+
+
 
 		}
 	}
