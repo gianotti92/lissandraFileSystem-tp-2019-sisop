@@ -173,7 +173,14 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 		//devolver un ok/error
 		}
+		else if (instruccion_parseada->instruccion == JOURNAL){
 
+			Journal* instruccion_journal = (Journal*) instruccion_parseada->instruccion_a_realizar;
+
+			lanzar_journal(instruccion_journal->timestamp);
+
+		//devolver un ok/error
+		}
 		else if(instruccion_parseada->instruccion != ERROR &&
 				instruccion_parseada->instruccion != METRICS &&
 				instruccion_parseada->instruccion != ADD &&
@@ -471,6 +478,56 @@ void lanzar_gossiping(){
 	instruccion->instruccion_a_realizar = gossip;
 
 	enviar_instruccion(IP_FS,PUERTO_FS,instruccion, POOLMEMORY);
+}
+
+void lanzar_journal(t_timestamp timestamp_journal){
+
+	int posicion_segmento = (l_segmentos->elements_count -1);
+	int posicion_pagina;
+	Segmento* segmento;
+	t_list* paginas;
+	void* pagina;
+	Pagina_general* pagina_general;
+
+	Insert* instruccion_insert;
+	Instruccion* instruccion;
+	instruccion->instruccion = INSERT;
+	instruccion->instruccion_a_realizar = instruccion_insert;
+
+
+	while(posicion_segmento >= 0){
+
+		segmento = list_get(l_segmentos, posicion_segmento);
+		paginas = segmento->paginas;
+		posicion_pagina = (paginas->elements_count -1);
+
+		while (posicion_pagina >= 0){
+			pagina = list_get(paginas, posicion_pagina);
+
+			if (*get_modificado_pagina(pagina)){
+				instruccion_insert->key = *get_key_pagina(pagina);
+				instruccion_insert->nombre_tabla = segmento->nombre;
+				instruccion_insert->timestamp_insert = *get_timestamp_pagina(pagina);
+				instruccion_insert->value = get_value_pagina(pagina);
+				instruccion_insert->timestamp = timestamp_journal;
+
+				int fd_proceso;
+				if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY))){
+					printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+
+				//captar respuesta y devolver paquete
+				}
+
+				pagina_general = buscar_pagina_general(pagina);
+				pagina_general->en_uso = false;
+
+			}
+			posicion_pagina--;
+		}
+		eliminar_de_memoria(segmento->nombre);
+		posicion_segmento--;
+	}
+
 }
 
 void print_memorias (){

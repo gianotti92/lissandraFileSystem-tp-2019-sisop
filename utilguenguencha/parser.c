@@ -523,7 +523,6 @@ void* leer_por_consola(void (*f) (char*)){
 
 	while (!string_equals_ignore_case(leido, "EXIT")){
 		f(leido);
-		free(leido);
 		leido = readline("\n>>");
 		add_history(leido);
 	}
