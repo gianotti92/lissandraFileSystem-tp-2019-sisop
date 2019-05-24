@@ -147,6 +147,12 @@ void planificar() {
 		char * num = string_new();
 		sprintf(num, "%d", exitSize);
 		log_info(LOGGER, num);
+
+		int tamanioMemDisp = dictionary_size(memoriasDisponibles);
+		int tamanioMemAsoc = dictionary_size(memoriasAsociadas);
+		int tamanioTablasXConsis = dictionary_size(tablasPorConsistencia);
+
+		printf("%s", "asd");
 	}
 }
 
@@ -201,7 +207,6 @@ void logicaRun(Run * run, Proceso * proceso){
 
 void logicaCreate(Create * create){
 	llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
-
 	Memoria * mem = (Memoria*) getMemoriaSafe(tablasPorConsistencia, create->nombre_tabla);
 
 }
@@ -266,13 +271,13 @@ void putMemorySafe(t_dictionary * dic, char* key, Memoria * value){
 }
 Memoria * getMemoriaSafe(t_dictionary * dic, char*key){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	Memoria * m = (Memoria*)dictionary_remove(dic, key);
+	Memoria * m = (Memoria*)dictionary_get(dic, key);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 	return m;
 }
 char* getTablasSafe(t_dictionary * dic, char*key){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	char * nombre = (char*)dictionary_remove(dic, key);
+	char * nombre = (char*)dictionary_get(dic, key);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 	return nombre;
 }
