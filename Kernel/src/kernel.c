@@ -59,11 +59,9 @@ void iniciarEstados() {
 	estadoReady = list_create();
 	estadoNew = list_create();
 	estadoExit = list_create();
-	estadoExec = list_create();
 	list_clean(estadoReady);
 	list_clean(estadoNew);
 	list_clean(estadoExit);
-	list_clean(estadoExec);
 }
 
 void iniciarEstructurasAsociadas(){
@@ -85,42 +83,27 @@ void retorno_consola(char* leido) {
 		proceso->numeroInstruccion = 0;
 		proceso->quantumProcesado = 0;
 		proceso->file_descriptor = -1;
-
-		if(pthread_mutex_trylock(&mutexRecursosCompartidos) == 0){
-			list_add(estadoNew, proceso);
-			pthread_mutex_unlock(&mutexRecursosCompartidos);
-			sem_post(&semaforoNewToReady);
-		}else{
-			log_error(LOGGER, "ERROR tratando de lockear");
-		}
-
-
-
+		encolar(estadoNew, proceso);
+		sem_post(&semaforoNewToReady);
 	}
 }
 
 void newToReady(){
 	while(true){
 		sem_wait(&semaforoNewToReady);
-
-		pthread_mutex_lock(&mutexRecursosCompartidos);
-		Proceso * proceso = list_remove(estadoNew, 0);
-		list_add(estadoReady, proceso);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
-
+		Proceso * proceso = desencolar(estadoNew);
+		encolar(estadoReady, proceso);
+		int val;
+		sem_getvalue(&semaforoSePuedePlanificar, &val);
 		sem_post(&semaforoSePuedePlanificar);
+		sem_getvalue(&semaforoSePuedePlanificar, &val);
 	}
-
 }
 
 void planificar() {
 	while(1){
 		sem_wait(&semaforoSePuedePlanificar);
-
-		pthread_mutex_lock(&mutexRecursosCompartidos);
-		Proceso * proceso = (Proceso*)list_remove(estadoReady, 0);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
-
+		Proceso * proceso = desencolar(estadoReady);
 		switch(proceso->instruccion->instruccion){
 			case RUN:;
 				Run * run = (Run *) proceso->instruccion->instruccion_a_realizar;
@@ -160,12 +143,8 @@ void planificar() {
 			default:
 				break;
 		}
-		pthread_mutex_lock(&mutexRecursosCompartidos);
 		encolar(estadoExit, proceso);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
 		return;
-
-
 	}
 }
 
@@ -180,11 +159,11 @@ void logicaRun(Run * run, Proceso * proceso){
 
 		switch(tipoInstruccionAProcesar){
 			case CREATE:;
-				logicaCreate(instruccionAProcesar);
+//				logicaCreate(instruccionAProcesar);
 				break;
 
 			case SELECT:;
-				logicaSelect(instruccionAProcesar);
+//				logicaSelect(instruccionAProcesar);
 				break;
 
 			case INSERT:;
@@ -221,7 +200,7 @@ void logicaRun(Run * run, Proceso * proceso){
 void logicaCreate(Create * create){
 	llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
 
-	Memoria * mem = (Memoria*) dictionary_get(tablasPorConsistencia, create->nombre_tabla);
+	Memoria * mem = (Memoria*) getMemoriaSafe(tablasPorConsistencia, create->nombre_tabla);
 
 }
 
@@ -233,7 +212,7 @@ void logicaAdd(Add * add){
 	for(i = 0; i <= tamTabla; i++){
 		char * key = string_new();
 		sprintf(key, "%d", i);
-		memoria = (Memoria*)dictionary_get(memoriasDisponibles, key);
+		memoria = (Memoria*)getMemoriaSafe(memoriasDisponibles, key);
 		if(memoria != NULL){
 			break;
 		}
@@ -246,7 +225,7 @@ void logicaSelect(Select * select){
 	char * nombreTabla = string_new();
 	string_append(&nombreTabla, select->nombre_tabla);
 
-	Memoria * mem = (Memoria*)dictionary_get(tablasPorConsistencia,nombreTabla);
+	Memoria * mem = (Memoria*)getMemoriaSafe(tablasPorConsistencia,nombreTabla);
 
 	//int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
 }
@@ -259,41 +238,50 @@ bool esFinLectura(Proceso * p, char * instruccionALeer){
 	return instruccionALeer == NULL;
 }
 
-void liberarProceso(Proceso * proceso) {
-	free(proceso);
-}
-
 void encolar(t_list * cola, Proceso * proceso) {
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	list_add(cola, proceso);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
 
-void pasarProceso(int posicion, t_list *from, t_list *to) {
-	if (list_size(from) > 0) {
-		pthread_mutex_lock(&mutexRecursosCompartidos);
-		Proceso * p = (Proceso *) list_remove(from, posicion);
-		list_add(to, p);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
-	}
+Proceso * desencolar(t_list * cola){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	Proceso * p = list_remove(cola, 0);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	return p;
 }
 
-void cambiarEstado(Proceso* p, t_list * estado){
+void putTablaSafe(t_dictionary * dic, char* key, char * value){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	list_add(estado, p);
+	dictionary_put(dic, key, value);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
+}
+
+void putMemorySafe(t_dictionary * dic, char* key, Memoria * value){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	dictionary_put(dic, key, value);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+}
+Memoria * getMemoriaSafe(t_dictionary * dic, char*key){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	Memoria * m = (Memoria*)dictionary_remove(dic, key);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	return m;
+}
+char* getTablasSafe(t_dictionary * dic, char*key){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	char * nombre = (char*)dictionary_remove(dic, key);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	return nombre;
 }
 
 void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia){
 	char * key = string_new();
 	sprintf(key, "%d", idMemoria);
-	/*probar que el get no saque el elemento de la lista*/
 	Memoria * m = malloc(sizeof(Memoria));
-	m = (Memoria*) dictionary_get(memoriasDisponibles, key);
+	m = getMemoriaSafe(memoriasDisponibles, key);
 	if(m != NULL){
-		pthread_mutex_lock(&mutexRecursosCompartidos);
-		dictionary_put(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], m);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
+		putMemorySafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], m);
 	}else{
 		/*Fallo el log*/
 		printf("Fallo el ADD");
@@ -301,15 +289,9 @@ void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia)
 }
 
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
-
-	pthread_mutex_lock(&mutexRecursosCompartidos);
-	Memoria * mem = (Memoria*)dictionary_get(memoriasAsociadas, consistencia);
-	pthread_mutex_unlock(&mutexRecursosCompartidos);
-
+	Memoria * mem = (Memoria*)getMemoriaSafe(memoriasAsociadas, consistencia);
 	if(mem != NULL){
-		pthread_mutex_lock(&mutexRecursosCompartidos);
-		dictionary_put(tablasPorConsistencia, nombreTable, consistencia);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
+		putTablaSafe(tablasPorConsistencia, nombreTable, consistencia);
 	}else{
 		printf("fallo create, no existe memoria con dicha consistencia");
 	}
@@ -331,11 +313,7 @@ void preguntarPorMemoriasDisponibles(){
 
 		char * key = string_new();
 		sprintf(key, "%d", m->idMemoria);
-		pthread_mutex_lock(&mutexRecursosCompartidos);
-		dictionary_put(memoriasDisponibles, key , m);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
-
-
+		putMemorySafe(memoriasDisponibles, key , m);
 
 		sleep(5);
 	}
