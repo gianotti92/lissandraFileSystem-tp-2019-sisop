@@ -116,34 +116,37 @@ void planificar() {
 		Proceso * proceso = (Proceso*)list_remove(estadoReady, 0);
 		pthread_mutex_unlock(&mutexRecursosCompartidos);
 
-		Instruccion * instruccion = proceso->instruccion;
-		Instruction_set tipoInstruccion = instruccion->instruccion;
 
 
-		switch(tipoInstruccion){
+
+		switch(proceso->instruccion->instruccion){
 			case RUN:;
-				logicaRun(proceso);
+				Run * run = (Run *) proceso->instruccion->instruccion_a_realizar;
+				logicaRun(run, proceso);
 				break;
 
 			case METRICS:;
 				break;
 
 			case SELECT:;
+				Select * select = (Select *) proceso->instruccion->instruccion_a_realizar;
+				logicaSelect(select);
 				break;
 
 			case INSERT:;
-
 				break;
 
 			case CREATE:;
-				logicaCreate(proceso);
+				Create * create = (Create *) proceso->instruccion->instruccion_a_realizar;
+				logicaCreate(create);
 				break;
 
 			case DROP:;
 				break;
 
 			case ADD:;
-				logicaAdd(proceso);
+				Add * add = (Add *) proceso->instruccion->instruccion_a_realizar;
+				logicaAdd(add);
 				break;
 
 			case DESCRIBE:;
@@ -164,9 +167,7 @@ void planificar() {
 	}
 }
 
-void logicaRun(Proceso * proceso){
-	void * instruccionOriginal = proceso->instruccion->instruccion_a_realizar;
-	Run * run = (Run*) instruccionOriginal;
+void logicaRun(Run * run, Proceso * proceso){
 	char * proximainstruccionChar = leer_linea(run->path, proceso->numeroInstruccion);
 
 	while(proximainstruccionChar != NULL && proceso->quantumProcesado < QUANTUM){
@@ -177,11 +178,11 @@ void logicaRun(Proceso * proceso){
 
 		switch(tipoInstruccionAProcesar){
 			case CREATE:;
-				logicaCreate(proceso);
+				logicaCreate(instruccionAProcesar);
 				break;
 
 			case SELECT:;
-				logicaSelect(proceso);
+				logicaSelect(instruccionAProcesar);
 				break;
 
 			case INSERT:;
@@ -215,17 +216,14 @@ void logicaRun(Proceso * proceso){
 	}
 }
 
-void logicaCreate(Proceso * proceso){
-	Create * create = (Create *) proceso->instruccionAProcesar->instruccion_a_realizar;
+void logicaCreate(Create * create){
 	llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
 
 	Memoria * mem = (Memoria*) dictionary_get(tablasPorConsistencia, create->nombre_tabla);
-	int fd = 6;
-	proceso->file_descriptor = fd;
+
 }
 
-void logicaAdd(Proceso * proceso){
-	Add * add = (Add *) proceso->instruccionAProcesar->instruccion_a_realizar;
+void logicaAdd(Add * add){
 	Memoria * memoria;
 	int tamTabla = dictionary_size(memoriasDisponibles);
 	int i;
@@ -241,9 +239,7 @@ void logicaAdd(Proceso * proceso){
 	asignarConsistenciaAMemoria(memoria->idMemoria, add->consistencia);
 }
 
-void logicaSelect(Proceso * proceso){
-
-	Select * select = (Select*) proceso->instruccionAProcesar->instruccion_a_realizar;
+void logicaSelect(Select * select){
 
 	char * nombreTabla = string_new();
 	string_append(&nombreTabla, select->nombre_tabla);
@@ -251,8 +247,6 @@ void logicaSelect(Proceso * proceso){
 	Memoria * mem = (Memoria*)dictionary_get(tablasPorConsistencia,nombreTabla);
 
 	//int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
-	int fd = 5;
-	proceso->file_descriptor = fd;
 }
 
 bool esFinQuantum(Proceso * p, char * instruccionALeer){

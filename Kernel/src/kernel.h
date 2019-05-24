@@ -41,10 +41,10 @@ void llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void preguntarPorMemoriasDisponibles();
 void newToReady();
-void logicaCreate(Proceso * proceso);
-void logicaRun(Proceso * proceso);
-void logicaSelect(Proceso * proceso);
-void logicaAdd(Proceso * proceso);
+void logicaCreate(Create * create);
+void logicaRun(Run * run, Proceso * proceso);
+void logicaSelect(Select * select);
+void logicaAdd(Add * add);
 bool esFinLectura(Proceso * p, char * instruccionALeer);
 bool esFinQuantum(Proceso * p, char * instruccionALeer);
 
