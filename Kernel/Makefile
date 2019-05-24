@@ -15,4 +15,4 @@ kernel:
 	gcc src/*.c ../utilguenguencha/*.c $(FLAGS) $(LIBS) -o Release/$@
 
 clean:
-	rm -rf Release/*
+	rm -rf Release

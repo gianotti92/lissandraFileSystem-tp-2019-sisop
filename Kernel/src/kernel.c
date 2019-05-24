@@ -1,16 +1,13 @@
 #include "kernel.h"
 #include <sys/types.h>
 
-//revisar semaforos para que siga ejecutando planificador
-//hacer otro hilo que vaya generando las metrics (sacando de estado exit) y haciendo free de los proceso
-//cambiar los if de desalojo, el numero 2 por QUANTUM levantado de archivo config
-
-pthread_mutex_t mutexEstados;
+pthread_mutex_t mutexRecursosCompartidos;
 sem_t semaforoSePuedePlanificar;
 sem_t semaforoNewToReady;
 
 int main(void) {
-	pthread_mutex_init(&mutexEstados, NULL);
+
+	pthread_mutex_init(&mutexRecursosCompartidos, NULL);
 	sem_init(&semaforoSePuedePlanificar,0,0);
 	sem_init(&semaforoNewToReady, 0, 0);
 
@@ -34,8 +31,7 @@ int main(void) {
 		pthread_create(&multiProcesamientoKernell, NULL, (void*) planificar,
 						NULL);
 		cantMultiprocesamiento++;
-	}
-
+}
 	pthread_join(consolaKernel, NULL);
 }
 
@@ -58,41 +54,6 @@ void configuracion_inicial(void) {
 			"HILOS_KERNEL");
 }
 
-void retorno_consola(char* leido) {
-
-	Proceso * proceso = malloc(sizeof(Proceso));
-	Instruccion * instruccion = malloc(sizeof(Instruccion));
-
-	instruccion = parser_lql(leido, KERNEL);
-
-
-	if(instruccion->instruccion != ERROR){
-		proceso->instruccion = instruccion;
-		proceso->numeroInstruccion = 0;
-		proceso->quantumProcesado = 0;
-		proceso->file_descriptor = -1;
-
-		pthread_mutex_lock(&mutexEstados);
-		list_add(estadoNew, proceso);
-		pthread_mutex_unlock(&mutexEstados);
-
-		sem_post(&semaforoNewToReady);
-	}
-}
-
-void newToReady(){
-	while(true){
-		sem_wait(&semaforoNewToReady);
-
-		pthread_mutex_lock(&mutexEstados);
-		Proceso * proceso = list_remove(estadoNew, 0);
-		list_add(estadoReady, proceso);
-		pthread_mutex_unlock(&mutexEstados);
-
-		sem_post(&semaforoSePuedePlanificar);
-	}
-
-}
 void iniciarEstados() {
 	log_info(LOGGER, "Kernel:Se inician estados");
 	estadoReady = list_create();
@@ -111,147 +72,195 @@ void iniciarEstructurasAsociadas(){
 	memoriasDisponibles = dictionary_create();
 }
 
+void retorno_consola(char* leido) {
+
+	Proceso * proceso = malloc(sizeof(Proceso));
+	Instruccion * instruccion = malloc(sizeof(Instruccion));
+
+	instruccion = parser_lql(leido, KERNEL);
+
+
+	if(instruccion->instruccion != ERROR){
+		proceso->instruccion = instruccion;
+		proceso->numeroInstruccion = 0;
+		proceso->quantumProcesado = 0;
+		proceso->file_descriptor = -1;
+
+		pthread_mutex_lock(&mutexRecursosCompartidos);
+		list_add(estadoNew, proceso);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+		sem_post(&semaforoNewToReady);
+	}
+}
+
+void newToReady(){
+	while(true){
+		sem_wait(&semaforoNewToReady);
+
+		pthread_mutex_lock(&mutexRecursosCompartidos);
+		Proceso * proceso = list_remove(estadoNew, 0);
+		list_add(estadoReady, proceso);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+		sem_post(&semaforoSePuedePlanificar);
+	}
+
+}
 
 void planificar() {
 	while(1){
 		sem_wait(&semaforoSePuedePlanificar);
 
-		pthread_mutex_lock(&mutexEstados);
+		pthread_mutex_lock(&mutexRecursosCompartidos);
 		Proceso * proceso = (Proceso*)list_remove(estadoReady, 0);
-		pthread_mutex_unlock(&mutexEstados);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
+
 		Instruccion * instruccion = proceso->instruccion;
-
-		while (proceso->quantumProcesado <= QUANTUM) {
-
-			switch(proceso->instruccion->instruccion	){
-				case RUN:;
-					Run * run = (Run*)instruccion->instruccion_a_realizar;
-
-					char * inst = leer_linea(run->path, proceso->numeroInstruccion);
-
-					while(inst != NULL){
-						Instruccion * instruccionAProcesar = parser_lql((char*)inst, KERNEL);
-						proceso->instruccionAProcesar = instruccionAProcesar;
-
-						Memoria * mem = NULL;
-						int fd = -1;
-						switch(proceso->instruccionAProcesar->instruccion){
-							case CREATE:;
-								Create * create = (Create *) proceso->instruccionAProcesar->instruccion_a_realizar;
-								llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
-
-								mem = (Memoria*) dictionary_get(tablasPorConsistencia, create->nombre_tabla);
-								fd = 6;
-								proceso->file_descriptor = fd;
-
-								break;
-
-							case SELECT:;
-								Select * select = (Select*) proceso->instruccionAProcesar->instruccion_a_realizar;
-
-								char * nombreTabla = string_new();
-								string_append(&nombreTabla, select->nombre_tabla);
-
-								mem = (Memoria*)dictionary_get(tablasPorConsistencia,nombreTabla);
-
-								//int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
-								fd = 5;
-								proceso->file_descriptor = fd;
-
-								break;
-
-							case INSERT:;
-								break;
-
-							case DROP:;
-								break;
-
-							case ERROR:;
-								break;
-
-							default:
-								break;
-
-						}
-
-						proceso->numeroInstruccion += 1;
-						proceso->quantumProcesado += 1;
-
-						inst = leer_linea(run->path, proceso->numeroInstruccion);
-
-						if(proceso->quantumProcesado == 2 && inst != NULL){
-							encolar(estadoReady, proceso);
-							return;
-						}else if(proceso->quantumProcesado == 2 && inst == NULL){
-							encolar(estadoExit, proceso);
-							return;
-						}else if(inst == NULL){
-							encolar(estadoExit, proceso);
-							return;
-						}
-
-					}
-					encolar(estadoExit, proceso);
-					return;
-
-					break;
-
-				case METRICS:;
-					break;
-
-				case SELECT:;
-					break;
-
-				case INSERT:;
-
-					break;
-
-				case CREATE:;
-					Create * create = (Create *) proceso->instruccionAProcesar->instruccion_a_realizar;
-					llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
-
-					Memoria * mem = (Memoria*) dictionary_get(tablasPorConsistencia, create->nombre_tabla);
-					int fd = 6;
-					proceso->file_descriptor = fd;
-
-					break;
-
-				case DROP:;
-					break;
-
-				case ADD:;
-					Add * add = (Add *)instruccion->instruccion_a_realizar;
-					Memoria * memoria;
-					int tamTabla = dictionary_size(memoriasDisponibles);
-					int i;
-
-					for(i = 0; i <= tamTabla; i++){
-						char * key = string_new();
-						sprintf(key, "%d", i);
-						memoria = (Memoria*)dictionary_get(memoriasDisponibles, key);
-						if(memoria != NULL){
-							break;
-						}
-					}
-					asignarConsistenciaAMemoria(memoria->idMemoria, add->consistencia);
+		Instruction_set tipoInstruccion = instruccion->instruccion;
 
 
-					break;
+		switch(tipoInstruccion){
+			case RUN:;
+				logicaRun(proceso);
+				break;
 
-				case DESCRIBE:;
-					break;
+			case METRICS:;
+				break;
 
-				case JOURNAL:
-					break;
+			case SELECT:;
+				break;
 
-				default:
-					break;
-			}
-			encolar(estadoExit, proceso);
-			return;
+			case INSERT:;
+
+				break;
+
+			case CREATE:;
+				logicaCreate(proceso);
+				break;
+
+			case DROP:;
+				break;
+
+			case ADD:;
+				logicaAdd(proceso);
+				break;
+
+			case DESCRIBE:;
+				break;
+
+			case JOURNAL:
+				break;
+
+			default:
+				break;
+		}
+		pthread_mutex_lock(&mutexRecursosCompartidos);
+		encolar(estadoExit, proceso);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
+		return;
+
+
+	}
+}
+
+void logicaRun(Proceso * proceso){
+	void * instruccionOriginal = proceso->instruccion->instruccion_a_realizar;
+	Run * run = (Run*) instruccionOriginal;
+	char * proximainstruccionChar = leer_linea(run->path, proceso->numeroInstruccion);
+
+	while(proximainstruccionChar != NULL && proceso->quantumProcesado < QUANTUM){
+
+		Instruccion * instruccionAProcesar = parser_lql((char*)proximainstruccionChar, KERNEL);
+		proceso->instruccionAProcesar = instruccionAProcesar;
+		Instruction_set tipoInstruccionAProcesar = instruccionAProcesar->instruccion;
+
+		switch(tipoInstruccionAProcesar){
+			case CREATE:;
+				logicaCreate(proceso);
+				break;
+
+			case SELECT:;
+				logicaSelect(proceso);
+				break;
+
+			case INSERT:;
+				break;
+
+			case DROP:;
+				break;
+
+			case ERROR:;
+				break;
+
+			default:
+				break;
 
 		}
+		proceso->numeroInstruccion += 1;
+		proceso->quantumProcesado += 1;
+
+		proximainstruccionChar = leer_linea(run->path, proceso->numeroInstruccion);
 	}
+
+	if(esFinQuantum(proceso, proximainstruccionChar)){
+		encolar(estadoReady, proceso);
+		return;
+	}else if(esFinLectura(proceso, proximainstruccionChar)){
+		encolar(estadoExit, proceso);
+		return;
+	}else{
+		encolar(estadoExit, proceso);
+		return;
+	}
+}
+
+void logicaCreate(Proceso * proceso){
+	Create * create = (Create *) proceso->instruccionAProcesar->instruccion_a_realizar;
+	llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
+
+	Memoria * mem = (Memoria*) dictionary_get(tablasPorConsistencia, create->nombre_tabla);
+	int fd = 6;
+	proceso->file_descriptor = fd;
+}
+
+void logicaAdd(Proceso * proceso){
+	Add * add = (Add *) proceso->instruccionAProcesar->instruccion_a_realizar;
+	Memoria * memoria;
+	int tamTabla = dictionary_size(memoriasDisponibles);
+	int i;
+
+	for(i = 0; i <= tamTabla; i++){
+		char * key = string_new();
+		sprintf(key, "%d", i);
+		memoria = (Memoria*)dictionary_get(memoriasDisponibles, key);
+		if(memoria != NULL){
+			break;
+		}
+	}
+	asignarConsistenciaAMemoria(memoria->idMemoria, add->consistencia);
+}
+
+void logicaSelect(Proceso * proceso){
+
+	Select * select = (Select*) proceso->instruccionAProcesar->instruccion_a_realizar;
+
+	char * nombreTabla = string_new();
+	string_append(&nombreTabla, select->nombre_tabla);
+
+	Memoria * mem = (Memoria*)dictionary_get(tablasPorConsistencia,nombreTabla);
+
+	//int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
+	int fd = 5;
+	proceso->file_descriptor = fd;
+}
+
+bool esFinQuantum(Proceso * p, char * instruccionALeer){
+	return instruccionALeer != NULL && p->quantumProcesado == 2;
+}
+
+bool esFinLectura(Proceso * p, char * instruccionALeer){
+	return instruccionALeer == NULL;
 }
 
 void liberarProceso(Proceso * proceso) {
@@ -259,24 +268,24 @@ void liberarProceso(Proceso * proceso) {
 }
 
 void encolar(t_list * cola, Proceso * proceso) {
-	pthread_mutex_lock(&mutexEstados);
+	pthread_mutex_lock(&mutexRecursosCompartidos);
 	list_add(cola, proceso);
-	pthread_mutex_unlock(&mutexEstados);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
 
 void pasarProceso(int posicion, t_list *from, t_list *to) {
 	if (list_size(from) > 0) {
-		pthread_mutex_lock(&mutexEstados);
+		pthread_mutex_lock(&mutexRecursosCompartidos);
 		Proceso * p = (Proceso *) list_remove(from, posicion);
 		list_add(to, p);
-		pthread_mutex_unlock(&mutexEstados);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
 	}
 }
 
 void cambiarEstado(Proceso* p, t_list * estado){
-	pthread_mutex_lock(&mutexEstados);
+	pthread_mutex_lock(&mutexRecursosCompartidos);
 	list_add(estado, p);
-	pthread_mutex_unlock(&mutexEstados);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
 
 void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia){
@@ -286,9 +295,9 @@ void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia)
 	Memoria * m = malloc(sizeof(Memoria));
 	m = (Memoria*) dictionary_get(memoriasDisponibles, key);
 	if(m != NULL){
-		pthread_mutex_lock(&mutexEstados);
+		pthread_mutex_lock(&mutexRecursosCompartidos);
 		dictionary_put(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], m);
-		pthread_mutex_unlock(&mutexEstados);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
 	}else{
 		/*Fallo el log*/
 		printf("Fallo el ADD");
@@ -297,14 +306,14 @@ void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia)
 
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
 
-	pthread_mutex_lock(&mutexEstados);
+	pthread_mutex_lock(&mutexRecursosCompartidos);
 	Memoria * mem = (Memoria*)dictionary_get(memoriasAsociadas, consistencia);
-	pthread_mutex_unlock(&mutexEstados);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
 
 	if(mem != NULL){
-		pthread_mutex_lock(&mutexEstados);
+		pthread_mutex_lock(&mutexRecursosCompartidos);
 		dictionary_put(tablasPorConsistencia, nombreTable, consistencia);
-		pthread_mutex_unlock(&mutexEstados);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
 	}else{
 		printf("fallo create, no existe memoria con dicha consistencia");
 	}
@@ -326,9 +335,9 @@ void preguntarPorMemoriasDisponibles(){
 
 		char * key = string_new();
 		sprintf(key, "%d", m->idMemoria);
-		pthread_mutex_lock(&mutexEstados);
+		pthread_mutex_lock(&mutexRecursosCompartidos);
 		dictionary_put(memoriasDisponibles, key , m);
-		pthread_mutex_unlock(&mutexEstados);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
 
 
 

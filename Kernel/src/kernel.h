@@ -41,6 +41,12 @@ void llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void preguntarPorMemoriasDisponibles();
 void newToReady();
+void logicaCreate(Proceso * proceso);
+void logicaRun(Proceso * proceso);
+void logicaSelect(Proceso * proceso);
+void logicaAdd(Proceso * proceso);
+bool esFinLectura(Proceso * p, char * instruccionALeer);
+bool esFinQuantum(Proceso * p, char * instruccionALeer);
 
 
 // Variables del proceso
