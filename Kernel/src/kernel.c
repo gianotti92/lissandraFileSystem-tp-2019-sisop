@@ -25,6 +25,7 @@ int main(void) {
 
 	pthread_create(&pasarNewToReady, NULL, (void*) newToReady, NULL);
 
+
 	int cantMultiprocesamiento = 0;
 	while(cantMultiprocesamiento <  HILOS_KERNEL){
 		pthread_t multiProcesamientoKernell;
@@ -93,10 +94,7 @@ void newToReady(){
 		sem_wait(&semaforoNewToReady);
 		Proceso * proceso = desencolar(estadoNew);
 		encolar(estadoReady, proceso);
-		int val;
-		sem_getvalue(&semaforoSePuedePlanificar, &val);
 		sem_post(&semaforoSePuedePlanificar);
-		sem_getvalue(&semaforoSePuedePlanificar, &val);
 	}
 }
 
@@ -104,6 +102,7 @@ void planificar() {
 	while(1){
 		sem_wait(&semaforoSePuedePlanificar);
 		Proceso * proceso = desencolar(estadoReady);
+
 		switch(proceso->instruccion->instruccion){
 			case RUN:;
 				Run * run = (Run *) proceso->instruccion->instruccion_a_realizar;
@@ -144,7 +143,10 @@ void planificar() {
 				break;
 		}
 		encolar(estadoExit, proceso);
-		return;
+		int exitSize = list_size(estadoExit);
+		char * num = string_new();
+		sprintf(num, "%d", exitSize);
+		log_info(LOGGER, num);
 	}
 }
 
