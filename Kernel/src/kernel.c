@@ -86,11 +86,16 @@ void retorno_consola(char* leido) {
 		proceso->quantumProcesado = 0;
 		proceso->file_descriptor = -1;
 
-		pthread_mutex_lock(&mutexRecursosCompartidos);
-		list_add(estadoNew, proceso);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
+		if(pthread_mutex_trylock(&mutexRecursosCompartidos) == 0){
+			list_add(estadoNew, proceso);
+			pthread_mutex_unlock(&mutexRecursosCompartidos);
+			sem_post(&semaforoNewToReady);
+		}else{
+			log_error(LOGGER, "ERROR tratando de lockear");
+		}
 
-		sem_post(&semaforoNewToReady);
+
+
 	}
 }
 
@@ -115,9 +120,6 @@ void planificar() {
 		pthread_mutex_lock(&mutexRecursosCompartidos);
 		Proceso * proceso = (Proceso*)list_remove(estadoReady, 0);
 		pthread_mutex_unlock(&mutexRecursosCompartidos);
-
-
-
 
 		switch(proceso->instruccion->instruccion){
 			case RUN:;
