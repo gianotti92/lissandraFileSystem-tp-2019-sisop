@@ -1,5 +1,4 @@
 #include "kernel.h"
-#include <sys/types.h>
 
 pthread_mutex_t mutexRecursosCompartidos;
 sem_t semaforoSePuedePlanificar;
