@@ -6,7 +6,7 @@
 #include "../../utilguenguencha/kernel_utils.h"
 #include "../../utilguenguencha/parser.h"
 #include "../../utilguenguencha/utils.h"
-#include "../../collections/dictionary.h"
+#include <commons/collections/dictionary.h>
 #include <semaphore.h>
 #include <stdlib.h>
 #include <sys/types.h>
