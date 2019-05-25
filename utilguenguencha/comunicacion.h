@@ -121,8 +121,17 @@ typedef struct {
 	t_list *lista_memorias;
 } Gossip;
 
+typedef enum {
+	T_GOSSIPING, T_INSTRUCCION, T_RETORNO, T_VALUE
+} t_tipo_comunicacion;
+
+typedef struct {
+	char* puerto_servidor;
+	t_tipo_comunicacion tipo_comunicacion;
+} t_comunicacion;
+
 void retornarControl(Instruccion *instruccion, int socket_cliente);
-void servidor_comunicacion(char* puerto_servidor);
+void servidor_comunicacion(t_comunicacion *comunicacion);
 int iniciar_servidor(char* puerto);
 int crear_conexion(char* ip, char* puerto);
 t_paquete* crear_paquete(Procesos proceso_del_que_envio,
