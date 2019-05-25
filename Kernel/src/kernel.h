@@ -8,6 +8,7 @@
 #include <semaphore.h>
 #include <commons/collections/dictionary.h>
 #include <stdlib.h>
+#include <time.h>
 
 typedef struct{
 	Instruccion* instruccion;
@@ -16,8 +17,6 @@ typedef struct{
 	int quantumProcesado;
 	int numeroInstruccion;
 }Proceso;
-
-
 
 char *CONSISTENCIAS_STRING[] = {
     "EC", "SC", "SHC",
@@ -36,7 +35,7 @@ void putMemorySafe(t_dictionary * dic, char* key, Memoria * value);
 void putTablaSafe(t_dictionary * dic, char* key, char * value);
 Memoria* getMemoriaSafe(t_dictionary * dic, char*key);
 char* getTablasSafe(t_dictionary * dic, char*key);
-void planificar();
+void ejecutar();
 void iniciarEstructurasAsociadas();
 void asignarConsistenciaAMemoria(uint32_t id, Consistencias leido);
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
@@ -47,9 +46,13 @@ void logicaCreate(Create * create);
 void logicaRun(Run * run, Proceso * proceso);
 void logicaSelect(Select * select);
 void logicaAdd(Add * add);
+void logicaInsert(Insert * insert);
 bool esFinLectura(Proceso * p, char * instruccionALeer);
 bool esFinQuantum(Proceso * p, char * instruccionALeer);
-
+void calculoMetrics();
+void inicializarValoresMetrics();
+void graficar(int insert, int select);
+int segundosTranscurridos();
 
 // Variables del proceso
 t_list *estadoReady;
@@ -71,7 +74,5 @@ uint32_t REFRESH_METADATA;
 uint32_t RETARDO;
 int TAMANO_MAXIMO_LECTURA_ARCHIVO;
 int HILOS_KERNEL;
-
-
 
 #endif /* KERNEL_H_ */

@@ -2,21 +2,21 @@
 #include <sys/types.h>
 
 pthread_mutex_t mutexRecursosCompartidos;
-sem_t semaforoSePuedePlanificar;
-sem_t semaforoNewToReady;
+sem_t semaforoSePuedePlanificar, semaforoNewToReady;//, semaforoMetrics;
 
 int main(void) {
 
 	pthread_mutex_init(&mutexRecursosCompartidos, NULL);
 	sem_init(&semaforoSePuedePlanificar,0,0);
 	sem_init(&semaforoNewToReady, 0, 0);
+//	sem_init(&semaforoMetrics, 0, 0);
 
 	configure_logger();
 	configuracion_inicial();
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
 
-	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady;
+	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics;
 
 	pthread_create(&memoriasDisponibles, NULL, (void*) preguntarPorMemoriasDisponibles, NULL);
 
@@ -25,11 +25,13 @@ int main(void) {
 
 	pthread_create(&pasarNewToReady, NULL, (void*) newToReady, NULL);
 
+	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, NULL);
+
 
 	int cantMultiprocesamiento = 0;
 	while(cantMultiprocesamiento <  HILOS_KERNEL){
 		pthread_t multiProcesamientoKernell;
-		pthread_create(&multiProcesamientoKernell, NULL, (void*) planificar,
+		pthread_create(&multiProcesamientoKernell, NULL, (void*) ejecutar,
 						NULL);
 		cantMultiprocesamiento++;
 }
@@ -69,6 +71,7 @@ void iniciarEstructurasAsociadas(){
 	memoriasAsociadas = dictionary_create();
 	tablasPorConsistencia = dictionary_create();
 	memoriasDisponibles = dictionary_create();
+	tablaMetrics = dictionary_create();
 }
 
 void retorno_consola(char* leido) {
@@ -98,7 +101,7 @@ void newToReady(){
 	}
 }
 
-void planificar() {
+void ejecutar() {
 	while(1){
 		sem_wait(&semaforoSePuedePlanificar);
 		Proceso * proceso = desencolar(estadoReady);
@@ -118,6 +121,8 @@ void planificar() {
 				break;
 
 			case INSERT:;
+				Insert * insert = (Insert *) proceso->instruccion->instruccion_a_realizar;
+				logicaInsert(insert);
 				break;
 
 			case CREATE:;
@@ -143,16 +148,8 @@ void planificar() {
 				break;
 		}
 		encolar(estadoExit, proceso);
-		int exitSize = list_size(estadoExit);
-		char * num = string_new();
-		sprintf(num, "%d", exitSize);
-		log_info(LOGGER, num);
+//		sem_post(&semaforoMetrics);
 
-		int tamanioMemDisp = dictionary_size(memoriasDisponibles);
-		int tamanioMemAsoc = dictionary_size(memoriasAsociadas);
-		int tamanioTablasXConsis = dictionary_size(tablasPorConsistencia);
-
-		printf("%s", "asd");
 	}
 }
 
@@ -235,6 +232,18 @@ void logicaSelect(Select * select){
 	Memoria * mem = (Memoria*)getMemoriaSafe(tablasPorConsistencia,nombreTabla);
 
 	//int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
+
+	free(nombreTabla);
+}
+
+void logicaInsert(Insert * insert){
+	char * nombreTabla = string_new();
+	string_append(&nombreTabla, insert->nombre_tabla);
+
+	Memoria * mem = (Memoria*)getMemoriaSafe(tablasPorConsistencia, nombreTabla);
+
+	free(nombreTabla);
+
 }
 
 bool esFinQuantum(Proceso * p, char * instruccionALeer){
@@ -324,4 +333,72 @@ void preguntarPorMemoriasDisponibles(){
 
 		sleep(5);
 	}
+}
+
+void calculoMetrics(){
+	inicializarValoresMetrics();
+	int contadorInsert = 0;
+	int contadorSelect = 0;
+	int segundos = 0;
+	int segundosMaximo = 30;
+
+	while(1){
+//		sem_wait(&semaforoMetrics);
+		Proceso * proceso = desencolar(estadoExit);
+		switch(proceso->instruccion->instruccion){
+			case INSERT:;
+				contadorInsert++;
+				free(proceso);
+				break;
+			case SELECT:;
+				contadorSelect++;
+				free(proceso);
+				break;
+
+			default:
+				free(proceso);
+				break;
+
+		}
+
+		if(segundos >= segundosMaximo){
+			graficar(contadorInsert, contadorSelect);
+			contadorInsert = 0;
+			contadorSelect = 0;
+			segundos = 0;
+		}
+		segundos = segundosTranscurridos();
+	}
+}
+
+void graficar(int contadorInsert, int contadorSelect){
+	char * reads = string_new();
+	char * writes = string_new();
+
+	string_append(&reads, "Cantidad de reads: ");
+	string_append(&writes, "Cantidad de writres ");
+
+	double r = (double)contadorSelect / 30;
+	double w = (double)contadorInsert / 30;
+
+	char * rChar = string_new();
+	char * wChar = string_new();
+
+	sprintf(rChar, "%f", r);
+	sprintf(wChar, "%f", w);
+
+	string_append(&reads, rChar);
+	string_append(&wChar, wChar);
+
+	log_info(LOGGER, reads);
+	log_info(LOGGER, writes);
+
+	free(reads);
+	free(writes);
+	free(rChar);
+	free(wChar);
+}
+
+int segundosTranscurridos(){
+	uintmax_t
 }
