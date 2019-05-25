@@ -71,7 +71,6 @@ void iniciarEstructurasAsociadas(){
 	memoriasAsociadas = dictionary_create();
 	tablasPorConsistencia = dictionary_create();
 	memoriasDisponibles = dictionary_create();
-	tablaMetrics = dictionary_create();
 }
 
 void retorno_consola(char* leido) {
@@ -336,38 +335,42 @@ void preguntarPorMemoriasDisponibles(){
 }
 
 void calculoMetrics(){
-	inicializarValoresMetrics();
 	int contadorInsert = 0;
 	int contadorSelect = 0;
-	int segundos = 0;
-	int segundosMaximo = 30;
-
+	time_t inicio, fin;
+	double diferencia;
+	inicio = get_timestamp();
+	fin = get_timestamp();
 	while(1){
 //		sem_wait(&semaforoMetrics);
+
 		Proceso * proceso = desencolar(estadoExit);
-		switch(proceso->instruccion->instruccion){
-			case INSERT:;
-				contadorInsert++;
-				free(proceso);
-				break;
-			case SELECT:;
-				contadorSelect++;
-				free(proceso);
-				break;
+		if(proceso != NULL){
+			switch(proceso->instruccion->instruccion){
+				case INSERT:;
+					contadorInsert++;
+					free(proceso);
+					break;
+				case SELECT:;
+					contadorSelect++;
+					free(proceso);
+					break;
 
-			default:
-				free(proceso);
-				break;
-
+				default:
+					free(proceso);
+					break;
+			}
 		}
+		diferencia = difftime(fin,inicio);
 
-		if(segundos >= segundosMaximo){
+		if((int)diferencia >= 30){
+
 			graficar(contadorInsert, contadorSelect);
 			contadorInsert = 0;
 			contadorSelect = 0;
-			segundos = 0;
+			inicio = get_timestamp();
 		}
-		segundos = segundosTranscurridos();
+		fin = get_timestamp();
 	}
 }
 
@@ -376,7 +379,7 @@ void graficar(int contadorInsert, int contadorSelect){
 	char * writes = string_new();
 
 	string_append(&reads, "Cantidad de reads: ");
-	string_append(&writes, "Cantidad de writres ");
+	string_append(&writes, "Cantidad de writres: ");
 
 	double r = (double)contadorSelect / 30;
 	double w = (double)contadorInsert / 30;
@@ -388,7 +391,7 @@ void graficar(int contadorInsert, int contadorSelect){
 	sprintf(wChar, "%f", w);
 
 	string_append(&reads, rChar);
-	string_append(&wChar, wChar);
+	string_append(&writes, wChar);
 
 	log_info(LOGGER, reads);
 	log_info(LOGGER, writes);
@@ -399,6 +402,4 @@ void graficar(int contadorInsert, int contadorSelect){
 	free(wChar);
 }
 
-int segundosTranscurridos(){
-	uintmax_t
-}
+

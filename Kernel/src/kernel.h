@@ -52,7 +52,6 @@ bool esFinQuantum(Proceso * p, char * instruccionALeer);
 void calculoMetrics();
 void inicializarValoresMetrics();
 void graficar(int insert, int select);
-int segundosTranscurridos();
 
 // Variables del proceso
 t_list *estadoReady;
