@@ -1,7 +1,6 @@
 #include "comunicacion.h"
 
-void servidor_comunicacion(void (*funcion_retorno)(Instruccion*, int),
-		char* puerto_servidor) {
+void servidor_comunicacion(char* puerto_servidor) {
 	fd_set fd_set_master, fd_set_temporal;
 	int aux1, bytes_recibidos, fd_max, server_socket;
 	server_socket = iniciar_servidor(puerto_servidor);
@@ -49,7 +48,7 @@ void servidor_comunicacion(void (*funcion_retorno)(Instruccion*, int),
 							}
 							if (recibir_buffer(aux1, inst_op, instruccion)) {
 								FD_CLR(aux1, &fd_set_master);
-								funcion_retorno(instruccion, aux1);
+								retornarControl(instruccion, aux1);
 							} else {
 								FD_CLR(aux1, &fd_set_master);
 								liberar_conexion(aux1);
@@ -64,7 +63,7 @@ void servidor_comunicacion(void (*funcion_retorno)(Instruccion*, int),
 							}
 							if (recibir_buffer(aux1, inst_op, instruccion)) {
 								FD_CLR(aux1, &fd_set_master);
-								funcion_retorno(instruccion, aux1);
+								retornarControl(instruccion, aux1);
 							} else {
 								FD_CLR(aux1, &fd_set_master);
 								liberar_conexion(aux1);
@@ -79,7 +78,7 @@ void servidor_comunicacion(void (*funcion_retorno)(Instruccion*, int),
 							}
 							if (recibir_buffer(aux1, inst_op, instruccion)) {
 								FD_CLR(aux1, &fd_set_master);
-								funcion_retorno(instruccion, aux1);
+								retornarControl(instruccion, aux1);
 							} else {
 								FD_CLR(aux1, &fd_set_master);
 								liberar_conexion(aux1);

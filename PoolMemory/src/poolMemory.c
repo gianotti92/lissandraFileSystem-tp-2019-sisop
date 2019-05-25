@@ -9,7 +9,7 @@ int main(void) {
 	pthread_t consolaPoolMemory, gossiping;
 	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);
 	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
-	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
+	servidor_comunicacion(PUERTO_DE_ESCUCHA);
 
 	pthread_join(consolaPoolMemory, NULL);
 	pthread_join(gossiping, NULL);

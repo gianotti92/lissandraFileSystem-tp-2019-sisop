@@ -28,9 +28,7 @@ char *CONSISTENCIAS_STRING[] = {
 // Funciones del proceso
 void configuracion_inicial(void);
 void retorno_consola(char* leido);
-void retornarControl(Instruction_set instruccion, int socket_cliente);
 void iniciarEstados();
-
 void leerArchivo(char * path);
 void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
@@ -52,6 +50,8 @@ void logicaAdd(Add * add);
 bool esFinLectura(Proceso * p, char * instruccionALeer);
 bool esFinQuantum(Proceso * p, char * instruccionALeer);
 
+// Hay que definirla ya que no tiene definición en kernel y sino rompería, de todos modos no se usa
+void retornarControl(Instruccion *instruccion, int socket_cliente){};
 
 // Variables del proceso
 t_list *estadoReady;

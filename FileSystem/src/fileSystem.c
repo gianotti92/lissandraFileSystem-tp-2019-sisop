@@ -5,7 +5,7 @@ int main(void) {
 	configuracion_inicial();
 	pthread_t consolaFS;
 	pthread_create(&consolaFS, NULL, (void*) leer_por_consola, retorno_consola);
-	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
+	servidor_comunicacion(PUERTO_DE_ESCUCHA);
 }
 
 void configuracion_inicial(void){
