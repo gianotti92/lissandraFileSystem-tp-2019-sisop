@@ -23,7 +23,9 @@ int main(void) {
 
 	pthread_create(&pasarNewToReady, NULL, (void*) newToReady, NULL);
 
-	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, NULL);
+	bool dormir = false;
+
+	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, (void*)&dormir);
 
 
 	int cantMultiprocesamiento = 0;
@@ -111,6 +113,8 @@ void ejecutar() {
 				break;
 
 			case METRICS:;
+				bool dormir = true;
+				calculoMetrics((void*)&dormir);
 				break;
 
 			case SELECT:;
@@ -131,10 +135,12 @@ void ejecutar() {
 
 			case CREATE:;
 				Create * create = (Create *) proceso->instruccion->instruccion_a_realizar;
-				logicaCreate(create);
+				proceso->file_descriptor = logicaCreate(create);
 				break;
 
 			case DROP:;
+				Drop * drop = (Drop *) proceso->instruccion->instruccion_a_realizar;
+				proceso->file_descriptor = logicaDrop(drop);
 				break;
 
 			case ADD:;
@@ -204,10 +210,17 @@ void logicaRun(Run * run, Proceso * proceso){
 	}
 }
 
-void logicaCreate(Create * create){
+int logicaCreate(Create * create){
+	Instruccion * i = malloc(sizeof(Instruccion));
 	llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
 	Memoria * mem = (Memoria*) getMemoriaSafe(tablasPorConsistencia, create->nombre_tabla);
-
+	if(mem != NULL){
+		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
+		free(i);
+		return fd;
+	}
+	free(i);
+	return -100;
 }
 
 void logicaAdd(Add * add){
@@ -245,6 +258,8 @@ int logicaSelect(Select * select){
 
 		return fd;
 	}
+	free(i);
+	free(nombreTabla);
 	return -100;
 }
 
@@ -263,9 +278,28 @@ int logicaInsert(Insert * insert){
 		free(i);
 		return fd;
 	}
-
+	free(nombreTabla);
+	free(i);
 	return -100;
+}
 
+int logicaDrop(Drop * drop){
+	Instruccion * i = malloc(sizeof(Instruccion));
+	i->instruccion_a_realizar = (void *) drop;
+	i->instruccion = DROP;
+
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	Memoria * mem = dictionary_remove(tablasPorConsistencia, drop->nombre_tabla);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	if(mem != NULL){
+		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
+		free(i);
+		free(mem);
+		return fd;
+	}
+
+	free(i);
+	return -100;
 
 }
 
@@ -358,7 +392,7 @@ void preguntarPorMemoriasDisponibles(){
 	}
 }
 
-void calculoMetrics(){
+void calculoMetrics(bool * direct){
 	int contadorInsert = 0;
 	int contadorSelect = 0;
 	int contadorSelectInsert = 0;
@@ -366,7 +400,9 @@ void calculoMetrics(){
 	int tiempoPromedioSelect = 0;
 	int tiempoPromedioInsert = 0;
 	while(1){
-		sleep(30);
+		if(!(*direct)){
+			sleep(30);
+		}
 		Proceso * proceso = desencolar(estadoExit);
 		while(proceso != NULL){
 			operacionesTotales++;
@@ -390,7 +426,13 @@ void calculoMetrics(){
 			}
 			proceso = desencolar(estadoExit);
 		}
+		if(contadorInsert == 0){
+			contadorInsert = 1;
+		}
 
+		if(contadorSelect == 0){
+			contadorSelect = 1;
+		}
 		tiempoPromedioInsert = tiempoPromedioInsert / contadorInsert;
 		tiempoPromedioSelect = tiempoPromedioSelect / contadorSelect;
 
@@ -399,6 +441,9 @@ void calculoMetrics(){
 		contadorInsert = 0;
 		contadorSelect = 0;
 		contadorSelectInsert = 0;
+		if(*direct){
+			return;
+		}
 
 	}
 }
@@ -410,7 +455,7 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	char * memLoad = string_new();
 	char * readLatency = string_new();
 	char * writeLatency = string_new();
-
+	//FIXME: fijarse porque al principio me devuelve un cantidad read 0.003333 ya que deberia estar vacia lista exit
 	string_append(&reads, "Cantidad de reads: ");
 	string_append(&writes, "Cantidad de writres: ");
 	string_append(&memLoad, "Memory load: ");
