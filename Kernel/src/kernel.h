@@ -18,6 +18,7 @@ typedef struct{
 	int file_descriptor;
 	int quantumProcesado;
 	int numeroInstruccion;
+	int segundosQueTardo;
 }Proceso;
 
 char *CONSISTENCIAS_STRING[] = {
@@ -46,14 +47,16 @@ void preguntarPorMemoriasDisponibles();
 void newToReady();
 void logicaCreate(Create * create);
 void logicaRun(Run * run, Proceso * proceso);
-void logicaSelect(Select * select);
+int logicaSelect(Select * select);
 void logicaAdd(Add * add);
-void logicaInsert(Insert * insert);
+int logicaInsert(Insert * insert);
 bool esFinLectura(Proceso * p, char * instruccionALeer);
 bool esFinQuantum(Proceso * p, char * instruccionALeer);
 void calculoMetrics();
 void inicializarValoresMetrics();
-void graficar(int insert, int select);
+void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
+int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
+		Procesos proceso_del_que_envio);
 
 // Variables del proceso
 t_list *estadoReady;

@@ -1,14 +1,13 @@
 #include "kernel.h"
 
 pthread_mutex_t mutexRecursosCompartidos;
-sem_t semaforoSePuedePlanificar, semaforoNewToReady;//, semaforoMetrics;
+sem_t semaforoSePuedePlanificar, semaforoNewToReady;
 
 int main(void) {
 
 	pthread_mutex_init(&mutexRecursosCompartidos, NULL);
 	sem_init(&semaforoSePuedePlanificar,0,0);
 	sem_init(&semaforoNewToReady, 0, 0);
-//	sem_init(&semaforoMetrics, 0, 0);
 
 	configure_logger();
 	configuracion_inicial();
@@ -103,7 +102,8 @@ void ejecutar() {
 	while(1){
 		sem_wait(&semaforoSePuedePlanificar);
 		Proceso * proceso = desencolar(estadoReady);
-
+		time_t fin;
+		int diff;
 		switch(proceso->instruccion->instruccion){
 			case RUN:;
 				Run * run = (Run *) proceso->instruccion->instruccion_a_realizar;
@@ -115,12 +115,18 @@ void ejecutar() {
 
 			case SELECT:;
 				Select * select = (Select *) proceso->instruccion->instruccion_a_realizar;
-				logicaSelect(select);
+				proceso->file_descriptor = logicaSelect(select);
+				fin = get_timestamp();
+				diff = difftime(fin ,select->timestamp);
+				proceso->segundosQueTardo = diff;
 				break;
 
 			case INSERT:;
 				Insert * insert = (Insert *) proceso->instruccion->instruccion_a_realizar;
-				logicaInsert(insert);
+				proceso->file_descriptor = logicaInsert(insert);
+				fin = get_timestamp();
+				diff = difftime(fin, insert->timestamp);
+				proceso->segundosQueTardo = diff;
 				break;
 
 			case CREATE:;
@@ -146,8 +152,6 @@ void ejecutar() {
 				break;
 		}
 		encolar(estadoExit, proceso);
-//		sem_post(&semaforoMetrics);
-
 	}
 }
 
@@ -222,25 +226,46 @@ void logicaAdd(Add * add){
 	asignarConsistenciaAMemoria(memoria->idMemoria, add->consistencia);
 }
 
-void logicaSelect(Select * select){
-
+int logicaSelect(Select * select){
 	char * nombreTabla = string_new();
+
 	string_append(&nombreTabla, select->nombre_tabla);
 
+	Instruccion * i = malloc(sizeof(Instruccion));
+	i->instruccion_a_realizar = (void *) select;
+	i->instruccion = SELECT;
+
 	Memoria * mem = (Memoria*)getMemoriaSafe(tablasPorConsistencia,nombreTabla);
+	if(mem != NULL){
+		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto,
+					i,
+					KERNEL);
+		free(i);
+		free(nombreTabla);
 
-	//int fd = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar->instruccion_a_realizar, KERNEL);
-
-	free(nombreTabla);
+		return fd;
+	}
+	return -100;
 }
 
-void logicaInsert(Insert * insert){
+int logicaInsert(Insert * insert){
 	char * nombreTabla = string_new();
 	string_append(&nombreTabla, insert->nombre_tabla);
 
+	Instruccion * i = malloc(sizeof(Instruccion));
+	i->instruccion_a_realizar = (void *) insert;
+	i->instruccion = INSERT;
 	Memoria * mem = (Memoria*)getMemoriaSafe(tablasPorConsistencia, nombreTabla);
+	if(mem != NULL){
+		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
 
-	free(nombreTabla);
+		free(nombreTabla);
+		free(i);
+		return fd;
+	}
+
+	return -100;
+
 
 }
 
@@ -336,22 +361,26 @@ void preguntarPorMemoriasDisponibles(){
 void calculoMetrics(){
 	int contadorInsert = 0;
 	int contadorSelect = 0;
-	time_t inicio, fin;
-	double diferencia;
-	inicio = get_timestamp();
-	fin = get_timestamp();
+	int contadorSelectInsert = 0;
+	int operacionesTotales = 0;
+	int tiempoPromedioSelect = 0;
+	int tiempoPromedioInsert = 0;
 	while(1){
-//		sem_wait(&semaforoMetrics);
-
+		sleep(30);
 		Proceso * proceso = desencolar(estadoExit);
-		if(proceso != NULL){
+		while(proceso != NULL){
+			operacionesTotales++;
 			switch(proceso->instruccion->instruccion){
 				case INSERT:;
+					tiempoPromedioInsert += proceso->segundosQueTardo;
 					contadorInsert++;
+					contadorSelectInsert++;
 					free(proceso);
 					break;
 				case SELECT:;
+					tiempoPromedioSelect += proceso->segundosQueTardo;
 					contadorSelect++;
+					contadorSelectInsert++;
 					free(proceso);
 					break;
 
@@ -359,46 +388,94 @@ void calculoMetrics(){
 					free(proceso);
 					break;
 			}
+			proceso = desencolar(estadoExit);
 		}
-		diferencia = difftime(fin,inicio);
 
-		if((int)diferencia >= 30){
+		tiempoPromedioInsert = tiempoPromedioInsert / contadorInsert;
+		tiempoPromedioSelect = tiempoPromedioSelect / contadorSelect;
 
-			graficar(contadorInsert, contadorSelect);
-			contadorInsert = 0;
-			contadorSelect = 0;
-			inicio = get_timestamp();
-		}
-		fin = get_timestamp();
+		graficar(contadorInsert, contadorSelect, contadorSelectInsert, operacionesTotales,
+				tiempoPromedioInsert, tiempoPromedioSelect);
+		contadorInsert = 0;
+		contadorSelect = 0;
+		contadorSelectInsert = 0;
+
 	}
 }
 
-void graficar(int contadorInsert, int contadorSelect){
+void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
+		int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect){
 	char * reads = string_new();
 	char * writes = string_new();
+	char * memLoad = string_new();
+	char * readLatency = string_new();
+	char * writeLatency = string_new();
 
 	string_append(&reads, "Cantidad de reads: ");
 	string_append(&writes, "Cantidad de writres: ");
+	string_append(&memLoad, "Memory load: ");
+	string_append(&readLatency, "Read latency: ");
+	string_append(&writeLatency, "Write Latency: ");
 
 	double r = (double)contadorSelect / 30;
 	double w = (double)contadorInsert / 30;
+	double ml = (double)contadorSelectInsert / operacionesTotales;
+	double rl = (double)tiempoPromedioSelect / contadorSelect;
+	double wl = (double)tiempoPromedioInsert / contadorSelectInsert;
 
 	char * rChar = string_new();
 	char * wChar = string_new();
+	char * mlChar = string_new();
+	char * rlChar = string_new();
+	char * wlChar = string_new();
 
 	sprintf(rChar, "%f", r);
 	sprintf(wChar, "%f", w);
+	sprintf(mlChar, "%f", ml);
+	sprintf(rlChar, "%f",rl);
+	sprintf(wlChar, "%f", wl);
 
 	string_append(&reads, rChar);
 	string_append(&writes, wChar);
+	string_append(&memLoad, mlChar);
+	string_append(&readLatency, rlChar);
+	string_append(&writeLatency,wlChar);
 
 	log_info(LOGGER, reads);
 	log_info(LOGGER, writes);
+	log_info(LOGGER, memLoad);
+	log_info(LOGGER, writeLatency);
+	log_info(LOGGER, readLatency);
 
 	free(reads);
 	free(writes);
 	free(rChar);
 	free(wChar);
+	free(memLoad);
+	free(mlChar);
+	free(writeLatency);
+	free(readLatency);
+	free(rlChar);
+	free(wlChar);
 }
+
+/* MOCK */
+int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
+		Procesos proceso_del_que_envio){
+	if(ip == NULL){
+		return -1;
+	}
+	if(puerto == NULL){
+		return -2;
+	}
+	if(instruccion == NULL){
+		return -3;
+	}
+
+	sleep(10);
+
+	return 6;
+}
+/* MOCK */
 
 
