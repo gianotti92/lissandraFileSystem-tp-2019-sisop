@@ -8,10 +8,11 @@
 #include "../../utilguenguencha/utils.h"
 #include <semaphore.h>
 #include <commons/collections/dictionary.h>
-
+#include <stdlib.h>
 
 typedef struct{
-	Instruccion* instruccionActual;
+	Instruccion* instruccion;
+	Instruccion* instruccionAProcesar;
 	int file_descriptor;
 	int quantumProcesado;
 	int numeroInstruccion;
@@ -30,27 +31,34 @@ void retornarControl(Instruction_set instruccion, int socket_cliente);
 void iniciarEstados();
 
 void leerArchivo(char * path);
-void liberarProceso(Proceso * proceso);
 void encolar(t_list * cola, Proceso * proceso);
+Proceso* desencolar(t_list * cola);
+void putMemorySafe(t_dictionary * dic, char* key, Memoria * value);
+void putTablaSafe(t_dictionary * dic, char* key, char * value);
+Memoria* getMemoriaSafe(t_dictionary * dic, char*key);
+char* getTablasSafe(t_dictionary * dic, char*key);
 void planificar();
-void pasarProceso(int posicion, t_list *from, t_list *to);
-void cambiarEstado(Proceso* p, t_list * estado);
 void iniciarEstructurasAsociadas();
 void asignarConsistenciaAMemoria(uint32_t id, Consistencias leido);
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void preguntarPorMemoriasDisponibles();
-
+void newToReady();
+void logicaCreate(Create * create);
+void logicaRun(Run * run, Proceso * proceso);
+void logicaSelect(Select * select);
+void logicaAdd(Add * add);
+bool esFinLectura(Proceso * p, char * instruccionALeer);
+bool esFinQuantum(Proceso * p, char * instruccionALeer);
 
 
 // Variables del proceso
 t_list *estadoReady;
 t_list *estadoNew;
 t_list *estadoExit;
-t_list *estadoExec;
 
 // tablas del proceso
-t_list * memoriasDisponibles;
+t_dictionary * memoriasDisponibles;
 t_dictionary * memoriasAsociadas;
 t_dictionary * tablasPorConsistencia;
 

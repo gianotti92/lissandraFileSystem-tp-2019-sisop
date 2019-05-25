@@ -16,4 +16,3 @@ fileSystem: src/*.* ../utilguenguencha/*.*
 
 clean:
 	rm -rf Release Debug
-

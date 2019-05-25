@@ -21,27 +21,124 @@
 #include "utils.h"
 #include "comunicacion.h"
 
-void * p_generico; //puntero que va a ser asignado a la estructura necesaria para la consulta parseada
+/**
+* @NAME: parser_lql
+* @DESC: Convierte un char* en un struct de tipo Instruccion
+*
+* Recibe el char* a parsear y el enum del proceso que lo esta enviando.
+*/
+Instruccion* parser_lql(char*, Procesos);
 
+/**
+* @NAME: cantidad_elementos
+* @DESC: Dado un array con ultimo elemento NULL, devuelve la cantidad de elementos que contiene.
+*/
+int cantidad_elementos(char**);
 
-Instruccion* parser_lql(char*, Procesos); //recibe una consulta en string y desde donde fue llamado, devuelve la consulta parseada o error en un struct instruction.
-int cantidad_elementos(char**); //dado un array devuelve la cantidad de elementos que contiene.
-int es_numero(char*); //dado un string devuelve 1 si es un numero, 0 en caso contrario.
+/**
+* @NAME: es_numero
+* @DESC: Dado un string devuelve true si es un numero.
+*/
+bool es_numero(char*);
+
+/**
+* @NAME: print_instruccion_parseada
+* @DESC: Imprime por pantalla la instruccion pasada como parametro.
+*/
 void print_instruccion_parseada(Instruccion*);
+
+/**
+* @NAME: crear_instruccion
+* @DESC: Crea una instruccion pasandole como parametro el enum de la operacion, el puntero a una operacion y el sizeof() de esa operacion.
+*/
 Instruccion* crear_instruccion(Instruction_set, void*, int);
+
+/**
+* @NAME: instruccion_error
+* @DESC: Devuelve una instruccion ERROR.
+*/
 Instruccion* instruccion_error();
+
+/**
+* @NAME: es_select
+* @DESC: Devuelve true si el primer elemento del array es SELECT.
+*/
 bool es_select(char**);
+
+/**
+* @NAME: es_insert
+* @DESC: Devuelve true si el primer elemento del array es INSERT.
+*/
 bool es_insert(char**);
+
+/**
+* @NAME: es_create
+* @DESC: Devuelve true si el primer elemento del array es CREATE.
+*/
 bool es_create(char**);
+
+/**
+* @NAME: es_describe
+* @DESC: Devuelve true si el primer elemento del array es DESCRIBE.
+*/
 bool es_describe(char**);
+
+/**
+* @NAME: es_drop
+* @DESC: Devuelve true si el primer elemento del array es DROP.
+*/
 bool es_drop(char**);
+
+/**
+* @NAME: es_add
+* @DESC: Devuelve true si el primer elemento del array es ADD.
+*/
 bool es_add(char**);
+
+/**
+* @NAME: es_run
+* @DESC: Devuelve true si el primer elemento del array es RUN.
+*/
 bool es_run(char**);
+
+/**
+* @NAME: es_metrics
+* @DESC: Devuelve true si el primer elemento del array es SELECT.
+*/
 bool es_metrics(char**);
+
+/**
+* @NAME: es_journal
+* @DESC: Devuelve true si el primer elemento del array es SELECT.
+*/
 bool es_journal(char**);
+
+/**
+* @NAME: es_error
+* @DESC: Devuelve true si el primer elemento del array es SELECT.
+*/
 bool es_error(char**);
+
+/**
+* @NAME: string_to_ulint
+* @DESC: Convierte un char* en long int.
+*/
 unsigned long int string_to_ulint(char*);
+
+/**
+* @NAME: leer_por_consola
+* @DESC: Readline que luego de leer aplica f sobre lo leido.
+*/
 void* leer_por_consola(void (*f) (char*));
+
+/**
+* @NAME: free_consulta
+* @DESC: Realiza free a una Instruccion y a lo que contenga.
+*/
 void free_consulta(Instruccion*);
+
+/**
+* @NAME: get_timestamp
+* @DESC: Devuelve el timestamp del sistema.
+*/
 uintmax_t get_timestamp();
-Instruccion dame_siguiente(char* path, uint16_t numero_instruccion);

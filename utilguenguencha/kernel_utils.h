@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <commons/string.h>
 
 char* leer_linea(char* path, int linea);
 

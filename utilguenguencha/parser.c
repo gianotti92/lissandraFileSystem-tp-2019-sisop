@@ -413,16 +413,16 @@ int cantidad_elementos(char ** array){
 
 }
 
-int es_numero(char* palabra){
+bool es_numero(char* palabra){
 	int length = string_length(palabra);
 
 	for (int i=0; i<length; i++){
 		if(!isdigit(palabra[i])){
-			return 0;
+			return false;
 		}
 	}
 
-	return 1;
+	return true;
 }
 
 void print_instruccion_parseada(Instruccion * instruccion_parseada){
