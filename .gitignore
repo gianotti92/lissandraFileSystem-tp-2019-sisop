@@ -58,3 +58,6 @@ dkms.conf
 *.cproject
 */Release/
 */Debug/
+*.project
+*/.settings/*
+*/RemoteSystemsTempFiles/*
