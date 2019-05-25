@@ -64,7 +64,7 @@ typedef struct {
 
 typedef struct {
 	char* nombre_tabla;
-	t_timestamp;
+	t_timestamp timestamp;
 } Describe;
 
 typedef struct {
