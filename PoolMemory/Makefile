@@ -11,8 +11,8 @@ default: dir poolmemory
 dir:
 	mkdir -p Release
 
-poolmemory: src/*.* ../utilguenguencha/*.*
+poolmemory: src/*.* ../utilguenguencha/*.* */*.cfg
 	gcc src/*.c ../utilguenguencha/*.c $(FLAGS) $(LIBS) -o Release/$@
 
 clean:
-	rm -rf Release Debug
+	rm -rf Release Debug */logger.log

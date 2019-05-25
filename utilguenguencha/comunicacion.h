@@ -42,53 +42,53 @@ typedef enum {
 
 typedef struct{
 	char* nombre_tabla;
-	uint16_t key;
-	uint32_t timestamp;
+	t_key key;
+	t_timestamp timestamp;
 } Select;
 
 typedef struct {
 	char* nombre_tabla;
-	uint16_t key;
+	t_key key;
 	char* value;
-	uint32_t timestamp_insert;
-	uint32_t timestamp;
+	t_timestamp timestamp_insert;
+	t_timestamp timestamp;
 } Insert;
 
 typedef struct {
 	char* nombre_tabla;
 	Consistencias consistencia;
 	uint8_t particiones;
-	uint32_t compactation_time;
-	uint32_t timestamp;
+	t_timestamp compactation_time;
+	t_timestamp timestamp;
 } Create;
 
 typedef struct {
 	char* nombre_tabla;
-	uint32_t timestamp;
+	t timestamp;
 } Describe;
 
 typedef struct {
 	char* nombre_tabla;
-	uint32_t timestamp;
+	t_timestamp timestamp;
 } Drop;
 
 typedef struct {
 	uint8_t memoria;
 	Consistencias consistencia;
-	uint32_t timestamp;
+	t_timestamp timestamp;
 } Add;
 
 typedef struct {
 	char* path;
-	uint32_t timestamp;
+	t_timestamp timestamp;
 } Run;
 
 typedef struct {
-	uint32_t timestamp;
+	t_timestamp timestamp;
 } Journal;
 
 typedef struct {
-	uint32_t timestamp;
+	t_timestamp timestamp;
 } Metrics;
 
 typedef struct {

@@ -11,8 +11,8 @@ default: dir fileSystem
 dir:
 	mkdir -p Release
 
-fileSystem: src/*.* ../utilguenguencha/*.*
+fileSystem: src/*.* ../utilguenguencha/*.* */*.cfg
 	gcc src/*.c ../utilguenguencha/*.c $(FLAGS) $(LIBS) -o Release/$@
 
 clean:
-	rm -rf Release Debug
+	rm -rf Release Debug */logger.log

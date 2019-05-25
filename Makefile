@@ -22,4 +22,4 @@ mem:
 
 .PHONY: clean
 clean:
-	rm -rf ./*/Release ./*/Debug
+	rm -rf ./*/Release ./*/Debug */logger.log
