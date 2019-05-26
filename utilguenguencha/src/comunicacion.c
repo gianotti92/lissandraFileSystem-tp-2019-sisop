@@ -263,21 +263,7 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 		}
 	case VALUE:
 		if(tipo_comu == T_VALUE){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t),
-			MSG_WAITALL)) <= 0) {
-				return false;
-			}
-			stream = malloc(buffer_size);
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
-					<= 0) {
-				free(stream);
-				return false;
-			}
-			Value *value;
-			value = desempaquetar_value(stream);
 			instruccion->instruccion = VALUE;
-			instruccion->instruccion_a_realizar = value;
-			free(stream);
 			return true;
 		}else{
 			return false;
@@ -290,26 +276,21 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion,
 		Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
 	int server_fd = crear_conexion(ip, puerto);
+	Instruccion *respuesta;
 	if (server_fd == -1) {
 		log_error(LOGGER, "No se puede establecer comunicacion con destino");
-		return false;
-	}
-	Instruction_set tipo_de_instruccion = instruccion->instruccion;
-	if (tipo_de_instruccion == ADD || tipo_de_instruccion == RUN
-			|| tipo_de_instruccion == METRICS || tipo_de_instruccion == ERROR) {
-		log_error(LOGGER,
-				"Se intento enviar una instruccion que no corresponde");
-		return false;
+		return respuesta_error(CONNECTION_ERROR);
 	} else {
 		t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
-		if (!enviar_paquete(paquete, server_fd)) {
+		if (enviar_paquete(paquete, server_fd)) {
+			eliminar_paquete(paquete);
+			recibir_respuesta(server_fd, respuesta);
+			return respuesta;
+		}else{
 			liberar_conexion(server_fd);
-			return -1;
+			log_error(LOGGER, "No se pudo enviar la instruccion");
+			return respuesta_error(CONNECTION_ERROR);
 		}
-		eliminar_paquete(paquete);
-		Instruccion *respuesta;
-		recibir_respuesta(server_fd, respuesta);
-		return respuesta;
 	}
 }
 
@@ -686,12 +667,6 @@ Gossip *desempaquetar_gossip(void* stream){
 	return gossip;
 }
 
-Value *desempaquetar_value(void* stream){
-	Value *value = malloc(sizeof(Value));
-	memcpy(&value->value, stream, sizeof(value->value));
-	return value;
-}
-
 bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comunicacion){
 	switch (comunicacion){
 	case T_INSTRUCCION:
@@ -711,10 +686,10 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 		}
 		break;
 	case T_GOSSIPING:
-		return sender == POOLMEMORY && (receiver == KERNEL || receiver == POOLMEMORY);
+		return receiver == POOLMEMORY && (sender == KERNEL || sender == POOLMEMORY);
 		break;
 	case T_VALUE:
-		return sender == FILESYSTEM && receiver == POOLMEMORY;
+		return receiver == FILESYSTEM && sender == POOLMEMORY;
 		break;
 	default:
 		return false;
@@ -722,16 +697,34 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 	}
 }
 
-bool responder(int fd_a_responder, Instruccion *instruccion){
+Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 	if(instruccion->instruccion == RETORNO){
 		// en este caso hay q preguntar los tipos y en base a cada uno empaquetar y enviar
-		return true;
+
+
+		return respuesta_success();
 	}else{
-		return false;
+		return respuesta_error(BAD_REQUEST);
 	}
 }
 
 void recibir_respuesta(int fd_a_escuchar, Instruccion *respuesta){
 	//Aca tengo que poner los datos de la respuesta y malloquear la isntruccion
 	// en caso de q este mal respondo con error y tipo en la respuesta
+}
+
+
+Instruccion *respuesta_error(Error_set error){
+	Instruccion *respuesta_error = malloc(sizeof(Instruccion));
+	Error * error_respuesta = malloc(sizeof(Error));
+	error_respuesta->error = error;
+	respuesta_error->instruccion = ERROR;
+	respuesta_error->instruccion_a_realizar = error_respuesta;
+	return respuesta_error;
+}
+
+Instruccion *respuesta_success(void){
+	Instruccion *respuesta_success = malloc(sizeof(Instruccion));
+	respuesta_success->instruccion = SUCCESS;
+	return respuesta_success;
 }

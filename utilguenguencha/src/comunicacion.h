@@ -28,11 +28,11 @@ typedef enum {
 } Consistencias;
 
 typedef enum {
-	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR, GOSSIP, VALUE, RETORNO
+	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR, GOSSIP, VALUE, RETORNO, SUCCESS
 } Instruction_set;
 
 typedef enum {
-	BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE
+	BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE, CONNECTION_ERROR, MEMORY_FULL, LARGE_VALUE
 } Error_set;
 
 typedef enum {
@@ -143,10 +143,8 @@ void retornarControl(Instruccion *instruccion, int socket_cliente);
 void servidor_comunicacion(Comunicacion *comunicacion);
 int iniciar_servidor(char* puerto);
 int crear_conexion(char* ip, char* puerto);
-t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_envio,
-		Instruccion* instruccion);
-Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion,
-		Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu);
+t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_envio, Instruccion* instruccion);
+Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu);
 bool enviar_paquete(t_paquete* paquete, int socket_cliente);
 void liberar_conexion(int socket_cliente);
 void eliminar_paquete(t_paquete* paquete);
@@ -157,7 +155,6 @@ void empaquetar_describe(t_paquete * paquete, Describe *describe);
 void empaquetar_drop(t_paquete * paquete, Drop * drop);
 void empaquetar_journal(t_paquete * paquete, Journal * journal);
 void empaquetar_gossip(t_paquete * paquete, Gossip * gossip);
-void empaquetar_value(t_paquete * paquete, Value * value);
 void* serializar_paquete(t_paquete* paquete, int bytes);
 bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion, Tipo_Comunicacion tipo_comu);
 Select *desempaquetar_select(void* stream);
@@ -167,9 +164,10 @@ Describe *desempaquetar_describe(void* stream);
 Drop *desempaquetar_drop(void* stream);
 Journal *desempaquetar_journal(void* stream);
 Gossip *desempaquetar_gossip(void* stream);
-Value *desempaquetar_value(void* stream);
-bool validar_sender(Procesos sender, Procesos receiver);
-bool responder(int fd_a_responder, Instruccion *instruccion);
+bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comunicacion);
+Instruccion *responder(int fd_a_responder, Instruccion *instruccion);
 void recibir_respuesta(int fd_a_escuchar, Instruccion *respuesta);
+Instruccion *respuesta_error(Error_set error);
+Instruccion *respuesta_success(void);
 
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */
