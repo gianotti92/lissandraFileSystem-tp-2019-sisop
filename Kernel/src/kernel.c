@@ -256,26 +256,31 @@ void logicaAdd(Add * add){
 }
 
 int logicaSelect(Select * select){
-	char * nombreTabla = string_new();
-
-	string_append(&nombreTabla, select->nombre_tabla);
 
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) select;
 	i->instruccion = SELECT;
 
-	Memoria * mem = (Memoria*)getMemoriaSafe(tablasPorConsistencia,nombreTabla);
-	if(mem != NULL){
-		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto,
+	char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, select->nombre_tabla);
+
+	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+	int max = list_size(memoriasAsoc);
+	int randomId = rand() % max + 1;
+	Memoria * m = NULL;
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	m = list_get(memoriasAsoc, randomId - 1);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+
+	if(m != NULL){
+		int fd = enviarInstruccionLuqui(m->ip, m->puerto,
 					i,
 					KERNEL);
 		free(i);
-		free(nombreTabla);
 
 		return fd;
 	}
 	free(i);
-	free(nombreTabla);
 	return -100;
 }
 
@@ -402,7 +407,7 @@ Proceso * desencolar(t_list * cola){
 
 Memoria * desencolarMemoria(t_list * lista){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	Memoria * m = list_remove(lista, 0);
+	Memoria * m = list_get(lista, 0);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 	return m;
 }
