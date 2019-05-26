@@ -1,9 +1,9 @@
 #ifndef POOLMEMORY_H_
 #define POOLMEMORY_H_
 
-#include "../../utilguenguencha/comunicacion.h"
-#include "../../utilguenguencha/parser.h"
-#include "../../utilguenguencha/utils.h"
+#include "../../utilguenguencha/src/comunicacion.h"
+#include "../../utilguenguencha/src/parser.h"
+#include "../../utilguenguencha/src/utils.h"
 
 
 // Variables globales del proceso

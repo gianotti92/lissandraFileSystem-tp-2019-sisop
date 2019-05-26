@@ -28,7 +28,7 @@ typedef enum {
 } Consistencias;
 
 typedef enum {
-	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR, GOSSIP
+	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR, GOSSIP, VALUE
 } Instruction_set;
 
 typedef enum {
@@ -39,6 +39,14 @@ typedef enum {
 	KERNEL, FILESYSTEM, POOLMEMORY
 } Procesos;
 
+typedef enum {
+	T_GOSSIPING, T_INSTRUCCION, T_RETORNO, T_VALUE
+} Tipo_Comunicacion;
+
+typedef struct {
+	char* puerto_servidor;
+	Tipo_Comunicacion tipo_comunicacion;
+} Comunicacion;
 
 typedef struct{
 	char* nombre_tabla;
@@ -106,6 +114,7 @@ typedef struct {
 } t_buffer;
 
 typedef struct {
+	Tipo_Comunicacion comunicacion;
 	Procesos source;
 	Instruction_set header;
 	t_buffer* buffer;
@@ -121,23 +130,14 @@ typedef struct {
 	t_list *lista_memorias;
 } Gossip;
 
-typedef enum {
-	T_GOSSIPING, T_INSTRUCCION, T_RETORNO, T_VALUE
-} t_tipo_comunicacion;
-
-typedef struct {
-	char* puerto_servidor;
-	t_tipo_comunicacion tipo_comunicacion;
-} t_comunicacion;
-
 void retornarControl(Instruccion *instruccion, int socket_cliente);
-void servidor_comunicacion(t_comunicacion *comunicacion);
+void servidor_comunicacion(Comunicacion *comunicacion);
 int iniciar_servidor(char* puerto);
 int crear_conexion(char* ip, char* puerto);
-t_paquete* crear_paquete(Procesos proceso_del_que_envio,
+t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_envio,
 		Instruccion* instruccion);
 int enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion,
-		Procesos proceso_del_que_envio);
+		Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu);
 bool enviar_paquete(t_paquete* paquete, int socket_cliente);
 void liberar_conexion(int socket_cliente);
 void eliminar_paquete(t_paquete* paquete);

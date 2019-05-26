@@ -5,9 +5,9 @@ int main(void) {
 	configuracion_inicial();
 	pthread_t consolaFS;
 	pthread_create(&consolaFS, NULL, (void*) leer_por_consola, retorno_consola);
-	t_comunicacion *comunicacion;
-	comunicacion->puerto_servidor = malloc(strlen(PUERTO_DE_ESCUCHA) * sizeof(char));
-	memcpy(comunicacion->puerto_servidor, PUERTO_DE_ESCUCHA, strlen(PUERTO_DE_ESCUCHA) * sizeof(char));
+
+	Comunicacion *comunicacion;
+	comunicacion->puerto_servidor = PUERTO_DE_ESCUCHA;
 	comunicacion->tipo_comunicacion = T_INSTRUCCION; 
 	servidor_comunicacion(comunicacion);
 }

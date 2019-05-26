@@ -1,13 +1,13 @@
 #include "comunicacion.h"
 
-void servidor_comunicacion(t_comunicacion *comunicacion){
+void servidor_comunicacion(Comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
 	int aux1, bytes_recibidos, fd_max, server_socket;
 	server_socket = iniciar_servidor(comunicacion->puerto_servidor);
 	FD_ZERO(&fd_set_master);
 	FD_ZERO(&fd_set_temporal);
 	FD_SET(server_socket, &fd_set_master);
-	fd_max = server_socket; //4
+	fd_max = server_socket;
 	for (;;) {
 		fd_set_temporal = fd_set_master;
 		if (select(fd_max + 1, &fd_set_temporal, NULL, NULL, NULL) == -1) {
@@ -251,7 +251,7 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion)
 }
 
 int enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion,
-		Procesos proceso_del_que_envio) {
+		Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
 	int server_fd = crear_conexion(ip, puerto);
 	if (server_fd == -1) {
 		log_error(LOGGER, "No se puede establecer comunicacion con destino");
@@ -264,7 +264,7 @@ int enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion,
 				"Se intento enviar una instruccion que no corresponde");
 		return false;
 	} else {
-		t_paquete * paquete = crear_paquete(proceso_del_que_envio, instruccion);
+		t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
 		if (!enviar_paquete(paquete, server_fd)) {
 			liberar_conexion(server_fd);
 			return -1;
@@ -338,9 +338,10 @@ void eliminar_paquete(t_paquete* paquete) {
 	free(paquete);
 }
 
-t_paquete* crear_paquete(Procesos proceso_del_que_envio,
+t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_envio,
 		Instruccion* instruccion) {
 	t_paquete* paquete = malloc(sizeof(t_paquete));
+
 	paquete->source = proceso_del_que_envio;
 	paquete->header = instruccion->instruccion;
 	crear_buffer(paquete);
