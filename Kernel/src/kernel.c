@@ -178,23 +178,37 @@ void logicaRun(Run * run, Proceso * proceso){
 		proceso->instruccionAProcesar = instruccionAProcesar;
 		Instruction_set tipoInstruccionAProcesar = instruccionAProcesar->instruccion;
 
+		time_t fin;
+		int diff;
 		switch(tipoInstruccionAProcesar){
 			case CREATE:;
-//				logicaCreate(instruccionAProcesar);
+				Create * create = (Create *) proceso->instruccion->instruccion_a_realizar;
+				proceso->file_descriptor = logicaCreate(create);
 				break;
 
 			case SELECT:;
-//				logicaSelect(instruccionAProcesar);
+				Select * select = (Select *) proceso->instruccion->instruccion_a_realizar;
+				proceso->file_descriptor = logicaSelect(select);
+				fin = get_timestamp();
+				diff = difftime(fin ,select->timestamp);
+				proceso->segundosQueTardo = diff;
 				break;
 
 			case INSERT:;
+				Insert * insert = (Insert *) proceso->instruccion->instruccion_a_realizar;
+				proceso->file_descriptor = logicaInsert(insert);
+				fin = get_timestamp();
+				diff = difftime(fin, insert->timestamp);
+				proceso->segundosQueTardo = diff;
 				break;
 
 			case DROP:;
+				Drop * drop = (Drop *) proceso->instruccion->instruccion_a_realizar;
+				proceso->file_descriptor = logicaDrop(drop);
 				break;
 
 			case ERROR:;
-				break;
+				return;
 
 			default:
 				break;
