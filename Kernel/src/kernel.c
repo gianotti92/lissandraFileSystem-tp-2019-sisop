@@ -71,6 +71,10 @@ void iniciarEstructurasAsociadas(){
 	memoriasAsociadas = dictionary_create();
 	tablasPorConsistencia = dictionary_create();
 	memoriasDisponibles = dictionary_create();
+
+	memoriasSc = list_create();
+	memoriasHc = list_create();
+	memoriasEv = list_create();
 }
 
 void retorno_consola(char* leido) {
@@ -149,9 +153,13 @@ void ejecutar() {
 				break;
 
 			case DESCRIBE:;
+				Describe * describe = (Describe*) proceso->instruccion->instruccion_a_realizar;
+				logicaDescribe(describe);
 				break;
 
-			case JOURNAL:
+			case JOURNAL:;
+				Journal * journal = (Journal*) proceso->instruccion->instruccion_a_realizar;
+				logicaJournal(journal);
 				break;
 
 			default:
@@ -213,18 +221,26 @@ void logicaRun(Run * run, Proceso * proceso){
 int logicaCreate(Create * create){
 	Instruccion * i = malloc(sizeof(Instruccion));
 	llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
-	Memoria * mem = (Memoria*) getMemoriaSafe(tablasPorConsistencia, create->nombre_tabla);
-	if(mem != NULL){
-		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
-		free(i);
-		return fd;
+	t_list * listaMemoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, CONSISTENCIAS_STRING[create->consistencia]);
+	if(listaMemoriasAsoc != NULL && list_size(listaMemoriasAsoc) > 0){
+
+		Memoria * m = (Memoria * ) desencolarMemoria(listaMemoriasAsoc);
+		if(m != NULL){
+			int fd = enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
+			free(i);
+			return fd;
+		}else{
+			log_error(LOGGER, "Error al extraer memorias asociadas");
+			free(i);
+			return -100;
+		}
 	}
 	free(i);
 	return -100;
 }
 
 void logicaAdd(Add * add){
-	Memoria * memoria;
+	Memoria * memoria = NULL;
 	int tamTabla = dictionary_size(memoriasDisponibles);
 	int i;
 
@@ -232,11 +248,11 @@ void logicaAdd(Add * add){
 		char * key = string_new();
 		sprintf(key, "%d", i);
 		memoria = (Memoria*)getMemoriaSafe(memoriasDisponibles, key);
-		if(memoria != NULL){
+		if(memoria != NULL && memoria->idMemoria == add->memoria){
 			break;
 		}
 	}
-	asignarConsistenciaAMemoria(memoria->idMemoria, add->consistencia);
+	asignarConsistenciaAMemoria(memoria, add->consistencia);
 }
 
 int logicaSelect(Select * select){
@@ -303,6 +319,66 @@ int logicaDrop(Drop * drop){
 
 }
 
+int logicaJournal(Journal * journal){
+	Instruccion * i = malloc(sizeof(Instruccion));
+	i->instruccion_a_realizar = (void *) journal;
+	i->instruccion = JOURNAL;
+
+	t_list * memoriasSc = getMemoriasAsociadasSafe(memoriasAsociadas, "SC");
+	t_list * memoriasHc = getMemoriasAsociadasSafe(memoriasAsociadas, "HC");
+	t_list * memoriasEc = getMemoriasAsociadasSafe(memoriasAsociadas, "EC");
+
+	Memoria * m = desencolarMemoria(memoriasEc);
+	while(m != NULL){
+		m = desencolarMemoria(memoriasEc);
+
+		enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
+	}
+
+	m = desencolarMemoria(memoriasHc);
+	while(m != NULL){
+		enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
+		m = desencolarMemoria(memoriasHc);
+	}
+
+	m = desencolarMemoria(memoriasSc);
+	while(m != NULL){
+		enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
+		m = desencolarMemoria(memoriasSc);
+	}
+	free(i);
+	return 1;
+
+}
+
+int logicaDescribe(Describe * describe){
+	Instruccion * inst = malloc(sizeof(Instruccion));
+	inst->instruccion_a_realizar = (void *) describe;
+	inst->instruccion = DESCRIBE;
+
+	if(describe->nombre_tabla != NULL){
+		Memoria * m = (Memoria*)getMemoriaSafe(tablasPorConsistencia, describe->nombre_tabla);
+		if(m != NULL){
+			enviarInstruccionLuqui(m->ip, m->puerto, inst, KERNEL);
+		}
+		free(inst);
+		return 1;
+
+	}else{
+		int i;
+		for(i = 0; i < dictionary_size(memoriasDisponibles); i++){
+			char * key = string_new();
+			sprintf(key, "%d", i);
+			Memoria * m = getMemoriaSafe(memoriasDisponibles, key);
+			if(m != NULL){
+				enviarInstruccionLuqui(m->ip, m->puerto, inst, KERNEL);
+			}
+		}
+		free(inst);
+		return 1;
+	}
+}
+
 bool esFinQuantum(Proceso * p, char * instruccionALeer){
 	return instruccionALeer != NULL && p->quantumProcesado == 2;
 }
@@ -324,7 +400,20 @@ Proceso * desencolar(t_list * cola){
 	return p;
 }
 
+Memoria * desencolarMemoria(t_list * lista){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	Memoria * m = list_remove(lista, 0);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	return m;
+}
+
 void putTablaSafe(t_dictionary * dic, char* key, char * value){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	dictionary_put(dic, key, value);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+}
+
+void putMemoryListSafe(t_dictionary * dic, char* key, t_list * value){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	dictionary_put(dic, key, value);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
@@ -335,12 +424,22 @@ void putMemorySafe(t_dictionary * dic, char* key, Memoria * value){
 	dictionary_put(dic, key, value);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
+
 Memoria * getMemoriaSafe(t_dictionary * dic, char*key){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	Memoria * m = (Memoria*)dictionary_get(dic, key);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 	return m;
 }
+
+t_list * getMemoriasAsociadasSafe(t_dictionary * dic, char*key){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	t_list * listaMemorias = dictionary_get(dic, key);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	return listaMemorias;
+}
+
+
 char* getTablasSafe(t_dictionary * dic, char*key){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	char * nombre = (char*)dictionary_get(dic, key);
@@ -348,26 +447,30 @@ char* getTablasSafe(t_dictionary * dic, char*key){
 	return nombre;
 }
 
-void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia){
-	char * key = string_new();
-	sprintf(key, "%d", idMemoria);
+void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 	Memoria * m = malloc(sizeof(Memoria));
-	m = getMemoriaSafe(memoriasDisponibles, key);
+	m = memoria;
+
 	if(m != NULL){
-		putMemorySafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], m);
+		if( consistencia == SC){
+			list_add(memoriasSc,m);
+			putMemoryListSafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], memoriasSc);
+		}else if(consistencia == EC){
+			list_add(memoriasEv, m);
+			putMemoryListSafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], memoriasEv);
+		}else{
+			list_add(memoriasHc, m);
+			putMemoryListSafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], memoriasHc);
+		}
+
 	}else{
-		/*Fallo el log*/
-		printf("Fallo el ADD");
+		log_error(LOGGER, "Error al asignar una memoria");
 	}
+
 }
 
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
-	Memoria * mem = (Memoria*)getMemoriaSafe(memoriasAsociadas, consistencia);
-	if(mem != NULL){
-		putTablaSafe(tablasPorConsistencia, nombreTable, consistencia);
-	}else{
-		printf("fallo create, no existe memoria con dicha consistencia");
-	}
+	putTablaSafe(tablasPorConsistencia, nombreTable, consistencia);
 }
 
 void preguntarPorMemoriasDisponibles(){
