@@ -28,7 +28,7 @@ typedef enum {
 } Consistencias;
 
 typedef enum {
-	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR, GOSSIP, VALUE
+	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR, GOSSIP, VALUE, RETORNO
 } Instruction_set;
 
 typedef enum {
@@ -40,11 +40,12 @@ typedef enum {
 } Procesos;
 
 typedef enum {
-	T_GOSSIPING, T_INSTRUCCION, T_RETORNO, T_VALUE
+	T_GOSSIPING, T_INSTRUCCION, T_VALUE
 } Tipo_Comunicacion;
 
 typedef struct {
 	char* puerto_servidor;
+	Procesos proceso;
 	Tipo_Comunicacion tipo_comunicacion;
 } Comunicacion;
 
@@ -130,13 +131,21 @@ typedef struct {
 	t_list *lista_memorias;
 } Gossip;
 
+typedef struct{
+ //Definir los tipos
+} Retorno;
+
+typedef struct {
+	int value;
+} Value;
+
 void retornarControl(Instruccion *instruccion, int socket_cliente);
 void servidor_comunicacion(Comunicacion *comunicacion);
 int iniciar_servidor(char* puerto);
 int crear_conexion(char* ip, char* puerto);
 t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_envio,
 		Instruccion* instruccion);
-int enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion,
+Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion,
 		Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu);
 bool enviar_paquete(t_paquete* paquete, int socket_cliente);
 void liberar_conexion(int socket_cliente);
@@ -148,8 +157,9 @@ void empaquetar_describe(t_paquete * paquete, Describe *describe);
 void empaquetar_drop(t_paquete * paquete, Drop * drop);
 void empaquetar_journal(t_paquete * paquete, Journal * journal);
 void empaquetar_gossip(t_paquete * paquete, Gossip * gossip);
+void empaquetar_value(t_paquete * paquete, Value * value);
 void* serializar_paquete(t_paquete* paquete, int bytes);
-bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion);
+bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion, Tipo_Comunicacion tipo_comu);
 Select *desempaquetar_select(void* stream);
 Insert *desempaquetar_insert(void* stream);
 Create *desempaquetar_create(void* stream);
@@ -157,6 +167,9 @@ Describe *desempaquetar_describe(void* stream);
 Drop *desempaquetar_drop(void* stream);
 Journal *desempaquetar_journal(void* stream);
 Gossip *desempaquetar_gossip(void* stream);
-
+Value *desempaquetar_value(void* stream);
+bool validar_sender(Procesos sender, Procesos receiver);
+bool responder(int fd_a_responder, Instruccion *instruccion);
+void recibir_respuesta(int fd_a_escuchar, Instruccion *respuesta);
 
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */

@@ -8,6 +8,7 @@ int main(void) {
 
 	Comunicacion *comunicacion;
 	comunicacion->puerto_servidor = PUERTO_DE_ESCUCHA;
+	comunicacion->proceso = FILESYSTEM;
 	comunicacion->tipo_comunicacion = T_INSTRUCCION; 
 	servidor_comunicacion(comunicacion);
 }
