@@ -285,21 +285,26 @@ int logicaSelect(Select * select){
 }
 
 int logicaInsert(Insert * insert){
-	char * nombreTabla = string_new();
-	string_append(&nombreTabla, insert->nombre_tabla);
-
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) insert;
 	i->instruccion = INSERT;
-	Memoria * mem = (Memoria*)getMemoriaSafe(tablasPorConsistencia, nombreTabla);
+
+	char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, insert->nombre_tabla);
+
+	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+	int max = list_size(memoriasAsoc);
+	int randomId = rand() % max + 1;
+	Memoria * mem = NULL;
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	mem = list_get(memoriasAsoc, randomId - 1);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+
 	if(mem != NULL){
 		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
 
-		free(nombreTabla);
 		free(i);
 		return fd;
 	}
-	free(nombreTabla);
 	free(i);
 	return -100;
 }
@@ -310,8 +315,18 @@ int logicaDrop(Drop * drop){
 	i->instruccion = DROP;
 
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	Memoria * mem = dictionary_remove(tablasPorConsistencia, drop->nombre_tabla);
+	char * consistencia = (char*)dictionary_remove(tablasPorConsistencia, drop->nombre_tabla);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+	int max = list_size(memoriasAsoc);
+	int randomId = rand() % max + 1;
+	Memoria * mem = NULL;
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	mem = list_get(memoriasAsoc, randomId - 1);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+
 	if(mem != NULL){
 		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
 		free(i);
@@ -362,9 +377,19 @@ int logicaDescribe(Describe * describe){
 	inst->instruccion = DESCRIBE;
 
 	if(describe->nombre_tabla != NULL){
-		Memoria * m = (Memoria*)getMemoriaSafe(tablasPorConsistencia, describe->nombre_tabla);
-		if(m != NULL){
-			enviarInstruccionLuqui(m->ip, m->puerto, inst, KERNEL);
+
+		char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, describe->nombre_tabla);
+
+		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+		int max = list_size(memoriasAsoc);
+		int randomId = rand() % max + 1;
+		Memoria * mem = NULL;
+		pthread_mutex_lock(&mutexRecursosCompartidos);
+		mem = list_get(memoriasAsoc, randomId - 1);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+		if(mem != NULL){
+			enviarInstruccionLuqui(mem->ip, mem->puerto, inst, KERNEL);
 		}
 		free(inst);
 		return 1;
