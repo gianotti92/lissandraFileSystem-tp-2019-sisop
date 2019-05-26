@@ -5,7 +5,11 @@ int main(void) {
 	configuracion_inicial();
 	pthread_t consolaFS;
 	pthread_create(&consolaFS, NULL, (void*) leer_por_consola, retorno_consola);
-	servidor_comunicacion(PUERTO_DE_ESCUCHA);
+	t_comunicacion *comunicacion;
+	comunicacion->puerto_servidor = malloc(strlen(PUERTO_DE_ESCUCHA) * sizeof(char));
+	memcpy(comunicacion->puerto_servidor, PUERTO_DE_ESCUCHA, strlen(PUERTO_DE_ESCUCHA) * sizeof(char));
+	comunicacion->tipo_comunicacion = T_INSTRUCCION; 
+	servidor_comunicacion(comunicacion);
 }
 
 void configuracion_inicial(void){

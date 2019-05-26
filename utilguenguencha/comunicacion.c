@@ -1,9 +1,9 @@
 #include "comunicacion.h"
 
-void servidor_comunicacion(char* puerto_servidor) {
+void servidor_comunicacion(t_comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
 	int aux1, bytes_recibidos, fd_max, server_socket;
-	server_socket = iniciar_servidor(puerto_servidor);
+	server_socket = iniciar_servidor(comunicacion->puerto_servidor);
 	FD_ZERO(&fd_set_master);
 	FD_ZERO(&fd_set_temporal);
 	FD_SET(server_socket, &fd_set_master);
