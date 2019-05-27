@@ -3,7 +3,9 @@
 char* leer_linea(char* path, int linea){
 	FILE *fileptr;
 	if((fileptr = fopen(path, "r"))){
-		char *buffer = "";
+
+		char *buffer = string_new();
+		string_append(&buffer, "");
 		int lineas_leidas = 0, desplazamiento = 0;
 		char c;
 		c = fgetc(fileptr);
@@ -23,6 +25,7 @@ char* leer_linea(char* path, int linea){
 					if(c == '\n' && strlen(buffer) == 0){
 						return NULL;
 					}else if(strlen(buffer) == desplazamiento){
+						buffer[desplazamiento] = '\0';
 						return buffer;
 					}else{
 						char *retorno = string_new();
