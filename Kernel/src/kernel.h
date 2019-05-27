@@ -2,10 +2,10 @@
 #define KERNEL_H_
 
 
-#include "../../utilguenguencha/comunicacion.h"
-#include "../../utilguenguencha/kernel_utils.h"
-#include "../../utilguenguencha/parser.h"
-#include "../../utilguenguencha/utils.h"
+#include "../../utilguenguencha/src/comunicacion.h"
+#include "../../utilguenguencha/src/kernel_utils.h"
+#include "../../utilguenguencha/src/parser.h"
+#include "../../utilguenguencha/src/utils.h"
 #include <commons/collections/dictionary.h>
 #include <semaphore.h>
 #include <stdlib.h>
@@ -28,9 +28,7 @@ char *CONSISTENCIAS_STRING[] = {
 // Funciones del proceso
 void configuracion_inicial(void);
 void retorno_consola(char* leido);
-void retornarControl(Instruction_set instruccion, int socket_cliente);
 void iniciarEstados();
-
 void leerArchivo(char * path);
 void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
@@ -63,6 +61,9 @@ void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
 int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
 		Procesos proceso_del_que_envio);
+// Hay que definirla ya que no tiene definición en kernel y sino rompería, de todos modos no se usa
+void retornarControl(Instruccion *instruccion, int socket_cliente){};
+
 
 // Variables del proceso
 t_list *estadoReady;

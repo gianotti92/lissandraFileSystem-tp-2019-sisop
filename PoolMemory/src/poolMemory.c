@@ -6,11 +6,15 @@ int main(void) {
 	MAX_VALUE = 100; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
-	pthread_t consolaPoolMemory, gossiping;
+	pthread_t consolaPoolMemory, gossiping, servidorPM;
 	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);
 	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
-	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
-
+	Comunicacion *comunicacion = malloc(sizeof(Comunicacion));
+	comunicacion->puerto_servidor = PUERTO_DE_ESCUCHA;
+	comunicacion->proceso = POOLMEMORY;
+	comunicacion->tipo_comunicacion = T_INSTRUCCION;
+	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion);
+	pthread_join(servidorPM, NULL);
 	pthread_join(consolaPoolMemory, NULL);
 	pthread_join(gossiping, NULL);
 
@@ -122,7 +126,7 @@ void inicializar_memoria(){
 
 void atender_consulta (Instruccion* instruccion_parseada){
 
-		int fd_proceso;
+		Instruccion* instruccion_respuesta;
 
 		if (instruccion_parseada->instruccion == SELECT){
 
@@ -137,8 +141,8 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 			if(pagina == NULL){
 			// no tenemos la tabla-key en memoria
-				if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
-					printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
+					printf("La consulta fue enviada al FILESYSTEM");
 
 					//hacer un insert con la respuesta
 					//insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, value, timestamp, false);
@@ -166,21 +170,28 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 			eliminar_de_memoria(instruccion_drop->nombre_tabla);
 
-			if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
-				printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+			if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
+				printf("La consulta fue enviada al FILESYSTEM");
 				//captar respuesta y devolver paquete
 			}
 
 		//devolver un ok/error
 		}
+		else if (instruccion_parseada->instruccion == JOURNAL){
 
+			Journal* instruccion_journal = (Journal*) instruccion_parseada->instruccion_a_realizar;
+
+			lanzar_journal(instruccion_journal->timestamp);
+
+		//devolver un ok/error
+		}
 		else if(instruccion_parseada->instruccion != ERROR &&
 				instruccion_parseada->instruccion != METRICS &&
 				instruccion_parseada->instruccion != ADD &&
 				instruccion_parseada->instruccion != RUN &&
 				instruccion_parseada->instruccion != JOURNAL){
-			if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
-				printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+			if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
+				printf("La consulta fue enviada al FILESYSTEM");
 
 			//captar respuesta y devolver paquete
 			}
@@ -470,7 +481,57 @@ void lanzar_gossiping(){
 	instruccion->instruccion = GOSSIP;
 	instruccion->instruccion_a_realizar = gossip;
 
-	enviar_instruccion(IP_FS,PUERTO_FS,instruccion, POOLMEMORY);
+	// Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS,PUERTO_FS,instruccion, POOLMEMORY, T_GOSSIPING);
+}
+
+void lanzar_journal(t_timestamp timestamp_journal){
+
+	int posicion_segmento = (l_segmentos->elements_count -1);
+	int posicion_pagina;
+	Segmento* segmento;
+	t_list* paginas;
+	void* pagina;
+	Pagina_general* pagina_general;
+
+	Insert* instruccion_insert;
+	Instruccion* instruccion;
+	instruccion->instruccion = INSERT;
+	instruccion->instruccion_a_realizar = instruccion_insert;
+
+
+	while(posicion_segmento >= 0){
+
+		segmento = list_get(l_segmentos, posicion_segmento);
+		paginas = segmento->paginas;
+		posicion_pagina = (paginas->elements_count -1);
+
+		while (posicion_pagina >= 0){
+			pagina = list_get(paginas, posicion_pagina);
+
+			if (*get_modificado_pagina(pagina)){
+				instruccion_insert->key = *get_key_pagina(pagina);
+				instruccion_insert->nombre_tabla = segmento->nombre;
+				instruccion_insert->timestamp_insert = *get_timestamp_pagina(pagina);
+				instruccion_insert->value = get_value_pagina(pagina);
+				instruccion_insert->timestamp = timestamp_journal;
+
+				Instruccion* instruccion_respuesta;
+				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
+					printf("La consulta fue enviada al FILESYSTEM");
+
+				//captar respuesta y devolver paquete
+				}
+
+				pagina_general = buscar_pagina_general(pagina);
+				pagina_general->en_uso = false;
+
+			}
+			posicion_pagina--;
+		}
+		eliminar_de_memoria(segmento->nombre);
+		posicion_segmento--;
+	}
+
 }
 
 void print_memorias (){

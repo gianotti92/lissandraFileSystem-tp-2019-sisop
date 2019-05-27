@@ -1,9 +1,9 @@
 #ifndef POOLMEMORY_H_
 #define POOLMEMORY_H_
 
-#include "../../utilguenguencha/comunicacion.h"
-#include "../../utilguenguencha/parser.h"
-#include "../../utilguenguencha/utils.h"
+#include "../../utilguenguencha/src/comunicacion.h"
+#include "../../utilguenguencha/src/parser.h"
+#include "../../utilguenguencha/src/utils.h"
 
 
 // Variables globales del proceso
@@ -40,7 +40,6 @@ typedef struct{
 // Funciones del proceso
 void configuracion_inicial(void);
 void retorno_consola(char* leido);
-void retornarControl(Instruccion *instruccion, int cliente);
 void inicializar_memoria();
 void atender_consulta (Instruccion*);
 void insertar_en_memoria(char*, t_key, char*, t_timestamp, t_flag);
@@ -62,6 +61,7 @@ void set_modificado_pagina( void*, t_flag);
 void print_lista_paginas();
 void print_pagina(void*);
 void lanzar_gossiping();
+void lanzar_journal(t_timestamp);
 void print_memorias ();
 void* pedir_pagina();
 void* seleccionar_pagina ();
