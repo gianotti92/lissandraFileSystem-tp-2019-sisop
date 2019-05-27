@@ -62,14 +62,15 @@ int getNumLastFile(char* prefix,char* extension,char* path) {
 		while ((dir = readdir(d)) != NULL) {
 			if (dir->d_type == DT_REG){
 				//Verifico si empieza con el prefijo y termina con la extension correspondiente
-				if(strstr(dir->d_name,prefix)==dir->d_name && strstr(dir->d_name,extension) == dir->d_name+(strlen(dir->d_name)-strlen(extension))) {
-					char strnum[5];
+				if(strstr(dir->d_name,prefix)==dir->d_name && strstr(dir->d_name,extension) == dir->d_name+(strlen(dir->d_name)-strlen(extension))) {				
 					int currnum;
 					//Seteo como fin de string justo cuando comienza la extension
 					*(dir->d_name+(strlen(dir->d_name)-strlen(extension)-1))='\0';
+					char*strnum=malloc(strlen(dir->d_name+strlen(prefix))+1);
 					//Copio el valor numerico del archivo
 					strcpy(strnum,dir->d_name+strlen(prefix));
 					sscanf(strnum,"%d",&currnum);
+					free(strnum);
 					retnum = (currnum>retnum)?currnum:retnum;
 				}
 			}
@@ -146,7 +147,7 @@ int deleteTable(char* tabla){
 		}
 		closedir(d);
 	} else {
-		log_error(LOGGER,"No existe el directorio %s",path);
+		log_error(LOGGER,"Error al abrir el directorio %s, %s",path, strerror(errno));
 		free(path);
 		return 1;
 	}
@@ -187,7 +188,7 @@ int read_temp_files(char* tabla,t_list* listaRegistros){
 		}
 		closedir(d);
 	} else {
-		log_error(LOGGER,"No existe el directorio %s, %s",path,strerror(errno));
+		log_error(LOGGER,"Error al abrir el directorio %s, %s",path,strerror(errno));
 		free(path);
 		return 1;
 	}
@@ -222,4 +223,14 @@ char* getTablePath(char*tabla){
 	char*path = malloc(strlen(global_conf.directorio_tablas)+strlen(tabla)+1);
 	sprintf(path,"%s%s",global_conf.directorio_tablas,tabla);
 	return path;
+}
+int digitos(int num){
+	int l=!num;
+	while(num){l++; num/=10;}
+	return l;
+}
+int digitos_long(long num){
+	long l=!num;
+	while(num){l++; num/=10;}
+	return (int)l;
 }

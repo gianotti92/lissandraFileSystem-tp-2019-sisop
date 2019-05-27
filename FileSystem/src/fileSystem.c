@@ -14,7 +14,7 @@ struct filesystem_conf{
 struct filesystem_conf global_fs_conf;
 
 /* Structure Initialization */
-int create_directory_structure(char* root);
+int create_directory_structure(void);
 int fs_get_conf(void);
 
 /* Write Functions */
@@ -42,16 +42,16 @@ t_bitarray* bitarray_get(void);
 void bitarray_show(t_bitarray* bitarray);
 
 /* Utils */
-int create_dir(char* path);
 int existeDirectorio(char *path);
 int file_exist (char *filename);
 int fs_get_reg_size(void);
+char* directorio_sin_ultima_barra(char*path);
 
 /*
 	Public Functions
 */
 int fs_init(void){
-	if(create_directory_structure(global_conf.punto_montaje)!=0){
+	if(create_directory_structure()!=0){
 		return 1;
 	}
 	if(fs_get_conf()!=0){
@@ -168,12 +168,11 @@ char* fs_write_registers_to_buffer(t_list *registros,int* buffer_size){
 }
 int fs_write_get_free_blocks(t_list* blocks,int cant_blocks){
 	if(cant_blocks>global_fs_conf.BLOCKS){
-		log_error(LOGGER,"Error asignar %d bloques, pasa el maximo de %lu",cant_blocks,global_fs_conf.BLOCKS);
+		log_error(LOGGER,"Error al asignar %d bloques, pasa el maximo de %lu",cant_blocks,global_fs_conf.BLOCKS);
 		return 1;
 	}
 	t_bitarray* bitarray = bitarray_get();
 	if(bitarray==NULL){
-		log_error(LOGGER,"Error al abrir el archivo %s/Metadata/Bitmap.bin",global_conf.punto_montaje);
 		return 1;
 	}
 	int cantAsign=0;
@@ -188,7 +187,7 @@ int fs_write_get_free_blocks(t_list* blocks,int cant_blocks){
 	}
 	if(cant_blocks != cantAsign){
 		bitarray_destroy(bitarray);
-		log_error(LOGGER,"Error al reservar %i bloques, se intento asignar %d",cant_blocks,cantAsign);
+		log_error(LOGGER,"Error al asignar %i bloques, se asignaron %d",cant_blocks,cantAsign);
 		return 1;
 	}
 	bitarray_to_file(bitarray->bitarray);
@@ -200,16 +199,17 @@ int fs_write_buffer_to_blocks(char* buffer,struct file_mdata* mdata) {
 	int cant = mdata->size/global_fs_conf.BLOCK_SIZE;
 
 	void writeInFile(int * block){
-		char path[100];
-		sprintf(path,"%s/Bloques/%i.bin",global_conf.punto_montaje,*block);
+		char*path=malloc(strlen(global_conf.directorio_bloques)+digitos(*block)+5);
+		sprintf(path,"%s%d.bin",global_conf.directorio_bloques,*block);
 
 		FILE * FileBlock = fopen(path, "wb");
-
 		if(FileBlock==NULL){
 			log_error(LOGGER,"Error al abrir el archivo '%s', %s",path,strerror(errno));
 			error=-1;
+			free(path);
 			return;
 		}
+		free(path);
 
 		if(i!=cant){
 				char * toBlock = malloc(global_fs_conf.BLOCK_SIZE);
@@ -231,24 +231,32 @@ int fs_write_buffer_to_blocks(char* buffer,struct file_mdata* mdata) {
 int fs_write_set_mdata(char* filename,struct file_mdata* mdata){
 	FILE* f=fopen(filename,"w");
 	if(f==NULL){
-		log_error(LOGGER,"No se pudo crear el archivo '%s', %s",filename,strerror(errno));
+		log_error(LOGGER,"Error al crear el archivo '%s', %s",filename,strerror(errno));
 		return 1;
 	}
-	char buff[200];
+	int lengthBlocks=0;
+	void sumLengthBlocks(int* block){
+		lengthBlocks+=digitos(*block)+1;
+	}
+	list_iterate(mdata->blocks,(void*)sumLengthBlocks);
+
+	char*buff=malloc(5+digitos_long(mdata->size)+9+lengthBlocks+1);
 	sprintf(buff,"SIZE=%lu\nBLOCKS=[",mdata->size);
 
 	void addBlockToBuff(int* block){
 		if(block==NULL)
 			return;
-		char aux[11];
+		char*aux=malloc(digitos(*block)+2);
 		sprintf(aux,"%d,",*block);
 		strcat(buff,aux);
+		free(aux);
 	}
 
 	list_iterate(mdata->blocks,(void*)addBlockToBuff);
 	buff[strlen(buff)-1]=']';
 
 	fwrite(buff,strlen(buff),1,f);
+	free(buff);
 	fclose(f);
 	return 0;
 }
@@ -259,10 +267,10 @@ int fs_write_set_mdata(char* filename,struct file_mdata* mdata){
 int fs_create_set_mdata(char* filename){
 	FILE* f=fopen(filename,"w");
 	if(f==NULL){
-		log_error(LOGGER,"No se pudo crear el archivo '%s', %s",filename,strerror(errno));
+		log_error(LOGGER,"Error al crear el archivo '%s', %s",filename,strerror(errno));
 		return 1;
 	}
-	char buff[20];
+	char buff[17];
 	strcpy(buff,"SIZE=0\nBLOCKS=[]");
 	fwrite(buff,strlen(buff),1,f);
 	fclose(f);
@@ -275,17 +283,17 @@ int fs_create_set_mdata(char* filename){
 int fs_delete_set_free_blocks(t_list* blocks){
 	t_bitarray* bitarray = bitarray_get();
 	if(bitarray==NULL){
-		log_error(LOGGER,"Error al abrir el archivo %s/Metadata/Bitmap.bin",global_conf.punto_montaje);
 		return 1;
 	}
 	int error=0;
 	void limpiar(int *block){
-		char filename[100];
-		sprintf(filename,"%s/Bloques/%i.bin",global_conf.punto_montaje,*block);		
+		char*filename=malloc(strlen(global_conf.directorio_bloques)+digitos(*block)+5);
+		sprintf(filename,"%s%d.bin",global_conf.directorio_bloques,*block);		
 		if(remove(filename)) {
 			log_error(LOGGER,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
 			error=1;
 		}
+		free(filename);
 		bitarray_clean_bit(bitarray,*block);
 	}
 	list_iterate(blocks,(void*)limpiar);
@@ -302,15 +310,17 @@ int fs_read_blocks_to_buffer(char*buffer,struct file_mdata* mdata){
 	int i=0,error=0;
 
 	void readFile(int*block){
-		char path[100];
-		sprintf(path,"%s/Bloques/%i.bin",global_conf.punto_montaje,*block);
+		char*path=malloc(strlen(global_conf.directorio_bloques)+digitos(*block)+5);
+		sprintf(path,"%s%d.bin",global_conf.directorio_bloques,*block);
 
 		FILE * FileBlock = fopen(path, "rb");
 		if(FileBlock==NULL){
 			log_error(LOGGER,"Error al abrir el archivo '%s', %s",path,strerror(errno));
 			error=1;
+			free(path);
 			return;
 		}
+		free(path);
 		if(i!=list_size(mdata->blocks)-1){
 			char toBlock[global_fs_conf.BLOCK_SIZE];
 			fread(toBlock,global_fs_conf.BLOCK_SIZE,1,FileBlock);
@@ -353,7 +363,7 @@ void fs_read_buffer_to_registers(char* buffParam,long bufferSize,t_list* registr
 int fs_read_get_mdata(char* filename,struct file_mdata* mdata){
 	t_config* conf=config_create(filename);
 	if(conf==NULL){
-		log_error(LOGGER,"No existe el archivo '%s'",filename);
+		log_error(LOGGER,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
 		return 1;
 	}
 	mdata->size = config_get_long_value(conf,"SIZE");
@@ -376,52 +386,43 @@ int fs_read_get_mdata(char* filename,struct file_mdata* mdata){
 /*
 	Structure Initialization
 */
-int create_directory_structure(char* root) {
-	if(!existeDirectorio(root)){
-		if(mkdirRecursivo(root)!=0){
-			log_error(LOGGER,"No se pudo crear el directorio '%s', %s",root,strerror(errno));
-			return 1;
-		}
-	}
-	char path[100];
-	sprintf(path,"%s/Metadata",root);
+int create_directory_structure() {
+	char*path=directorio_sin_ultima_barra(global_conf.directorio_tablas);
 	if(!existeDirectorio(path)){
-		if(create_dir(path)!=0){
-			log_error(LOGGER,"No se pudo crear el directorio '%s', %s",path,strerror(errno));
+		if(mkdirRecursivo(path)!=0){
+			free(path);
 			return 1;
 		}
 	}
-	sprintf(path,"%s/Tables",root);
+	free(path);
+	path=directorio_sin_ultima_barra(global_conf.directorio_bloques);
 	if(!existeDirectorio(path)){
-		if(create_dir(path)!=0){
-			log_error(LOGGER,"No se pudo crear el directorio '%s', %s",path,strerror(errno));
+		if(mkdirRecursivo(path)!=0){
+			free(path);
 			return 1;
 		}
 	}
-	sprintf(path,"%s/Metadata",root);
+	free(path);
+	path=directorio_sin_ultima_barra(global_conf.directorio_metadata);
 	if(!existeDirectorio(path)){
-		if(create_dir(path)!=0){
-			log_error(LOGGER,"No se pudo crear el directorio '%s', %s",path,strerror(errno));
+		if(mkdirRecursivo(path)!=0){
+			free(path);
 			return 1;
 		}
 	}
-	sprintf(path,"%s/Bloques",root);
-	if(!existeDirectorio(path)){
-		if(create_dir(path)!=0){
-			log_error(LOGGER,"No se pudo crear el directorio '%s', %s",path,strerror(errno));
-			return 1;
-		}
-	}
+	free(path);
 	return 0;
 }
 int fs_get_conf(void){
-	char filename[200];
-	sprintf(filename,"%s/Metadata/Metadata.bin",global_conf.punto_montaje);
+	char*filename=malloc(strlen(global_conf.directorio_metadata)+13);
+	sprintf(filename,"%sMetadata.bin",global_conf.directorio_metadata);
 	t_config* conf = config_create(filename);
 	if(conf==NULL){
-		log_error(LOGGER,"Archivo de configuracion: %s no encontrado",filename);
+		log_error(LOGGER,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
+		free(filename);
 		return 1;
 	}
+	free(filename);
 	global_fs_conf.BLOCK_SIZE = config_get_long_value(conf,"BLOCK_SIZE");
 	global_fs_conf.BLOCKS = config_get_long_value(conf,"BLOCKS");
 	strcpy(global_fs_conf.MAGIC_NUMBER,config_get_string_value(conf,"MAGIC_NUMBER"));
@@ -433,23 +434,26 @@ int fs_get_conf(void){
 	Bitarray
 */
 void bitarray_init(void){
-	char filename[100];
-	sprintf(filename,"%s/Metadata/Bitmap.bin",global_conf.punto_montaje);
+	char*filename=malloc(strlen(global_conf.directorio_metadata)+11);
+	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
 	if(!file_exist(filename)){
 		char *bitarray = malloc(bitarray_size());
 		memset(bitarray,0,bitarray_size());
 		bitarray_to_file(bitarray);
 		free(bitarray);
 	}
+	free(filename);
 }
 void bitarray_to_file(char *bitarray){
-	char filename[100];
-	sprintf(filename,"%s/Metadata/Bitmap.bin",global_conf.punto_montaje);
+	char*filename=malloc(strlen(global_conf.directorio_metadata)+11);
+	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
 	FILE * fd = fopen(filename, "wb");
 	if(fd==NULL){
-		log_error(LOGGER,"No se pudo abrir el archivo %s, %s",filename,strerror(errno));
+		log_error(LOGGER,"Error al abrir el archivo %s, %s",filename,strerror(errno));
+		free(filename);
 		return;
 	}
+	free(filename);
 	fwrite(bitarray,bitarray_size(),1,fd);
 	fclose(fd);
 }
@@ -461,13 +465,15 @@ long bitarray_size(void){
 	return size;
 }
 t_bitarray* bitarray_get(void){
-	char filename[100];
-	sprintf(filename,"%s/Metadata/Bitmap.bin",global_conf.punto_montaje);
+	char*filename=malloc(strlen(global_conf.directorio_metadata)+11);
+	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
 	FILE * fd = fopen(filename, "rb");
 	if(fd==NULL){
-		log_error(LOGGER,"No se pudo abrir el archivo %s, %s",filename,strerror(errno));
+		log_error(LOGGER,"Error al abrir el archivo %s, %s",filename,strerror(errno));
+		free(filename);
 		return NULL;
 	}
+	free(filename);
 	char *bitarray = malloc(bitarray_size());
 	fread(bitarray,bitarray_size(),1,fd);
 	fclose(fd);
@@ -485,9 +491,6 @@ void bitarray_show(t_bitarray* bitarray){
 /*
 	Utils
 */
-int create_dir(char* path) {
-	return mkdir(path,S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-}
 int existeDirectorio(char *path){
 	struct stat sb;
 	if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode))
@@ -501,4 +504,10 @@ int file_exist (char *filename){
 int fs_get_reg_size(void){
 	// max key: 65536 -> 5 char + max value -> conf + max timestamp -> 19 char + 2 ';' + '\n' + '\0'
 	return 5+global_conf.max_value_size+19+4;
+}
+char* directorio_sin_ultima_barra(char*path){
+	char*ret=malloc(strlen(path));
+	memcpy(ret,path,strlen(path));
+	ret[strlen(path)-1]='\0';
+	return ret;
 }

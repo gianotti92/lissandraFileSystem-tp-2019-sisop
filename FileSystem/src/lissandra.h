@@ -3,9 +3,9 @@
 /*
 	UtilGueguencha
 */
-#include "../../utilguenguencha/utilguenguencha/comunicacion.h"
-#include "../../utilguenguencha/utilguenguencha/parser.h"
-#include "../../utilguenguencha/utilguenguencha/utils.h"
+#include "../../utilguenguencha/src/comunicacion.h"
+#include "../../utilguenguencha/src/parser.h"
+#include "../../utilguenguencha/src/utils.h"
 /*
 	Commons
 */
@@ -50,17 +50,16 @@ void global_conf_destroy(void);
 /*
 	Table Metadata
 */
-struct tableMetadataItem {
-	struct TableMetadata metadata;
-	char tableName[100];
-	pthread_rwlock_t lock;
-};
-
-/* FS */
 struct TableMetadata{
 	Consistencias consistencia;
 	int numero_particiones;
 	int compaction_time;
+};
+
+struct tableMetadataItem {
+	struct TableMetadata metadata;
+	char tableName[100];
+	pthread_rwlock_t lock;
 };
 
 struct FileSystemMetadata{
@@ -132,14 +131,15 @@ int read_temp_files(char* tabla,t_list* listaRegistros);
 char *consistencia2string(Consistencias consistencia);
 int string2consistencia(char* consistencia);
 char* getTablePath(char*tabla);
+int digitos(int num);
+int digitos_long(long num);
 
 /* Fmanager */
 int existeDirectorio(char path[]);
 int crearDirectorio(char*source, char*name);
-char * borrarDirectorio(char*source, char*name);
 int crearMetadataTableFile(char*directorio,struct TableMetadata tableMeta);
 int crearMetadataFile(char*directorio,struct FileSystemMetadata systemMeta);
-int crearBinarios(char*directorio, char*tabla, int numero_particiones);
+int crearBinarios(char*directorio,int numero_particiones);
 int mkdirRecursivo(char*path);
 struct TableMetadata setTableMetadata(Consistencias consistencia, int numero_particiones,double compaction_time);
 

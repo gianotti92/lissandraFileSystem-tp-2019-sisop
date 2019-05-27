@@ -41,8 +41,8 @@ int _select(Select* select){
 	findInMemtable(select->nombre_tabla,select->key,listaRegistros);
 
 	int particion = select->key%found->metadata.numero_particiones;
-	char particionFile[150];
-	sprintf(particionFile,"%s/Tables/%s/%d.bin",global_conf.punto_montaje,select->nombre_tabla,particion);
+	char*particionFile = malloc(strlen(global_conf.directorio_tablas)+strlen(select->nombre_tabla)+digitos(particion)+6);
+	sprintf(particionFile,"%s%s/%d.bin",global_conf.directorio_tablas,select->nombre_tabla,particion);
 
 	// Espero posible compactacion
 	pthread_rwlock_rdlock(&found->lock);
@@ -52,8 +52,10 @@ int _select(Select* select){
 		clean_registers_list(listaRegistros);
 		list_destroy(listaRegistros);
 		pthread_rwlock_unlock(&found->lock);
+		free(particionFile);
 		return 1;
 	}
+	free(particionFile);
 
 	// Reviso archivos temporales
 	if(read_temp_files(select->nombre_tabla,listaRegistros)!=0){
@@ -99,22 +101,21 @@ int _select(Select* select){
 	return 0;
 }
 int _create(Create* create){
-	char path[107];
-	sprintf(path,"%s/Tables",global_conf.punto_montaje);
-	char directorio[207];
-	sprintf(directorio,"%s/%s",path,create->nombre_tabla);
-
-	if(crearDirectorio(path,create->nombre_tabla)!=0){
+	char*directorio=getTablePath(create->nombre_tabla);
+	if(crearDirectorio(global_conf.directorio_tablas,create->nombre_tabla)!=0){
+		free(directorio);
 		return 1;
 	}
 	if(crearMetadataTableFile(directorio,setTableMetadata(create->consistencia,create->particiones,create->compactation_time)) != 0) {
+		free(directorio);
 		return 1;
 	}
 
-	if(crearBinarios(directorio,create->nombre_tabla,create->particiones) != 0) {
+	if(crearBinarios(directorio,create->particiones)!=0) {
+		free(directorio);
 		return 1;
 	}
-
+	free(directorio);
 	/* Agrego la nueva tabla a la metadata global */
 	pthread_mutex_lock(&tableMetadataMutex);
 	insertInTableMetadata(create->nombre_tabla,setTableMetadata(create->consistencia,create->particiones,create->compactation_time));

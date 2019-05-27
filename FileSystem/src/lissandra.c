@@ -212,28 +212,30 @@ void *TH_dump(void* p){
 		struct dumpTableList* dump_table_item = (struct dumpTableList*)elem;
 
 		// Obtengo el nombre del archivo
-		char path[207];
-		sprintf(path,"%s/Tables/%s",global_conf.punto_montaje,dump_table_item->tableName);
-
 		struct tableMetadataItem* found = get_table_metadata(dump_table_item->tableName);
 		if(found == NULL) {
 			log_error(LOGGER,"DUMP: No se encontro la metadata de la tabla '%s'",dump_table_item->tableName);
 			return;
 		}
+		char*path=getTablePath(dump_table_item->tableName);
 
 		pthread_rwlock_rdlock(&found->lock);
 		int lastDump = getNumLastFile("dump_","tmp",path);
 		pthread_rwlock_unlock(&found->lock);
 
-		char newfilename[220];
+		char*newfilename=malloc(strlen(path)+6+digitos(lastDump)+5);
 		sprintf(newfilename,"%s/dump_%d.tmp",path,lastDump+1);
 
 		pthread_rwlock_wrlock(&found->lock);
 		if(fs_write(newfilename,dump_table_item->registros)!=0){
 			pthread_rwlock_unlock(&found->lock);
+			free(path);
+			free(newfilename);
 			return;
 		}
 		pthread_rwlock_unlock(&found->lock);
+		free(path);
+		free(newfilename);
 	}
 	while(true) {
 		usleep(global_conf.tiempo_dump*1000);
@@ -421,58 +423,3 @@ void* TH_compacItem(void* p){
 	}
 	return (void*)0;
 }
-
-/*
-	Jubilado
-	
-
-void *threadNewClientHandler(void * ncs);
-void *threadConsolaHandler(void * logger);
-
-void *threadConsolaHandler(void * logger) {
-	printf("Welcome to Lissandra FS\nType any API command to continue..\n");
-	char* leido = readline("LissandraFS> ");
-	while(strcmp("exit",leido)!=0) {
-		struct Request req = getRequest(leido);
-		controller(req,(t_log*)logger);
-		free(leido);
-		leido = readline("LissandraFS> ");
-	}
-	free(leido);
-	return (void *)0;
-}
-void *threadNewClientHandler(void * ncs) {
-	struct threadNewClientStruct* data = (struct threadNewClientStruct*)ncs;
-
-	if(handshake(data->client_fd,data->logger) == -1) {
-		log_error(data->logger,"Error con el handshake");
-		close(data->client_fd);
-		return (void *)1;
-	}
-
-	char bufferAPI[1000];
-	int bytesRecibidos = recibirDatos(data->client_fd,bufferAPI,sizeof(bufferAPI),NULL);
-	while(strcmp("exit",bufferAPI)!=0) {
-		if(bytesRecibidos == -1) {
-			log_error(data->logger,"API: error al recibir mensaje");
-			close(data->client_fd);
-			return (void *)1;
-		}
-		struct Request req = getRequest(bufferAPI);
-		int result = controller(req,data->logger);
-
-		if(result != 0) {
-			char errmsg[6];
-			strcpy(errmsg,"ERROR");
-			if (send(data->client_fd,errmsg,strlen(errmsg),0) == -1) {
-				log_error(data->logger,"API: error al enviar mensaje de error");
-				close(data->client_fd);
-				return (void *)1;
-			}
-		}
-		bytesRecibidos = recibirDatos(data->client_fd,bufferAPI,sizeof(bufferAPI),NULL);
-	}
-	close(data->client_fd);
-	return (void *)0;
-}
-*/

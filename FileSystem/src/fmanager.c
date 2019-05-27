@@ -1,9 +1,3 @@
-/*
- * fileManager.c
- *
- *  Created on: 13 abr. 2019
- *      Author: utnso
- */
 #include "lissandra.h"
 
 struct PartitionData{
@@ -12,28 +6,25 @@ struct PartitionData{
 };
 
 char * makeMetadataTableString(struct TableMetadata tableMeta);
-char * makeMetadataString(struct FileSystemMetadata systemMeta);
 struct PartitionData getPartitionData(char* nameTable, int partition);
 int setPartitionData(struct PartitionData partitionD);
 
 int crearDirectorio(char* source,char* name){
-	/*if(!existeDirectorio(source)){
-		if(mkdirRecursivo(source)!=0){
-			return 1;
-		}
-	}*/
-	char PATH[200];
+	char*PATH=malloc(strlen(source)+strlen(name)+2);
 	sprintf(PATH,"%s/%s",source,name);
 
 	if(!existeDirectorio(PATH)){
 		if(mkdir(PATH,S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)==0){ //Directorio creado con 755
+			free(PATH);
 			return 0;
 		} else {
 			log_error(LOGGER,"Error al crear el directorio '%s', %s",PATH,strerror(errno));
+			free(PATH);
 			return 1;
 		}
 	}
 	log_error(LOGGER,"Tabla '%s' existente",name);
+	free(PATH);
     return 1;
 }
 
@@ -42,12 +33,12 @@ int mkdirRecursivo(char*pathSrc) { //Creados con 755
 	char* path = malloc(strlen(pathSrc)+1);
 	strcpy(path,pathSrc);
 	//Acumulador de directorios creados
-	char* create = malloc(strlen(pathSrc)+1);
+	char* create = malloc(strlen(pathSrc)+2);
 	strcpy(create,"/");
 	//Spliteo el path
 	char* find = strtok(path,"/");
 	while(find != NULL) {
-		sprintf(create,"%s%s",create,find);
+		strcat(create,find);
 		if(!existeDirectorio(create)) {
 			if(mkdir(create,S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)!=0){
 				log_error(LOGGER,"Error al crear el directorio '%s', %s",create,strerror(errno));
@@ -56,58 +47,84 @@ int mkdirRecursivo(char*pathSrc) { //Creados con 755
 				return 1;
 			}
 		}
-		sprintf(create,"%s/",create);
+		strcat(create,"/");
 		find = strtok(NULL,"/");
 	}
 	free(create);
 	free(path);
 	return 0;
 }
-
-
-char * borrarDirectorio(char*source, char*name){
-	char PATH[200];
-	printf(PATH,"%s/%s",source,name);
-
-	char *result = (char *)malloc(strlen(PATH)+1);
-	strcpy(result,PATH);
-
-	if(existeDirectorio(PATH)){
-		if(rmdir(PATH)==0){
-			return result;
-		}
-	}
-
-    return NULL;
-}
-
-char * makeMetadataTableString(struct TableMetadata tableMeta){
-	char DATA[100];
-	strcpy(DATA, "CONSISTENCY=");
-	char* consistencia=consistencia2string(tableMeta.consistencia);
-	strcat(DATA,consistencia);
+char* makeMetadataTableString(struct TableMetadata tableMeta){
+	char*consistencia=consistencia2string(tableMeta.consistencia);
+	char*metadataStr=malloc(12+strlen(consistencia)+12+digitos(tableMeta.numero_particiones)+17+digitos(tableMeta.compaction_time)+1);
+	sprintf(metadataStr,"CONSISTENCY=%s\nPARTITIONS=%d\nCOMPACTION_TIME=%d",consistencia,tableMeta.numero_particiones,tableMeta.compaction_time);
 	free(consistencia);
-	strcat(DATA, "\nPARTITIONS=");
-	char n1[10];
-	snprintf(n1, sizeof(n1), "%d",tableMeta.numero_particiones);
-	strcat(DATA, n1);
-	strcat(DATA, "\nCOMPACTION_TIME=");
-	char n2[10];
-	snprintf(n2, sizeof(n2), "%d",tableMeta.compaction_time);
-	strcat(DATA, n2);
-
-	char *result = malloc(strlen(DATA)+1);
-	strcpy(result,DATA);
-
-	return result;
+	return metadataStr;
+}
+int crearMetadataTableFile(char*directorio,struct TableMetadata tableMeta){
+	char*PATH = malloc(strlen(directorio)+13+1);
+	sprintf(PATH,"%s/Metadata.txt",directorio);
+	FILE *pf = txt_open_for_append(PATH);
+	free(PATH);
+	if (pf == NULL){
+		log_error(LOGGER,"Error al abrir el archivo '%s', %s",PATH,strerror(errno));
+		return 1;
+	}
+	char * data = makeMetadataTableString(tableMeta);
+	txt_write_in_file(pf, data);
+	txt_close_file(pf);
+	free(data);
+	return 0;
+}
+int crearBinarios(char*directorio,int numero_particiones){
+	int n=0;
+	while(n<numero_particiones){
+		char*filename=malloc(strlen(directorio)+1+digitos(numero_particiones)+5);
+		sprintf(filename,"%s/%d.bin",directorio,n);
+		if(fs_create(filename)!=0){
+			log_error(LOGGER,"Error al crear el archivo '%s', %s",filename,strerror(errno));
+			free(filename);
+			return 1;
+		}
+		free(filename);
+		n++;
+	}
+	return 0;
+}
+struct TableMetadata setTableMetadata(Consistencias consistencia, int numero_particiones,double compaction_time){
+	struct TableMetadata mData;
+	mData.consistencia = consistencia;
+	mData.numero_particiones = numero_particiones;
+	mData.compaction_time = compaction_time;
+	return mData;
 }
 
 
+/*Jubilar*/
 /*
- * BLOCK_SIZE=64
- * BLOCKS=5192
- * MAGIC_NUMBER=LISSANDRA
-*/
+char * makeMetadataString(struct FileSystemMetadata systemMeta);
+struct FileSystemMetadata setFileSystemMetadata(int block_size,int blocks,int magic_number){
+	struct  FileSystemMetadata fData;
+	fData.block_size = block_size;
+	fData.blocks = blocks;
+	fData.magic_number = magic_number ;
+	return fData;
+}
+int crearMetadataFile(char*directorio,struct FileSystemMetadata systemMeta){
+	char PATH[50];
+	sprintf(PATH,"%s/Metadata.txt",directorio);
+
+	FILE *pf = txt_open_for_append(PATH);
+	if (pf == NULL)
+		return 1;
+
+	char * data = makeMetadataString(systemMeta);
+
+	txt_write_in_file(pf, data);
+	txt_close_file(pf);
+	free(data);
+	return 0;
+}
 char * makeMetadataString(struct FileSystemMetadata systemMeta){
 	char DATA[100];
 
@@ -131,87 +148,4 @@ char * makeMetadataString(struct FileSystemMetadata systemMeta){
 
 	return result;
 }
-
-int crearMetadataTableFile(char*directorio,struct TableMetadata tableMeta){
-	char*PATH = malloc(strlen(directorio)+13+1);
-	sprintf(PATH,"%s/Metadata.txt",directorio);
-	FILE *pf = txt_open_for_append(PATH);
-	free(PATH);
-	if (pf == NULL){
-		log_error(LOGGER,"Error al abrir el archivo '%s', %s",PATH,strerror(errno));
-		return 1;
-	}
-	char * data = makeMetadataTableString(tableMeta);
-	txt_write_in_file(pf, data);
-	txt_close_file(pf);
-	free(data);
-	return 0;
-}
-
-
-int crearBinarios(char*directorio, char*tabla, int numero_particiones){
-	char FILE_NAME[10];
-	char PATH[50];
-	int n=0;
-	strcat(directorio,"/");
-
-	while(n<numero_particiones){
-		strcpy(PATH, directorio );
-		snprintf(FILE_NAME, sizeof(FILE_NAME), "%d",n);
-		strcat(FILE_NAME, ".bin");
-		strcat(PATH, FILE_NAME);
-		/*FILE*file = fopen (PATH, "wb");
-		if (file==NULL) {
-		   return 1;
-		}
-		fclose(file);*/
-		if(fs_create(PATH)!=0){
-			log_error(LOGGER,"Error al crear el archivo '%s', %s",PATH,strerror(errno));
-			return 1;
-		}
-		n++;
-	}
-	return 0;
-}
-
-/*
- *  Block_size: Indica el tamaño en bytes de cada bloque
-	Blocks: Indica la cantidad de bloques del File System
-	Magic_Number: Un string fijo con el valor "LFS"
- *
- */
-int crearMetadataFile(char*directorio,struct FileSystemMetadata systemMeta){
-	char PATH[50];
-	sprintf(PATH,"%s/Metadata.txt",directorio);
-
-	FILE *pf = txt_open_for_append(PATH);
-	if (pf == NULL)
-		return 1;
-
-	char * data = makeMetadataString(systemMeta);
-
-	txt_write_in_file(pf, data);
-	txt_close_file(pf);
-	free(data);
-	return 0;
-}
-
-struct TableMetadata setTableMetadata(Consistencias consistencia, int numero_particiones,double compaction_time){
-	struct TableMetadata mData;
-	mData.consistencia = consistencia;
-	mData.numero_particiones = numero_particiones;
-	mData.compaction_time = compaction_time;
-	return mData;
-}
-struct FileSystemMetadata setFileSystemMetadata(int block_size,int blocks,int magic_number){
-	struct  FileSystemMetadata fData;
-	fData.block_size = block_size;
-	fData.blocks = blocks;
-	fData.magic_number = magic_number ;
-	return fData;
-}
-
-
-
-
-
+*/

@@ -1,9 +1,7 @@
 #include "lissandra.h"
 
 int compac_search_tmp_files(t_list* tmpc_files, char* tableName){
-	char path[200];
-	sprintf(path,"%s/Tables/%s",global_conf.punto_montaje,tableName);
-
+	char*path=getTablePath(tableName);
 	struct dirent *dir;
 	DIR *d = opendir(path);
 	if (d) {
@@ -11,23 +9,29 @@ int compac_search_tmp_files(t_list* tmpc_files, char* tableName){
 			if (dir->d_type == DT_REG){
 				//Verifico si empieza con el prefijo y termina con la extension correspondiente
 				if(strstr(dir->d_name,"dump_")==dir->d_name && strstr(dir->d_name,"tmp") == dir->d_name+(strlen(dir->d_name)-strlen("tmp"))) {
-					char * newfilename = malloc(250); 
+					char*newfilename = malloc(strlen(path)+1+strlen(dir->d_name)+2); 
 					sprintf(newfilename,"%s/%sc",path,dir->d_name);
-					char oldfilename[250];
+					char*oldfilename = malloc(strlen(path)+1+strlen(dir->d_name)+1);
 					sprintf(oldfilename,"%s/%s",path,dir->d_name);
 					if (rename(oldfilename,newfilename)!=0){
-						log_error(LOGGER,"No se pudo renombrar el archivo %s a %s, %s",dir->d_name,newfilename,strerror(errno));
+						log_error(LOGGER,"Error al renombrar el archivo %s a %s, %s",dir->d_name,newfilename,strerror(errno));
+						free(newfilename);
+						free(oldfilename);
+						free(path);
 						return 1;
 					}
+					free(oldfilename);
 					list_add(tmpc_files,newfilename);
 				}
 			}
 		}
 		closedir(d);
 	} else{
-		log_error(LOGGER,"No se pudo abrir el directorio %s, %s",path,strerror(errno));
+		log_error(LOGGER,"Error al abrir el directorio %s, %s",path,strerror(errno));
+		free(path);
 		return 1;
 	}
+	free(path);
 	return 0;
 }
 int compac_get_tmp_registers(t_list*registrosTemporales,t_list*tmpc_files){
@@ -39,17 +43,21 @@ int compac_get_tmp_registers(t_list*registrosTemporales,t_list*tmpc_files){
 	return ret;
 }
 int compac_get_partition_registers(t_list*registrosParticiones,char*tableName,int numero_particiones){
-	char basePath[200];
-	sprintf(basePath,"%s/Tables/%s",global_conf.punto_montaje,tableName);
+	char*basePath=getTablePath(tableName);
 	for(int i=0;i<numero_particiones;i++){
-		char filename[220];
+		char*filename = malloc(strlen(basePath)+1+digitos(i)+5);
 		sprintf(filename,"%s/%d.bin",basePath,i);
 		t_list* particion=list_create();
 		if(fs_read(filename,particion)!=0){
+			list_destroy(particion);
+			free(filename);
+			free(basePath);
 			return 1;
 		}
 		list_add_in_index(registrosParticiones,i,(void*)particion);
+		free(filename);
 	}
+	free(basePath);
 	return 0;
 }
 void compac_match_registers(t_list*registrosParticiones,t_list*registrosTemporales){
@@ -96,20 +104,24 @@ int compac_delete_tmpc_files(t_list*tmpc_files){
 int compac_save_partition_registers(t_list*registrosParticiones,char* tablename){
 	// Borro los .bin anteriores
 	for(int i=0;i<list_size(registrosParticiones);i++){
-		char filename[200];
-		sprintf(filename,"%s/Tables/%s/%d.bin",global_conf.punto_montaje,tablename,i);
+		char*filename=malloc(strlen(global_conf.directorio_tablas)+strlen(tablename)+1+digitos(i)+5);
+		sprintf(filename,"%s%s/%d.bin",global_conf.directorio_tablas,tablename,i);
 		if(fs_delete(filename)!=0){
+			free(filename);
 			return 1;
 		}
+		free(filename);
 	}
 	// Escribo los datos en los nuevos .bin
 	for(int i=0;i<list_size(registrosParticiones);i++){
-		char filename[200];
-		sprintf(filename,"%s/Tables/%s/%d.bin",global_conf.punto_montaje,tablename,i);
+		char*filename=malloc(strlen(global_conf.directorio_tablas)+strlen(tablename)+1+digitos(i)+5);
+		sprintf(filename,"%s%s/%d.bin",global_conf.directorio_tablas,tablename,i);
 		t_list* particion = list_get(registrosParticiones,i);
 		if(fs_write(filename,particion)!=0){
+			free(filename);
 			return 1;
 		}
+		free(filename);
 	}
 	return 0;
 }
