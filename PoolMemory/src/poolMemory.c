@@ -126,7 +126,7 @@ void inicializar_memoria(){
 
 void atender_consulta (Instruccion* instruccion_parseada){
 
-		int fd_proceso;
+		Instruccion* instruccion_respuesta;
 
 		if (instruccion_parseada->instruccion == SELECT){
 
@@ -141,8 +141,8 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 			if(pagina == NULL){
 			// no tenemos la tabla-key en memoria
-				if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
-					printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
+					printf("La consulta fue enviada al FILESYSTEM");
 
 					//hacer un insert con la respuesta
 					//insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, value, timestamp, false);
@@ -170,8 +170,8 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 			eliminar_de_memoria(instruccion_drop->nombre_tabla);
 
-			if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
-				printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+			if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
+				printf("La consulta fue enviada al FILESYSTEM");
 				//captar respuesta y devolver paquete
 			}
 
@@ -190,8 +190,8 @@ void atender_consulta (Instruccion* instruccion_parseada){
 				instruccion_parseada->instruccion != ADD &&
 				instruccion_parseada->instruccion != RUN &&
 				instruccion_parseada->instruccion != JOURNAL){
-			if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY))){
-				printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+			if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
+				printf("La consulta fue enviada al FILESYSTEM");
 
 			//captar respuesta y devolver paquete
 			}
@@ -481,7 +481,7 @@ void lanzar_gossiping(){
 	instruccion->instruccion = GOSSIP;
 	instruccion->instruccion_a_realizar = gossip;
 
-	enviar_instruccion(IP_FS,PUERTO_FS,instruccion, POOLMEMORY);
+	// Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS,PUERTO_FS,instruccion, POOLMEMORY, T_GOSSIPING);
 }
 
 void lanzar_journal(t_timestamp timestamp_journal){
@@ -515,9 +515,9 @@ void lanzar_journal(t_timestamp timestamp_journal){
 				instruccion_insert->value = get_value_pagina(pagina);
 				instruccion_insert->timestamp = timestamp_journal;
 
-				int fd_proceso;
-				if((fd_proceso = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY))){
-					printf("La consulta fue enviada al fd %d de FILESYSTEM y este sigue abierto\n", fd_proceso);
+				Instruccion* instruccion_respuesta;
+				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
+					printf("La consulta fue enviada al FILESYSTEM");
 
 				//captar respuesta y devolver paquete
 				}
