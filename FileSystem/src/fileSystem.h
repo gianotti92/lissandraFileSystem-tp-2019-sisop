@@ -2,14 +2,13 @@
 #define FILESYSTEM_H_
 
 
-#include "../../utilguenguencha/comunicacion.h"
-#include "../../utilguenguencha/parser.h"
-#include "../../utilguenguencha/utils.h"
+#include "../../utilguenguencha/src/comunicacion.h"
+#include "../../utilguenguencha/src/parser.h"
+#include "../../utilguenguencha/src/utils.h"
 
 // Funciones del proceso
 void configuracion_inicial(void);
 void retorno_consola(char* leido);
-void retornarControl(Instruccion * instruccion, int cliente);
 
 // Variables del proceso
 char* PUERTO_DE_ESCUCHA;

@@ -71,7 +71,7 @@ void iniciarEstructurasAsociadas(){
 	memoriasAsociadas = dictionary_create();
 	tablasPorConsistencia = dictionary_create();
 	memoriasDisponibles = dictionary_create();
-}
+} 
 
 void retorno_consola(char* leido) {
 

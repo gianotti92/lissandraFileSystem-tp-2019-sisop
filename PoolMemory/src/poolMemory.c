@@ -6,11 +6,15 @@ int main(void) {
 	MAX_VALUE = 100; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
-	pthread_t consolaPoolMemory, gossiping;
+	pthread_t consolaPoolMemory, gossiping, servidorPM;
 	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);
 	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
-	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
-
+	Comunicacion *comunicacion = malloc(sizeof(Comunicacion));
+	comunicacion->puerto_servidor = PUERTO_DE_ESCUCHA;
+	comunicacion->proceso = POOLMEMORY;
+	comunicacion->tipo_comunicacion = T_INSTRUCCION;
+	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion);
+	pthread_join(servidorPM, NULL);
 	pthread_join(consolaPoolMemory, NULL);
 	pthread_join(gossiping, NULL);
 

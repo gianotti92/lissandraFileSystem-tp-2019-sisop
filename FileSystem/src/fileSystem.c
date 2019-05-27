@@ -3,9 +3,16 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
-	pthread_t consolaFS;
+	pthread_t consolaFS, servidorFS;
 	pthread_create(&consolaFS, NULL, (void*) leer_por_consola, retorno_consola);
-	servidor_comunicacion(retornarControl, PUERTO_DE_ESCUCHA);
+
+	Comunicacion *comunicacion = malloc(sizeof(Comunicacion));
+	comunicacion->puerto_servidor = PUERTO_DE_ESCUCHA;
+	comunicacion->proceso = FILESYSTEM;
+	comunicacion->tipo_comunicacion = T_INSTRUCCION;
+	pthread_create(&servidorFS, NULL, (void*) servidor_comunicacion, comunicacion);
+	pthread_join(consolaFS, NULL);
+	pthread_join(servidorFS, NULL);
 }
 
 void configuracion_inicial(void){
