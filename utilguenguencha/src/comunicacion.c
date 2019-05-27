@@ -715,8 +715,82 @@ Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 }
 
 void recibir_respuesta(int fd_a_escuchar, Instruccion *respuesta){
-	//Aca tengo que poner los datos de la respuesta y malloquear la isntruccion
-	// en caso de q este mal respondo con error y tipo en la respuesta
+	int bytes_recibidos;
+	Instruction_set retorno;
+	if((bytes_recibidos = recv(fd_a_escuchar, &retorno, sizeof(Instruction_set), MSG_WAITALL)) <= 0){
+		liberar_conexion(fd_a_escuchar);
+		respuesta = respuesta_error(CONNECTION_ERROR);
+		return;
+	}switch(retorno){
+	case RETORNO:
+		Tipo_Retorno tipo_ret;
+		if ((bytes_recibidos = recv(fd_a_escuchar, &tipo_ret, sizeof(Tipo_Retorno), MSG_WAITALL)) <= 0){
+			liberar_conexion(fd_a_escuchar);
+			respuesta = respuesta_error(CONNECTION_ERROR);
+		}else{
+			switch(tipo_ret){
+			case VALOR:
+				// Hay que hacer el desempaquetado de Valor que nos envie responder
+				respuesta = respuesta_success();
+				break;
+			case DATOS_DESCRIBE:
+				// Hay que hacer el desempaquetado de describe que nos envie responder
+				respuesta = respuesta_success();
+				break;
+			case TAMANIO_VALOR_MAXIMO:
+				// Hay que hacer el desempaquetado de valor que nos envia responder
+				respuesta = respuesta_success();
+				break;
+			case SUCCESS_RET:
+				// Hay que hacer el desempaquetado de valor que nos envia responder
+				respuesta = respuesta_success();
+				break;
+			default:
+				respuesta = respuesta_error(UNKNOWN);
+				break;
+			}
+		}
+		return;
+	case ERROR:
+		Error_set tipo_error;
+		if ((bytes_recibidos = recv(fd_a_escuchar, &tipo_error, sizeof(Error_set), MSG_WAITALL)) <= 0){
+			liberar_conexion(fd_a_escuchar);
+			respuesta = respuesta_error(CONNECTION_ERROR);
+		}else{
+			switch(tipo_error){
+			case BAD_KEY:
+				respuesta = respuesta_error(BAD_KEY);
+				break;
+			case MISSING_TABLE:
+				respuesta = respuesta_error(MISSING_TABLE);
+				break;
+			case UNKNOWN:
+				respuesta = respuesta_error(UNKNOWN);
+				break;
+			case BAD_REQUEST:
+				respuesta = respuesta_error(BAD_REQUEST);
+				break;
+			case MISSING_FILE:
+				respuesta = respuesta_error(MISSING_FILE);
+				break;
+			case CONNECTION_ERROR:
+				respuesta = respuesta_error(CONNECTION_ERROR);
+				break;
+			case MEMORY_FULL:
+				respuesta = respuesta_error(MEMORY_FULL);
+				break;
+			case LARGE_VALUE:
+				respuesta = respuesta_error(LARGE_VALUE);
+				break;
+			default:
+				respuesta = respuesta_error(UNKNOWN);
+				break;
+			}
+		}
+		return;
+	default:
+		respuesta = respuesta_error(UNKNOWN);
+	}
 }
 
 
