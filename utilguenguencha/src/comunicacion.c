@@ -261,9 +261,9 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 		}else{
 			return false;
 		}
-	case VALUE:
+	case MAX_VALUE:
 		if(tipo_comu == T_VALUE){
-			instruccion->instruccion = VALUE;
+			instruccion->instruccion = MAX_VALUE;
 			return true;
 		}else{
 			return false;
@@ -393,10 +393,6 @@ t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_e
 	case GOSSIP:
 		empaquetar_gossip(paquete,
 				(Gossip*) instruccion->instruccion_a_realizar);
-		break;
-	case VALUE:
-		empaquetar_value(paquete,
-				(Value*) instruccion->instruccion_a_realizar);
 		break;
 	default:
 		free(paquete->buffer);
@@ -539,12 +535,6 @@ void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
 		cantidad_memorias--;
 		free(memoria);
 	}
-}
-
-void empaquetar_value(t_paquete * paquete, Value * value){
-	paquete->buffer->stream = malloc(sizeof(value->value));
-	memcpy(paquete->buffer->stream, &value->value, sizeof(value->value));
-	paquete->buffer->size += sizeof(value->value);
 }
 
 Select *desempaquetar_select(void* stream) {
@@ -699,8 +689,24 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 
 Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 	if(instruccion->instruccion == RETORNO){
-		// en este caso hay q preguntar los tipos y en base a cada uno empaquetar y enviar
-
+		Retorno *retorno;
+		retorno = instruccion->instruccion_a_realizar;
+		t_paquete_retorno* paquete_retorno = malloc(sizeof(t_paquete_retorno));
+		crear_buffer(paquete_retorno);
+		paquete_retorno->comunicacion = T_RETORNO;
+		paquete_retorno->header = retorno->tipo_retorno;
+		switch(retorno->tipo_retorno){
+		case VALOR:
+			break;
+		case DATOS_DESCRIBE:
+			break;
+		case TAMANIO_VALOR_MAXIMO:
+			break;
+		case SUCCESS_RET:
+			break;
+		default:
+			return respuesta_error(BAD_REQUEST);
+		}
 
 		return respuesta_success();
 	}else{

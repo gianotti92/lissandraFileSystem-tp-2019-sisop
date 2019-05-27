@@ -28,7 +28,7 @@ typedef enum {
 } Consistencias;
 
 typedef enum {
-	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR, GOSSIP, VALUE, RETORNO, SUCCESS
+	SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD, RUN, JOURNAL, METRICS, ERROR, GOSSIP, MAX_VALUE, RETORNO, SUCCESS
 } Instruction_set;
 
 typedef enum {
@@ -40,8 +40,12 @@ typedef enum {
 } Procesos;
 
 typedef enum {
-	T_GOSSIPING, T_INSTRUCCION, T_VALUE
+	T_GOSSIPING, T_INSTRUCCION, T_VALUE, T_RETORNO
 } Tipo_Comunicacion;
+
+typedef enum {
+	VALOR, DATOS_DESCRIBE, TAMANIO_VALOR_MAXIMO, SUCCESS_RET
+} Tipo_Retorno;
 
 typedef struct {
 	char* puerto_servidor;
@@ -122,6 +126,13 @@ typedef struct {
 } t_paquete;
 
 typedef struct {
+	Tipo_Comunicacion comunicacion;
+	Procesos source;
+	Tipo_Retorno header;
+	t_buffer* buffer;
+} t_paquete_retorno;
+
+typedef struct {
 	char* ip;
 	char* puerto;
 	int idMemoria;
@@ -131,13 +142,25 @@ typedef struct {
 	t_list *lista_memorias;
 } Gossip;
 
-typedef struct{
- //Definir los tipos
-} Retorno;
+typedef struct {
+	char *value;
+} Retorno_Value;
 
 typedef struct {
-	int value;
-} Value;
+	char *nombre_tabla;
+	Consistencias consistencia;
+	uint8_t particiones;
+	t_timestamp compactation_time;
+} Retorno_Describe;
+
+typedef struct {
+	int value_size;
+} Retorno_Max_Value;
+
+typedef struct{
+	Tipo_Retorno tipo_retorno;
+	void * retorno;
+} Retorno;
 
 void retornarControl(Instruccion *instruccion, int socket_cliente);
 void servidor_comunicacion(Comunicacion *comunicacion);
