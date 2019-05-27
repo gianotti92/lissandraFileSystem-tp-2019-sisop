@@ -60,6 +60,8 @@ struct tableMetadataItem {
 	struct TableMetadata metadata;
 	char tableName[100];
 	pthread_rwlock_t lock;
+	pthread_t thread;
+	int endFlag;
 };
 
 struct FileSystemMetadata{
@@ -84,19 +86,14 @@ struct dumpTableList{
 	t_list* registros;
 };
 
-/* Compaction Item Struct*/
-struct compactionItem {
-	char tableName[100];
-	pthread_t thread;
-	int endFlag;
-	struct TableMetadata metadata;
-};
 /* Global Variables*/
 t_list* global_memtable;
 t_list* global_table_metadata;
 pthread_mutex_t memtableMutex;
 pthread_mutex_t tableMetadataMutex;
 
+/* Thread Compactacion */
+void *TH_compactacion(void* p);
 
 /* API */
 int controller(Instruccion* instruccion);

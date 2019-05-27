@@ -1,18 +1,16 @@
 #include "lissandra.h"
 
 void *TH_confMonitor(void * p);
-void *TH_compactacion(void* p);
 void *TH_dump(void* p);
 void *TH_server(void * p);
-void *TH_compacItem(void* p);
 void TH_consola(char* leido);
 
 int main(void) {
 	/*
 		** Inicializaciones **
 	*/
-	pthread_t T_consola,T_server,T_confMonitor,T_dump,T_compactacion;
-	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump,*TR_compactacion;
+	pthread_t T_consola,T_server,T_confMonitor,T_dump;
+	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump;
 
 	configure_logger();
 
@@ -49,8 +47,11 @@ int main(void) {
 	*/
 	// Creo thread que va a ejecutar el monitoreo del archivo de configuracion
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL);
-	// Creo thread de compactacion
-	pthread_create(&T_compactacion,NULL,TH_compactacion,NULL);
+
+	/*// Creo thread de compactacion
+	pthread_create(&T_compactacion,NULL,TH_compactacion,NULL);*/
+
+
 	// Creo thread de dump
 	pthread_create(&T_dump,NULL,TH_dump,NULL);
 	// Creo thread que va a ejecutar la escucha por consola
@@ -76,11 +77,13 @@ int main(void) {
 	if((int)TR_server != 0) {
 		log_error(LOGGER,"Error con el thread server: %d",(int)TR_server);
 	}
+	/*
 	// Espero el fin del thread compactacion
 	pthread_join(T_compactacion,&TR_compactacion);
 	if((int)TR_compactacion != 0) {
 		log_error(LOGGER,"Error con el thread de compactacion: %d",(int)TR_compactacion);
 	}
+	*/
 	// Espero el fin del thread dump
 	pthread_join(T_dump,&TR_dump);
 	if((int)TR_dump != 0) {
@@ -269,72 +272,8 @@ void *TH_dump(void* p){
 /*
 	Manejo Compactacion
 */
-void *TH_compactacion(void* p){
-	loadCurrentTableMetadata();
-	t_list* local_table_metadata = list_create();
-
-	void agregoNuevasTablas(void* elem){
-		if(elem == NULL){
-			return;
-		}
-		struct tableMetadataItem* item = (struct tableMetadataItem*)elem;
-
-		/*Declaro funcion compare para el list_find */
-		bool matchTablename(void* element){
-			struct compactionItem* itemNested = (struct compactionItem*)element;
-			return !strcmp(itemNested->tableName,item->tableName);
-		}
-		/* Busco si en la referencia local tengo la tabla */
-		struct compactionItem* found = list_find(local_table_metadata,&matchTablename);
-		if(found == NULL) { //Si no la tengo, creo el item y levanto el thread
-			struct compactionItem *newItem = malloc(sizeof(struct compactionItem));
-			strcpy(newItem->tableName,item->tableName);
-			newItem->metadata=item->metadata;
-			newItem->endFlag=0;
-			pthread_create(&newItem->thread,NULL,TH_compacItem,(void*)newItem);
-			list_add(local_table_metadata,(void*)newItem);
-		}
-	}
-	void sacoViejasTablas(void* elem){
-		if(elem == NULL){
-			return;
-		}
-		struct compactionItem *item = (struct compactionItem *)elem;
-
-		/*Declaro funcion compare para el list_find */
-		bool matchTablename(void* element){
-			struct tableMetadataItem* itemNested = (struct tableMetadataItem*)element;
-			return !strcmp(itemNested->tableName,item->tableName);
-		}
-		/* Declaro funcion condicion para list_remove_by_condition */
-		bool condicionFinHilo(void* element){
-			struct compactionItem *itemNested = (struct compactionItem *)element;
-			return !strcmp(itemNested->tableName,item->tableName);
-		}
-		/* Busco si en la referencia global tengo la tabla */
-		pthread_mutex_lock(&tableMetadataMutex);
-		struct tableMetadataItem* found = list_find(global_table_metadata,&matchTablename);
-		pthread_mutex_unlock(&tableMetadataMutex);
-		if(found == NULL) { //Si no la tengo, la dropearon, termino el thread correspondiente y elimino el nodo
-			item->endFlag=1; // Le aviso que termine
-			pthread_join(item->thread,NULL);
-			list_remove_by_condition(local_table_metadata,&condicionFinHilo);
-		}
-	}
-	
-	while(1) {
-		list_iterate(local_table_metadata,&sacoViejasTablas);
-		pthread_mutex_lock(&tableMetadataMutex);
-		list_iterate(global_table_metadata,&agregoNuevasTablas);
-		pthread_mutex_unlock(&tableMetadataMutex);
-		usleep(1*1000*1000); //1 seg
-	}
-	list_destroy(local_table_metadata);
-	return (void*)0;
-}
-
-void* TH_compacItem(void* p){
-	struct compactionItem *item = (struct compactionItem *)p;
+void* TH_compactacion(void* p){
+	struct tableMetadataItem *item = (struct tableMetadataItem *)p;
 	while(item->endFlag == 0){
 		usleep(item->metadata.compaction_time*1000);
 		if(item->endFlag != 0)

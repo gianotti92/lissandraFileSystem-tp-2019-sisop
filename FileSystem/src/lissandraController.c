@@ -7,6 +7,7 @@ int _describe(Describe* describe);
 int _drop(Drop* drop);
 
 int _insert(Insert* insert){
+	usleep(global_conf.retardo*1000);
 	if(!tableExists(insert->nombre_tabla)) {
 		log_error(LOGGER,"INSERT: no existe la tabla '%s'",insert->nombre_tabla);
 		return 1;
@@ -25,6 +26,7 @@ int _insert(Insert* insert){
 	return 0;
 }
 int _select(Select* select){
+	usleep(global_conf.retardo*1000);
 	if(!tableExists(select->nombre_tabla)) {
 		log_error(LOGGER,"SELECT: no existe la tabla '%s'",select->nombre_tabla);
 		return 1;
@@ -101,6 +103,7 @@ int _select(Select* select){
 	return 0;
 }
 int _create(Create* create){
+	usleep(global_conf.retardo*1000);
 	char*directorio=getTablePath(create->nombre_tabla);
 	if(crearDirectorio(global_conf.directorio_tablas,create->nombre_tabla)!=0){
 		free(directorio);
@@ -123,6 +126,7 @@ int _create(Create* create){
 	return 0;
 }
 int _describe(Describe * describe){
+	usleep(global_conf.retardo*1000);
 	if(!tableExists(describe->nombre_tabla)) {
 		log_error(LOGGER,"DESCRIBE: no existe la tabla '%s'",describe->nombre_tabla);
 		return 1;
@@ -138,6 +142,7 @@ int _describe(Describe * describe){
 	return 0;
 }
 int _drop(Drop* drop){
+	usleep(global_conf.retardo*1000);
 	if(!tableExists(drop->nombre_tabla)) {
 		log_error(LOGGER,"DROP: no existe la tabla '%s'",drop->nombre_tabla);
 		return 1;
@@ -145,6 +150,7 @@ int _drop(Drop* drop){
 	pthread_mutex_lock(&tableMetadataMutex);
 	deleteInTableMetadata(drop->nombre_tabla);
 	pthread_mutex_unlock(&tableMetadataMutex);
+	
 	if(deleteTable(drop->nombre_tabla)!=0){
 		return 1;
 	}

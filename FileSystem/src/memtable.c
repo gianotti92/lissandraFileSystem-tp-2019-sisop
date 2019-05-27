@@ -1,4 +1,7 @@
 #include "lissandra.h"
+
+void* TH_asesino(void*p);
+
 struct memtableItem* createMemtableItem(char* tableName, struct tableRegister reg) {
 	struct memtableItem item;
 	strcpy(item.tableName,tableName);
@@ -41,12 +44,15 @@ void findInMemtable(char* tablename, uint16_t key, t_list* registers){
 /* Global Table metadata*/
 void initTableMetadata(void){
 	global_table_metadata = list_create();
+	loadCurrentTableMetadata();
 }
 void insertInTableMetadata(char*tableName,struct TableMetadata tMetadata) {
 	struct tableMetadataItem* item = malloc(sizeof(struct tableMetadataItem));
 	item->metadata=tMetadata;
 	strcpy(item->tableName,tableName);
 	pthread_rwlock_init(&item->lock,NULL);
+	item->endFlag=0;
+	pthread_create(&item->thread,NULL,TH_compactacion,(void*)item);
 	list_add(global_table_metadata, (void *)item);
 }
 void deleteInTableMetadata(char*tableName) {
@@ -56,6 +62,11 @@ void deleteInTableMetadata(char*tableName) {
 	struct tableMetadataItem* found = list_find(global_table_metadata,(void*)condition);
 	if (found != NULL) {
 		pthread_rwlock_destroy(&found->lock);
+		found->endFlag=1;
+		/* Hilo asesino */
+		pthread_t hilo_asesino;
+		pthread_create(&hilo_asesino,NULL,TH_asesino,(void*)found->thread);
+		pthread_detach(hilo_asesino);
 	}
 	struct tableMetadataItem* removido = list_remove_by_condition(global_table_metadata,(void*)condition);
 	free(removido);
@@ -78,6 +89,8 @@ void loadCurrentTableMetadata(void){
 				t_config* conf = config_create(filename);
 				struct tableMetadataItem *item = malloc(sizeof(struct tableMetadataItem));
 				pthread_rwlock_init(&item->lock,NULL);
+				item->endFlag=0;
+				pthread_create(&item->thread,NULL,TH_compactacion,(void*)item);
 				strcpy(item->tableName,dir->d_name);
 				item->metadata.consistencia=string2consistencia(config_get_string_value(conf,"CONSISTENCY"));
 				item->metadata.numero_particiones=config_get_int_value(conf,"PARTITIONS");
@@ -91,4 +104,9 @@ void loadCurrentTableMetadata(void){
 		}
 		closedir(d);
 	}
+}
+void* TH_asesino(void*p){
+	pthread_t victima = (pthread_t)p;
+	pthread_join(victima,NULL);
+	return (void*)0;
 }
