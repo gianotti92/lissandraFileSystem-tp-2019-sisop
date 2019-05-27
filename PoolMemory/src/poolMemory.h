@@ -1,13 +1,9 @@
 #ifndef POOLMEMORY_H_
 #define POOLMEMORY_H_
 
-#include <utilguenguencha/comunicacion.h>
-#include <utilguenguencha/parser.h>
-#include <utilguenguencha/utils.h>
-
-
-
-
+#include "../../utilguenguencha/src/comunicacion.h"
+#include "../../utilguenguencha/src/parser.h"
+#include "../../utilguenguencha/src/utils.h"
 
 
 // Variables globales del proceso
@@ -44,11 +40,14 @@ typedef struct{
 // Funciones del proceso
 void configuracion_inicial(void);
 void retorno_consola(char* leido);
-void retornarControl(Instruccion *instruccion, int cliente);
 void inicializar_memoria();
-void* buscar_pagina( char*, t_key);
-void* buscar_pagina_en_segmento(Segmento*, t_key);
+void atender_consulta (Instruccion*);
+void insertar_en_memoria(char*, t_key, char*, t_timestamp, t_flag);
+void agregar_pagina_en_segmento(Segmento*, void*);
 void* buscar_segmento(char*);
+int index_segmento(char*);
+void* buscar_pagina_en_segmento(Segmento*, t_key);
+Pagina_general* buscar_pagina_general(void*);
 bool coincide_segmento (char*, Segmento*);
 bool coincide_pagina (t_key, void*);
 t_timestamp* get_timestamp_pagina( void*);
@@ -61,8 +60,13 @@ void set_value_pagina( void*, char*);
 void set_modificado_pagina( void*, t_flag);
 void print_lista_paginas();
 void print_pagina(void*);
-void * lanzar_gossiping();
+void lanzar_gossiping();
+void lanzar_journal(t_timestamp);
 void print_memorias ();
-
+void* pedir_pagina();
+void* seleccionar_pagina ();
+Segmento* crear_segmento(char*);
+bool pagina_en_uso(Pagina_general*);
+bool memoria_full();
 
 #endif

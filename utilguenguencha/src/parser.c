@@ -8,11 +8,9 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 	/*
 	time_t echo_time;
 	echo_time = time(NULL);
-
 	if (echo_time == ((time_t)-1)){
 		puts ("ERROR: Fallo al obtener la hora.");
 		log_error(LOGGER, "Parser: Fallo al obtener la hora.");
-
 		return instruccion_error();
 	}*/
 
@@ -413,16 +411,16 @@ int cantidad_elementos(char ** array){
 
 }
 
-int es_numero(char* palabra){
+bool es_numero(char* palabra){
 	int length = string_length(palabra);
 
 	for (int i=0; i<length; i++){
 		if(!isdigit(palabra[i])){
-			return 0;
+			return false;
 		}
 	}
 
-	return 1;
+	return true;
 }
 
 void print_instruccion_parseada(Instruccion * instruccion_parseada){
@@ -523,7 +521,6 @@ void* leer_por_consola(void (*f) (char*)){
 
 	while (!string_equals_ignore_case(leido, "EXIT")){
 		f(leido);
-		free(leido);
 		leido = readline("\n>>");
 		add_history(leido);
 	}

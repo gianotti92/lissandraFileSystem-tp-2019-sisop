@@ -1,6 +1,6 @@
 #include "kernel_utils.h"
 
-int leer_linea(char* path, int linea){
+char* leer_linea(char* path, int linea){
 	FILE *fileptr;
 	if((fileptr = fopen(path, "r"))){
 		char *buffer = "";
@@ -21,12 +21,13 @@ int leer_linea(char* path, int linea){
 					continue;
 				}else{
 					if(c == '\n' && strlen(buffer) == 0){
-						return -1;
+						return NULL;
 					}else if(strlen(buffer) == desplazamiento){
 						return buffer;
 					}else{
-						char *retorno = malloc(desplazamiento);
-						memcpy(retorno, buffer, desplazamiento);
+						char *retorno = string_new();
+						string_append(&retorno, buffer);
+
 						free(buffer);
 						fclose(fileptr);
 						return retorno;
@@ -39,17 +40,17 @@ int leer_linea(char* path, int linea){
 				c = fgetc(fileptr);
 			}
 		}
-		if(desplazamiento==0){
+		if((desplazamiento==0 && strlen(buffer) == 0)|| (c == EOF && desplazamiento != 0 &&  strlen(buffer) == 0)){
 			fclose(fileptr);
-					return -1;
+					return NULL;
 		}else{
 			if(c == '\n' && strlen(buffer) == 0){
-				return -1;
+				return NULL;
 			}else if(strlen(buffer) == desplazamiento){
 				return buffer;
 			}else{
-				char *retorno = malloc(desplazamiento);
-				memcpy(retorno, buffer, desplazamiento);
+				char *retorno = string_new();
+				string_append(&retorno, buffer);
 				free(buffer);
 				fclose(fileptr);
 				return retorno;
@@ -57,6 +58,6 @@ int leer_linea(char* path, int linea){
 		}
 
 	}else{
-		return -1;
+		return NULL;
 	}
 }
