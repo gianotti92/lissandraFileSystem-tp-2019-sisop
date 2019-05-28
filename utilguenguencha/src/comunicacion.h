@@ -133,6 +133,9 @@ typedef struct {
 
 typedef struct{
  //Definir los tipos
+	t_key key;
+	char* value;
+	t_timestamp timestamp;
 } Retorno;
 
 typedef struct {

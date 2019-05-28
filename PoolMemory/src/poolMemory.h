@@ -50,6 +50,7 @@ void* buscar_pagina_en_segmento(Segmento*, t_key);
 Pagina_general* buscar_pagina_general(void*);
 bool coincide_segmento (char*, Segmento*);
 bool coincide_pagina (t_key, void*);
+void eliminar_de_memoria(char* nombre_tabla);
 t_timestamp* get_timestamp_pagina( void*);
 t_key* get_key_pagina( void*);
 char* get_value_pagina( void*);

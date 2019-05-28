@@ -142,10 +142,11 @@ void atender_consulta (Instruccion* instruccion_parseada){
 			if(pagina == NULL){
 			// no tenemos la tabla-key en memoria
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
-					printf("La consulta fue enviada al FILESYSTEM");
 
-					//hacer un insert con la respuesta
-					//insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, value, timestamp, false);
+					Retorno* respuesta = instruccion_respuesta->instruccion_a_realizar;
+					Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
+					insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, respuesta->value, respuesta->timestamp, false);
+
 				}
 
 			//devolver un paquete value/error
