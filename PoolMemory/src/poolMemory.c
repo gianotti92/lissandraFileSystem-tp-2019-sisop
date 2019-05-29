@@ -149,14 +149,16 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 					if (instruccion_respuesta->instruccion != ERROR){
 						Retorno* respuesta = instruccion_respuesta->instruccion_a_realizar;
-						Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
-						insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, respuesta->value, respuesta->timestamp, false);
+						int result = insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, respuesta->value, respuesta->timestamp, false);
+
+						if (result < 0){
+							instruccion_respuesta = crear_error(INSERT_FAILURE);
+						}
 					}
 				}
 			}
 			else{
 			// tenemos la tabla-key en memoria
-				print_pagina(pagina);
 
 				instruccion_respuesta->instruccion = RETORNO;
 				Retorno* p_retorno = malloc(sizeof(Retorno));
@@ -172,13 +174,11 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
 
-			insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
+			int result = insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
 
-			instruccion_respuesta->instruccion = OK;
-			instruccion_respuesta->instruccion_a_realizar = NULL;
-
-			//tomar error del insertar_en_memoria para poder devolverlo
-
+			if (result < 0){
+				instruccion_respuesta = crear_error(INSERT_FAILURE);
+			}
 		}
 		else if (instruccion_parseada->instruccion == DROP){
 
@@ -188,21 +188,19 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 
-			instruccion_respuesta->instruccion = OK;
-			instruccion_respuesta->instruccion_a_realizar = NULL;
-
-			//tomar error del eliminar_de_memoria para poder devolverlo
 		}
 		else if (instruccion_parseada->instruccion == JOURNAL){
 
 			Journal* instruccion_journal = (Journal*) instruccion_parseada->instruccion_a_realizar;
 
-			lanzar_journal(instruccion_journal->timestamp);
+			int result = lanzar_journal(instruccion_journal->timestamp);
 
-			instruccion_respuesta->instruccion = OK;
-			instruccion_respuesta->instruccion_a_realizar = NULL;
-
-			//tomar error del lanzar_journal para poder devolverlo
+			if (result >= 0){
+				instruccion_respuesta->instruccion = OK;
+				instruccion_respuesta->instruccion_a_realizar = NULL;
+			} else {
+				instruccion_respuesta = crear_error(INSERT_FAILURE);
+			}
 		}
 		else if(instruccion_parseada->instruccion != ERROR &&
 				instruccion_parseada->instruccion != METRICS &&
@@ -212,11 +210,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 		}
 		else {
-			instruccion_respuesta->instruccion = ERROR;
-			Error* p_error = malloc(sizeof(Error));
-			p_error->error = BAD_REQUEST;
-			instruccion_respuesta->instruccion_a_realizar = p_error;
-
+			instruccion_respuesta = crear_error(BAD_REQUEST);
 		}
 
 		free_consulta(instruccion_parseada);
@@ -224,13 +218,18 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 }
 
 
-void insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp timestamp_insert, t_flag modificado){
+int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp timestamp_insert, t_flag modificado){
 
 	Segmento* segmento = buscar_segmento(nombre_tabla);
 
 	if(segmento == NULL){
 		//no tenemos el segmento, creo uno
 		segmento = crear_segmento(nombre_tabla);
+
+		if(segmento == NULL){
+			return -1;
+		}
+
 	}
 
 	void* pagina = buscar_pagina_en_segmento(segmento, key);
@@ -238,6 +237,11 @@ void insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp
 	if(pagina == NULL){
 		//no tenemos la pagina
 		pagina = seleccionar_pagina();
+
+		if(pagina == NULL){
+			return -2;
+		}
+
 		agregar_pagina_en_segmento(segmento, pagina);
 	}
 
@@ -246,7 +250,7 @@ void insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp
 	set_timestamp_pagina(pagina, timestamp_insert);
 	set_modificado_pagina(pagina, modificado);
 
-	//devolver un ok
+	return 1;
 }
 
 void eliminar_de_memoria(char* nombre_tabla){
@@ -502,7 +506,7 @@ void lanzar_gossiping(){
 	// Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS,PUERTO_FS,instruccion, POOLMEMORY, T_GOSSIPING);
 }
 
-void lanzar_journal(t_timestamp timestamp_journal){
+int lanzar_journal(t_timestamp timestamp_journal){
 
 	int posicion_segmento = (l_segmentos->elements_count -1);
 	int posicion_pagina;
@@ -537,7 +541,10 @@ void lanzar_journal(t_timestamp timestamp_journal){
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
 					printf("La consulta fue enviada al FILESYSTEM \n");
 
-				//captar respuesta y devolver paquete
+					if(instruccion_respuesta->instruccion = ERROR){
+						free_consulta(instruccion);
+						return -1;
+					}
 				}
 
 				pagina_general = buscar_pagina_general(pagina);
@@ -551,6 +558,7 @@ void lanzar_journal(t_timestamp timestamp_journal){
 	}
 
 	free_consulta(instruccion);
+	return 1;
 }
 
 void print_memorias (){
@@ -610,5 +618,16 @@ bool pagina_en_uso(Pagina_general* pagina_general){
 
 bool memoria_full(){
 	return list_all_satisfy(l_maestro_paginas, pagina_en_uso);
+
+}
+
+Instruccion* crear_error(Error_set error){
+	Instruccion* instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion = ERROR;
+	Error* p_error = malloc(sizeof(Error));
+	p_error->error = error;
+	instruccion->instruccion_a_realizar = p_error;
+
+	return instruccion;
 
 }
