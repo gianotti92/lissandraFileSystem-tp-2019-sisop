@@ -200,8 +200,8 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 	}
 	else if (es_describe(consulta_separada)){
 
-		if (length != 2){
-			puts("ERROR: La sintaxis correcta es > DESCRIBE [NOMBRE_TABLA]");
+		if (length > 2){
+			puts("ERROR: La sintaxis correcta es > DESCRIBE [NOMBRE_TABLA] o DESCRIBE");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
 			return instruccion_error();
@@ -209,16 +209,25 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 		else{
 
 			// es DESCRIBE
-			Describe * nuevoDescribe = malloc(sizeof(Describe));;
+			Describe * nuevoDescribe = malloc(sizeof(Describe));
 
-			string_to_upper(consulta_separada[1]);
-			nuevoDescribe->nombre_tabla = consulta_separada[1]; 							// cargo tabla
-			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
-			nuevoDescribe->timestamp = timestamp;				 				 		// cargo timestamp
+			if (length == 2) {
+
+
+				string_to_upper(consulta_separada[1]);
+				nuevoDescribe->nombre_tabla = consulta_separada[1]; 							// cargo tabla
+				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
+				nuevoDescribe->timestamp = timestamp;				 				 		// cargo timestamp
+
+
+			} else {
+				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
+				nuevoDescribe->timestamp = timestamp;				 				 		// cargo timestamp
+				nuevoDescribe->nombre_tabla = NULL;
+
+			}
 
 			consultaParseada = crear_instruccion(DESCRIBE, nuevoDescribe, sizeof(nuevoDescribe));
-
-
 		}
 	}
 	else if (es_drop(consulta_separada)){
