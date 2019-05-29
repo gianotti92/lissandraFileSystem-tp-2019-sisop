@@ -43,7 +43,9 @@ void configuracion_inicial(void){
 
 void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
-	atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
+	Instruccion* respuesta = atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
+
+	print_instruccion_parseada(respuesta);
 
 }
 
@@ -53,7 +55,9 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	print_instruccion_parseada(instruccion);
 	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
 
-	atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
+	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
+
+	//responder(respuesta, cliente);
 
 	//liberar_conexion(cliente); // Para liberar el fd del socket
 	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
@@ -124,9 +128,9 @@ void inicializar_memoria(){
 	log_info(LOGGER, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,l_maestro_paginas->elements_count, tamanio_pagina);
 }
 
-void atender_consulta (Instruccion* instruccion_parseada){
+Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
-		Instruccion* instruccion_respuesta;
+		Instruccion* instruccion_respuesta = malloc(sizeof(Instruccion));
 
 		if (instruccion_parseada->instruccion == SELECT){
 
@@ -143,18 +147,25 @@ void atender_consulta (Instruccion* instruccion_parseada){
 			// no tenemos la tabla-key en memoria
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
 
-					Retorno* respuesta = instruccion_respuesta->instruccion_a_realizar;
-					Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
-					insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, respuesta->value, respuesta->timestamp, false);
-
+					if (instruccion_respuesta->instruccion != ERROR){
+						Retorno* respuesta = instruccion_respuesta->instruccion_a_realizar;
+						Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
+						insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, respuesta->value, respuesta->timestamp, false);
+					}
 				}
-
-			//devolver un paquete value/error
 			}
 			else{
 			// tenemos la tabla-key en memoria
 				print_pagina(pagina);
-				//devolver un paquete value/error
+
+				instruccion_respuesta->instruccion = RETORNO;
+				Retorno* p_retorno = malloc(sizeof(Retorno));
+
+				p_retorno->key = *get_key_pagina(pagina);
+				p_retorno->timestamp = *get_timestamp_pagina(pagina);
+				p_retorno->value = get_value_pagina(pagina);
+
+				instruccion_respuesta->instruccion_a_realizar = p_retorno;
 			}
 		}
 		else if (instruccion_parseada->instruccion == INSERT){
@@ -163,7 +174,11 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 			insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
 
-		//devolver un ok/error
+			instruccion_respuesta->instruccion = OK;
+			instruccion_respuesta->instruccion_a_realizar = NULL;
+
+			//tomar error del insertar_en_memoria para poder devolverlo
+
 		}
 		else if (instruccion_parseada->instruccion == DROP){
 
@@ -171,12 +186,12 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 			eliminar_de_memoria(instruccion_drop->nombre_tabla);
 
-			if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
-				printf("La consulta fue enviada al FILESYSTEM");
-				//captar respuesta y devolver paquete
-			}
+			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 
-		//devolver un ok/error
+			instruccion_respuesta->instruccion = OK;
+			instruccion_respuesta->instruccion_a_realizar = NULL;
+
+			//tomar error del eliminar_de_memoria para poder devolverlo
 		}
 		else if (instruccion_parseada->instruccion == JOURNAL){
 
@@ -184,25 +199,28 @@ void atender_consulta (Instruccion* instruccion_parseada){
 
 			lanzar_journal(instruccion_journal->timestamp);
 
-		//devolver un ok/error
+			instruccion_respuesta->instruccion = OK;
+			instruccion_respuesta->instruccion_a_realizar = NULL;
+
+			//tomar error del lanzar_journal para poder devolverlo
 		}
 		else if(instruccion_parseada->instruccion != ERROR &&
 				instruccion_parseada->instruccion != METRICS &&
 				instruccion_parseada->instruccion != ADD &&
 				instruccion_parseada->instruccion != RUN &&
 				instruccion_parseada->instruccion != JOURNAL){
-			if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
-				printf("La consulta fue enviada al FILESYSTEM");
-
-			//captar respuesta y devolver paquete
-			}
+			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 		}
 		else {
-			printf("La consulta enviada no puede ser procesada por la memoria. \n");
+			instruccion_respuesta->instruccion = ERROR;
+			Error* p_error = malloc(sizeof(Error));
+			p_error->error = BAD_REQUEST;
+			instruccion_respuesta->instruccion_a_realizar = p_error;
+
 		}
 
-		//liberar_conexion(fd_proceso); // Para liberar el fd del socket
 		free_consulta(instruccion_parseada);
+		return instruccion_respuesta;
 }
 
 
@@ -406,7 +424,6 @@ void set_value_pagina( void* p_pagina, char* value){
 	void* p_value =  p_pagina;
 	p_value += (sizeof(t_key) + sizeof(t_timestamp));
 	memcpy(p_value, value, MAX_VALUE);
-	int largo = string_length(value);
 
 }
 
@@ -431,7 +448,7 @@ void print_lista_paginas(){
 		char* value = get_value_pagina(pagina);
 		t_flag modificado = *get_modificado_pagina(pagina);
 
-		printf("Index: %i Pagina: %i Key: %i Timestamp: %lu Valor: %s  \n", nro_pagina, pagina, key, timestamp, value);
+		printf("Index: %i Pagina: %i Key: %i Timestamp: %zu Valor: %s Modificado: %i \n", nro_pagina, (int)pagina, key, timestamp, value, (int) modificado);
 
 		nro_pagina++;
 	}
@@ -444,7 +461,7 @@ void print_pagina(void* pagina){
 		char* value = get_value_pagina(pagina);
 		t_flag modificado = *get_modificado_pagina(pagina);
 
-		printf("Pagina: %i Key: %i Timestamp: %lu Valor: %s  \n", pagina, key, timestamp, value);
+		printf("Pagina: %i Key: %i Timestamp: %zu Valor: %s Modificado: %i  \n",(int)pagina, key, timestamp, value, (int) modificado);
 
 }
 
@@ -494,8 +511,8 @@ void lanzar_journal(t_timestamp timestamp_journal){
 	void* pagina;
 	Pagina_general* pagina_general;
 
-	Insert* instruccion_insert;
-	Instruccion* instruccion;
+	Insert* instruccion_insert = malloc(sizeof(Insert));
+	Instruccion* instruccion = malloc(sizeof(Instruccion));
 	instruccion->instruccion = INSERT;
 	instruccion->instruccion_a_realizar = instruccion_insert;
 
@@ -518,7 +535,7 @@ void lanzar_journal(t_timestamp timestamp_journal){
 
 				Instruccion* instruccion_respuesta;
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
-					printf("La consulta fue enviada al FILESYSTEM");
+					printf("La consulta fue enviada al FILESYSTEM \n");
 
 				//captar respuesta y devolver paquete
 				}
@@ -533,6 +550,7 @@ void lanzar_journal(t_timestamp timestamp_journal){
 		posicion_segmento--;
 	}
 
+	free_consulta(instruccion);
 }
 
 void print_memorias (){

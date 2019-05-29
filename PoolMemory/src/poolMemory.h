@@ -41,7 +41,7 @@ typedef struct{
 void configuracion_inicial(void);
 void retorno_consola(char* leido);
 void inicializar_memoria();
-void atender_consulta (Instruccion*);
+Instruccion* atender_consulta (Instruccion*);
 void insertar_en_memoria(char*, t_key, char*, t_timestamp, t_flag);
 void agregar_pagina_en_segmento(Segmento*, void*);
 void* buscar_segmento(char*);
