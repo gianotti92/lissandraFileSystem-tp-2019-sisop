@@ -152,7 +152,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 						int result = insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, respuesta->value, respuesta->timestamp, false);
 
 						if (result < 0){
-							instruccion_respuesta = crear_error(INSERT_FAILURE);
+							instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 						}
 					}
 				}
@@ -176,8 +176,10 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			int result = insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
 
-			if (result < 0){
-				instruccion_respuesta = crear_error(INSERT_FAILURE);
+			if (result >= 0){
+				instruccion_respuesta = respuesta_success();
+			} else {
+				instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 			}
 		}
 		else if (instruccion_parseada->instruccion == DROP){
@@ -196,10 +198,9 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			int result = lanzar_journal(instruccion_journal->timestamp);
 
 			if (result >= 0){
-				instruccion_respuesta->instruccion = OK;
-				instruccion_respuesta->instruccion_a_realizar = NULL;
+				instruccion_respuesta = respuesta_success();
 			} else {
-				instruccion_respuesta = crear_error(INSERT_FAILURE);
+				instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 			}
 		}
 		else if(instruccion_parseada->instruccion != ERROR &&
@@ -210,7 +211,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 		}
 		else {
-			instruccion_respuesta = crear_error(BAD_REQUEST);
+			instruccion_respuesta = respuesta_error(BAD_REQUEST);
 		}
 
 		free_consulta(instruccion_parseada);
@@ -615,19 +616,6 @@ bool pagina_en_uso(Pagina_general* pagina_general){
 	return pagina_general->en_uso == true;
 }
 
-
 bool memoria_full(){
 	return list_all_satisfy(l_maestro_paginas, pagina_en_uso);
-
-}
-
-Instruccion* crear_error(Error_set error){
-	Instruccion* instruccion = malloc(sizeof(Instruccion));
-	instruccion->instruccion = ERROR;
-	Error* p_error = malloc(sizeof(Error));
-	p_error->error = error;
-	instruccion->instruccion_a_realizar = p_error;
-
-	return instruccion;
-
 }

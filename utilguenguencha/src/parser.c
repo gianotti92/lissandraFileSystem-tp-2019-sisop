@@ -8,11 +8,9 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 	/*
 	time_t echo_time;
 	echo_time = time(NULL);
-
 	if (echo_time == ((time_t)-1)){
 		puts ("ERROR: Fallo al obtener la hora.");
 		log_error(LOGGER, "Parser: Fallo al obtener la hora.");
-
 		return instruccion_error();
 	}*/
 
@@ -460,8 +458,8 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada){
 			case RETORNO: {Retorno * retorno = instruccion_parseada->instruccion_a_realizar;
 						   printf("Key: %i Value: %s TS: %zu \n", retorno->key, retorno-> value, retorno->timestamp);
 						   break;}
-			case OK: {printf("REALIZADO CORRECTAMENTE \n");
-					  break;}
+			case SUCCESS: {printf("REALIZADO CORRECTAMENTE \n");
+					  	   break;}
 
 		}
 

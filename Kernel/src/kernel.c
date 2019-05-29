@@ -522,5 +522,3 @@ int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
 	return 6;
 }
 /* MOCK */
-
-
