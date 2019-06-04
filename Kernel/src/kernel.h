@@ -19,6 +19,7 @@ typedef struct{
 	int quantumProcesado;
 	int numeroInstruccion;
 	int segundosQueTardo;
+	bool esProcesoRun;
 }Proceso;
 
 char *CONSISTENCIAS_STRING[] = {

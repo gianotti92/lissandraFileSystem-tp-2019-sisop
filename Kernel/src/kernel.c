@@ -114,11 +114,13 @@ void ejecutar() {
 			case RUN:;
 				Run * run = (Run *) proceso->instruccion->instruccion_a_realizar;
 				logicaRun(run, proceso);
+				proceso->esProcesoRun=true;
 				break;
 
 			case METRICS:;
 				bool dormir = true;
 				calculoMetrics((void*)&dormir);
+				proceso->esProcesoRun=false;
 				break;
 
 			case SELECT:;
@@ -127,6 +129,7 @@ void ejecutar() {
 				fin = get_timestamp();
 				diff = difftime(fin ,select->timestamp);
 				proceso->segundosQueTardo = diff;
+				proceso->esProcesoRun=false;
 				break;
 
 			case INSERT:;
@@ -135,37 +138,47 @@ void ejecutar() {
 				fin = get_timestamp();
 				diff = difftime(fin, insert->timestamp);
 				proceso->segundosQueTardo = diff;
+				proceso->esProcesoRun=false;
 				break;
 
 			case CREATE:;
 				Create * create = (Create *) proceso->instruccion->instruccion_a_realizar;
 				proceso->file_descriptor = logicaCreate(create);
+				proceso->esProcesoRun=false;
 				break;
 
 			case DROP:;
 				Drop * drop = (Drop *) proceso->instruccion->instruccion_a_realizar;
 				proceso->file_descriptor = logicaDrop(drop);
+				proceso->esProcesoRun=false;
 				break;
 
 			case ADD:;
 				Add * add = (Add *) proceso->instruccion->instruccion_a_realizar;
 				logicaAdd(add);
+				proceso->esProcesoRun=false;
 				break;
 
 			case DESCRIBE:;
 				Describe * describe = (Describe*) proceso->instruccion->instruccion_a_realizar;
 				logicaDescribe(describe);
+				proceso->esProcesoRun=false;
 				break;
 
 			case JOURNAL:;
 				Journal * journal = (Journal*) proceso->instruccion->instruccion_a_realizar;
 				logicaJournal(journal);
+				proceso->esProcesoRun=false;
 				break;
 
 			default:
 				break;
 		}
-		encolar(estadoExit, proceso);
+		if(!proceso->esProcesoRun){
+			encolar(estadoExit, proceso);
+		}else{
+			sem_post(&semaforoSePuedePlanificar);
+		}
 	}
 }
 
@@ -182,12 +195,12 @@ void logicaRun(Run * run, Proceso * proceso){
 		int diff;
 		switch(tipoInstruccionAProcesar){
 			case CREATE:;
-				Create * create = (Create *) proceso->instruccion->instruccion_a_realizar;
+				Create * create = (Create *) proceso->instruccionAProcesar->instruccion_a_realizar;
 				proceso->file_descriptor = logicaCreate(create);
 				break;
 
 			case SELECT:;
-				Select * select = (Select *) proceso->instruccion->instruccion_a_realizar;
+				Select * select = (Select *) proceso->instruccionAProcesar->instruccion_a_realizar;
 				proceso->file_descriptor = logicaSelect(select);
 				fin = get_timestamp();
 				diff = difftime(fin ,select->timestamp);
@@ -195,7 +208,7 @@ void logicaRun(Run * run, Proceso * proceso){
 				break;
 
 			case INSERT:;
-				Insert * insert = (Insert *) proceso->instruccion->instruccion_a_realizar;
+				Insert * insert = (Insert *) proceso->instruccionAProcesar->instruccion_a_realizar;
 				proceso->file_descriptor = logicaInsert(insert);
 				fin = get_timestamp();
 				diff = difftime(fin, insert->timestamp);
@@ -203,7 +216,7 @@ void logicaRun(Run * run, Proceso * proceso){
 				break;
 
 			case DROP:;
-				Drop * drop = (Drop *) proceso->instruccion->instruccion_a_realizar;
+				Drop * drop = (Drop *) proceso->instruccionAProcesar->instruccion_a_realizar;
 				proceso->file_descriptor = logicaDrop(drop);
 				break;
 
@@ -497,6 +510,7 @@ void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 
 	if(m != NULL){
 		if( consistencia == SC){
+			list_clean(memoriasSc);
 			list_add(memoriasSc,m);
 			putMemoryListSafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], memoriasSc);
 		}else if(consistencia == EC){
