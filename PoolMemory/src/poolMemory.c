@@ -1,6 +1,12 @@
 #include "poolMemory.h"
 
+pthread_mutex_t mutexListaPaginas, mutexAccesoMemoria;
+
 int main(void) {
+
+	pthread_mutex_init(&mutexListaPaginas, NULL);
+	pthread_mutex_init(&mutexAccesoMemoria, NULL);
+
 	configure_logger();
 	configuracion_inicial();
 	MAX_VALUE = 100; // esto hay que reemplazarlo por el valor del FS
@@ -211,7 +217,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 		}
 		else {
-			instruccion_respuesta = respuesta_error(BAD_REQUEST);
+			instruccion_respuesta = instruccion_parseada;
 		}
 
 		free_consulta(instruccion_parseada);
@@ -237,19 +243,28 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 
 	if(pagina == NULL){
 		//no tenemos la pagina
+		pthread_mutex_lock(&mutexListaPaginas);
 		pagina = seleccionar_pagina();
 
 		if(pagina == NULL){
+
+			pthread_mutex_unlock(&mutexListaPaginas);
 			return -2;
 		}
 
+		set_modificado_pagina(pagina, modificado);
+		pthread_mutex_unlock(&mutexListaPaginas);
+
 		agregar_pagina_en_segmento(segmento, pagina);
+
 	}
 
+	pthread_mutex_lock(&mutexAccesoMemoria);
 	set_key_pagina(pagina, key);
 	set_value_pagina(pagina, value);
 	set_timestamp_pagina(pagina, timestamp_insert);
 	set_modificado_pagina(pagina, modificado);
+	pthread_mutex_unlock(&mutexAccesoMemoria);
 
 	return 1;
 }
@@ -268,7 +283,9 @@ void eliminar_de_memoria(char* nombre_tabla){
 			pagina_general_liberar = buscar_pagina_general(pagina_liberar);
 
 			if(pagina_general_liberar != NULL){
+				pthread_mutex_lock(&mutexAccesoMemoria);
 				pagina_general_liberar->en_uso = false;
+				pthread_mutex_unlock(&mutexAccesoMemoria);
 			}
 
 			posicion --;
@@ -542,7 +559,7 @@ int lanzar_journal(t_timestamp timestamp_journal){
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
 					printf("La consulta fue enviada al FILESYSTEM \n");
 
-					if(instruccion_respuesta->instruccion = ERROR){
+					if(instruccion_respuesta->instruccion == ERROR){
 						free_consulta(instruccion);
 						return -1;
 					}
