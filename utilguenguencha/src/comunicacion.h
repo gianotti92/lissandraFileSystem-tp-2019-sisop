@@ -32,7 +32,7 @@ typedef enum {
 } Instruction_set;
 
 typedef enum {
-	BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE, CONNECTION_ERROR, MEMORY_FULL, LARGE_VALUE
+	BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE, CONNECTION_ERROR, MEMORY_FULL, LARGE_VALUE, INSERT_FAILURE
 } Error_set;
 
 typedef enum {
@@ -133,6 +133,9 @@ typedef struct {
 
 typedef struct{
  //Definir los tipos
+	t_key key;
+	char* value;
+	t_timestamp timestamp;
 } Retorno;
 
 typedef struct {

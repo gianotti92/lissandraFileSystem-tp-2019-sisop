@@ -430,7 +430,7 @@ void empaquetar_insert(t_paquete *paquete, Insert *insert) {
 	size_t tamanio_value = (strlen(insert->value) + 1);
 	paquete->buffer->stream = malloc(
 			sizeof(insert->key) + sizeof(size_t) + tamanio_nombre_tabla
-					+ sizeof(insert->timestamp) + sizeof(size_t) + tamanio_value);
+					+ sizeof(insert->timestamp)+ sizeof(insert->timestamp_insert) + sizeof(size_t) + tamanio_value);
 	memcpy(paquete->buffer->stream, &insert->key, sizeof(insert->key));
 	paquete->buffer->size += sizeof(insert->key);
 	memcpy(paquete->buffer->stream + paquete->buffer->size,
@@ -442,6 +442,9 @@ void empaquetar_insert(t_paquete *paquete, Insert *insert) {
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &insert->timestamp,
 			sizeof(insert->timestamp));
 	paquete->buffer->size += sizeof(insert->timestamp);
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &insert->timestamp_insert,
+			sizeof(insert->timestamp_insert));
+	paquete->buffer->size += sizeof(insert->timestamp_insert);
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_value,
 			sizeof(tamanio_value));
 	paquete->buffer->size += sizeof(tamanio_value);
@@ -577,6 +580,9 @@ Insert *desempaquetar_insert(void* stream) {
 	memcpy(&insert->timestamp, stream + desplazamiento,
 			sizeof(insert->timestamp));
 	desplazamiento += sizeof(insert->timestamp);
+	memcpy(&insert->timestamp_insert, stream + desplazamiento,
+			sizeof(insert->timestamp_insert));
+	desplazamiento += sizeof(insert->timestamp_insert);
 	memcpy(&tamanio, stream + desplazamiento, sizeof(tamanio));
 	desplazamiento += sizeof(tamanio);
 	insert->value = malloc(tamanio);
