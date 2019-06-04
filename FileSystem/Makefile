@@ -17,7 +17,7 @@ dir:
 fileSystem: src/*.* utilguenguencha
 	gcc src/*.c $(utilguenguencha_path)Release/*.o $(FLAGS) $(LIBS) -o Release/$@
 
-.PHONY:	utilguenguencha
+.PHONY: utilguenguencha
 utilguenguencha:
 	make -C $(utilguenguencha_path)
 

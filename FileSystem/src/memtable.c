@@ -105,6 +105,16 @@ void loadCurrentTableMetadata(void){
 		closedir(d);
 	}
 }
+void showTableMetadata(void){
+	void show(struct tableMetadataItem * item){
+		char*consistencia=consistencia2string(item->metadata.consistencia);
+		printf("Table: %s - Consistency: %s, Partitions: %d, Compaction time: %d\n",item->tableName,consistencia,item->metadata.numero_particiones,item->metadata.compaction_time);
+		free(consistencia);
+	}
+	pthread_mutex_lock(&tableMetadataMutex);
+	list_iterate(global_table_metadata,(void*)show);
+	pthread_mutex_unlock(&tableMetadataMutex);
+}
 void* TH_asesino(void*p){
 	pthread_t victima = (pthread_t)p;
 	pthread_join(victima,NULL);

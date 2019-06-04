@@ -127,6 +127,10 @@ int _create(Create* create){
 }
 int _describe(Describe * describe){
 	usleep(global_conf.retardo*1000);
+	if(describe->nombre_tabla==NULL){
+		showTableMetadata();
+		return 0;
+	}
 	if(!tableExists(describe->nombre_tabla)) {
 		log_error(LOGGER,"DESCRIBE: no existe la tabla '%s'",describe->nombre_tabla);
 		return 1;

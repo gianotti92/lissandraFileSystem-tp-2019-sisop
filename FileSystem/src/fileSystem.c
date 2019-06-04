@@ -8,7 +8,7 @@ struct file_mdata{
 struct filesystem_conf{
 	long BLOCK_SIZE;
 	long BLOCKS;
-	char MAGIC_NUMBER[4];
+	char*MAGIC_NUMBER;
 };
 
 struct filesystem_conf global_fs_conf;
@@ -59,6 +59,9 @@ int fs_init(void){
 	}
 	bitarray_init();
 	return 0;
+}
+void fs_destroy(void){
+	free(global_fs_conf.MAGIC_NUMBER);
 }
 int fs_read(char* filename, t_list* registros){
 	struct file_mdata mdata;
@@ -425,6 +428,7 @@ int fs_get_conf(void){
 	free(filename);
 	global_fs_conf.BLOCK_SIZE = config_get_long_value(conf,"BLOCK_SIZE");
 	global_fs_conf.BLOCKS = config_get_long_value(conf,"BLOCKS");
+	global_fs_conf.MAGIC_NUMBER=malloc(strlen(config_get_string_value(conf,"MAGIC_NUMBER"))+1);
 	strcpy(global_fs_conf.MAGIC_NUMBER,config_get_string_value(conf,"MAGIC_NUMBER"));
 	config_destroy(conf);
 	return 0;
