@@ -1,66 +1,25 @@
 #include "kernel_utils.h"
 
-char* leer_linea(char* path, int linea){
-	FILE *fileptr;
-	if((fileptr = fopen(path, "r"))){
+char* leer_linea(char* path, int linea) {
+	char *line_buf = NULL;
+	size_t line_buf_size = 0;
+	ssize_t line_size;
+	FILE * fp = fopen(path, "r");
 
-		char *buffer = string_new();
-		string_append(&buffer, "");
-		int lineas_leidas = 0, desplazamiento = 0;
-		char c;
-		c = fgetc(fileptr);
-		while(c != EOF){
-			if(lineas_leidas == linea){
-				if(c != '\n'){
-					if(strlen(buffer) == 0){
-						buffer = calloc(1, sizeof(char));
-					}else{
-						buffer = realloc(buffer, strlen(buffer) + sizeof(char));
-					}
-					memcpy(buffer+desplazamiento, &c, sizeof(char));
-					desplazamiento++;
-					c = fgetc(fileptr);
-					continue;
-				}else{
-					if(c == '\n' && strlen(buffer) == 0){
-						return NULL;
-					}else if(strlen(buffer) == desplazamiento){
-						buffer[desplazamiento] = '\0';
-						return buffer;
-					}else{
-						char *retorno = string_new();
-						string_append(&retorno, buffer);
-
-						free(buffer);
-						fclose(fileptr);
-						return retorno;
-					}
-				}
-			}else{
-				if(c == '\n'){
-					lineas_leidas++;
-				}
-				c = fgetc(fileptr);
-			}
-		}
-		if((desplazamiento==0 && strlen(buffer) == 0)|| (c == EOF && desplazamiento != 0 &&  strlen(buffer) == 0)){
-			fclose(fileptr);
-					return NULL;
-		}else{
-			if(c == '\n' && strlen(buffer) == 0){
-				return NULL;
-			}else if(strlen(buffer) == desplazamiento){
-				return buffer;
-			}else{
-				char *retorno = string_new();
-				string_append(&retorno, buffer);
-				free(buffer);
-				fclose(fileptr);
-				return retorno;
-			}
-		}
-
-	}else{
+	if(!fp){
+		perror("Error al leer archivo");
 		return NULL;
 	}
+	int i;
+	for(i = 0; i <= linea; i++){
+		line_size = getline(&line_buf, &line_buf_size, fp);
+	}
+
+	if(line_size >= 0){
+		line_buf[line_size - 1] = '\0';
+	}else{
+		line_buf = NULL;
+	}
+	fclose(fp);
+	return line_buf;
 }

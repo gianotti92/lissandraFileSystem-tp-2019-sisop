@@ -25,7 +25,8 @@ int main(void) {
 
 	bool dormir = false;
 
-	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, (void*)&dormir);
+	/*TODO: descomentar =)*/
+//	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, (void*)&dormir);
 
 
 	int cantMultiprocesamiento = 0;
@@ -113,8 +114,9 @@ void ejecutar() {
 		switch(proceso->instruccion->instruccion){
 			case RUN:;
 				Run * run = (Run *) proceso->instruccion->instruccion_a_realizar;
-				logicaRun(run, proceso);
+				proceso = logicaRun(run, proceso);
 				proceso->esProcesoRun=true;
+				proceso->quantumProcesado = 0;
 				break;
 
 			case METRICS:;
@@ -174,7 +176,7 @@ void ejecutar() {
 			default:
 				break;
 		}
-		if(!proceso->esProcesoRun){
+		if(!proceso->esProcesoRun || proceso->instruccionAProcesar->instruccion == ERROR){
 			encolar(estadoExit, proceso);
 		}else{
 			sem_post(&semaforoSePuedePlanificar);
@@ -182,7 +184,7 @@ void ejecutar() {
 	}
 }
 
-void logicaRun(Run * run, Proceso * proceso){
+Proceso * logicaRun(Run * run, Proceso * proceso){
 	char * proximainstruccionChar = leer_linea(run->path, proceso->numeroInstruccion);
 
 	while(proximainstruccionChar != NULL && proceso->quantumProcesado < QUANTUM){
@@ -221,7 +223,7 @@ void logicaRun(Run * run, Proceso * proceso){
 				break;
 
 			case ERROR:;
-				return;
+				return proceso;
 
 			default:
 				break;
@@ -235,13 +237,13 @@ void logicaRun(Run * run, Proceso * proceso){
 
 	if(esFinQuantum(proceso, proximainstruccionChar)){
 		encolar(estadoReady, proceso);
-		return;
+		return proceso;
 	}else if(esFinLectura(proceso, proximainstruccionChar)){
 		encolar(estadoExit, proceso);
-		return;
+		return proceso;
 	}else{
 		encolar(estadoExit, proceso);
-		return;
+		return proceso;
 	}
 }
 
@@ -677,9 +679,6 @@ int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
 	if(instruccion == NULL){
 		return -3;
 	}
-
-	sleep(10);
-
 	return 6;
 }
 /* MOCK */

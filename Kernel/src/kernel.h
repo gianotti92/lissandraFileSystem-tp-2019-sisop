@@ -48,7 +48,7 @@ Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void preguntarPorMemoriasDisponibles();
 void newToReady();
 int logicaCreate(Create * create);
-void logicaRun(Run * run, Proceso * proceso);
+Proceso * logicaRun(Run * run, Proceso * proceso);
 int logicaDescribe(Describe * describe);
 int logicaJournal(Journal * journal);
 int logicaDrop(Drop * drop);
