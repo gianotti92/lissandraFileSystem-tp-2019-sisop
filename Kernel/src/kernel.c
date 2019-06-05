@@ -25,8 +25,7 @@ int main(void) {
 
 	bool dormir = false;
 
-	/*TODO: descomentar =)*/
-//	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, (void*)&dormir);
+	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, (void*)&dormir);
 
 
 	int cantMultiprocesamiento = 0;
