@@ -3,16 +3,12 @@
 
 Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 
-	Instruccion* consultaParseada;
+	if(string_is_empty(consulta)){
+		return respuesta_error(NULL_REQUEST);
+	}
 
-	/*
-	time_t echo_time;
-	echo_time = time(NULL);
-	if (echo_time == ((time_t)-1)){
-		puts ("ERROR: Fallo al obtener la hora.");
-		log_error(LOGGER, "Parser: Fallo al obtener la hora.");
-		return instruccion_error();
-	}*/
+
+	Instruccion* consultaParseada;
 
 	uintmax_t echo_time = get_timestamp();
 
@@ -29,13 +25,13 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 			puts("ERROR: La sintaxis correcta es > SELECT [NOMBRE_TABLA] [KEY]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		else if(!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
 			log_error(LOGGER, "Parser: La Key es incorrecta.");
 
-			return instruccion_error();
+			return respuesta_error(BAD_KEY);
 		}
 		else{
 
@@ -94,7 +90,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 				puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
 				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-				return instruccion_error();
+				return respuesta_error(BAD_REQUEST);
 			}
 		}
 
@@ -102,13 +98,13 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		else if (!es_numero(consulta_separada[2])|| string_to_ulint(consulta_separada[2])>65535){
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
 			log_error(LOGGER, "Parser: La Key es incorrecta.");
 
-			return instruccion_error();
+			return respuesta_error(BAD_KEY);
 		}
 		else{
 
@@ -144,19 +140,19 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 			puts("ERROR: La sintaxis correcta es > CREATE [NOMBRE_TABLA] [TIPO_CONSISTENCIA] [NUMERO_PARTICIONES] [COMPACTION_TIME]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		else if (!es_numero(consulta_separada[3])){
 			puts("ERROR: La cantidad de particiones debe ser un numero.");
 			log_error(LOGGER, "Parser: La cantidad de particiones debe ser un numero.");
 
-			return instruccion_error();
+			return respuesta_error(BAD_PARTITION);
 		}
 		else if (!es_numero(consulta_separada[4])){
 			puts("ERROR: El tiempo de compactacion debe ser un numero.");
 			log_error(LOGGER, "Parser: El tiempo de compactacion debe ser un numero.");
 
-			return instruccion_error();
+			return respuesta_error(BAD_COMPACTATION);
 		}
 		else{
 
@@ -182,7 +178,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 				puts("ERROR: Los criterios de consistencia aceptados son [SC, SHC, EC]");
 				log_error(LOGGER, "Parser: Criterio de consistencia no aceptado.");
 
-				return instruccion_error();
+				return respuesta_error(BAD_CONSISTENCY);
 			};
 
 			nuevoCreate->consistencia = consistencia;									 // cargo consistencia
@@ -204,7 +200,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 			puts("ERROR: La sintaxis correcta es > DESCRIBE [NOMBRE_TABLA] o DESCRIBE");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		else{
 
@@ -236,7 +232,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 			puts("ERROR: La sintaxis correcta es > DROP [NOMBRE_TABLA]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		else{
 
@@ -259,19 +255,19 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 			puts("ERROR: La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		else if (!es_numero(consulta_separada[2])){
 			puts("ERROR: La memoria debe ser un numero.");
 			log_error(LOGGER, "Parser: La memoria debe ser un numero.");
 
-			return instruccion_error();
+			return respuesta_error(BAD_MEMORY);
 		}
 		else if (!(string_equals_ignore_case(string_from_format("%s %s", consulta_separada[0], consulta_separada[1]), "ADD MEMORY") & (string_equals_ignore_case(consulta_separada[3], "TO")))){
 			puts("ERROR: La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		else{
 
@@ -295,7 +291,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 				puts("ERROR: Los criterios de consistencia aceptados son [SC, SHC, EC]");
 				log_error(LOGGER, "Parser: Criterio de consistencia no aceptado.");
 
-				return instruccion_error();
+				return respuesta_error(BAD_CONSISTENCY);
 			}
 
 			nuevoAddMemory->consistencia = consistencia;									// cargo consistencia
@@ -313,7 +309,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 			puts("ERROR: La sintaxis correcta es > RUN [ARCHIVO]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		else{
 
@@ -335,7 +331,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 				puts("ERROR: La sintaxis correcta es > METRICS");
 				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-				return instruccion_error();
+				return respuesta_error(BAD_REQUEST);
 			}
 			else{
 
@@ -355,7 +351,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 				puts("ERROR: La sintaxis correcta es > JOURNAL");
 				log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-				return instruccion_error();
+				return respuesta_error(BAD_REQUEST);
 			}
 			else{
 
@@ -380,7 +376,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen){
 
 		log_error(LOGGER, "Parser: Operacion no reconocida.");
 
-		return instruccion_error();
+		return respuesta_error(BAD_OPERATION);
 	}
 
 	log_info(LOGGER, "Parser: Consulta aceptada.");
@@ -462,7 +458,42 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada){
 			case METRICS: {Metrics * metrics = instruccion_parseada->instruccion_a_realizar;
 						   printf("TS: %zu \n",metrics->timestamp);
 						   break;}
-			case ERROR: {printf("ERROR DE CONSULTA \n");
+			case ERROR: {
+						Error* error = instruccion_parseada->instruccion_a_realizar;
+						switch(error->error){
+						case BAD_COMPACTATION:{
+											   printf("ERROR - EL TIEMPO DE COMPACTACION DEBE SER UN NUMERO. \n");
+											   break;
+											   }
+						case BAD_CONSISTENCY:{
+											  printf("ERROR - TIPO DE CONSISTENCIA INCORRECTO [SC, SHC, EC]. \n");
+											  break;
+											   }
+						case BAD_KEY:{
+									  printf("ERROR - LA KEY DEBE SER UN NUMERO. \n");
+									  break;
+									  }
+						case BAD_MEMORY:{
+										 printf("ERROR - LA MEMORIA DEBE SER UN NUMERO. \n");
+										 break;
+										 }
+						case BAD_OPERATION:{
+											printf("ERROR - OPERACION INVALIDA. \n");
+											break;
+											}
+						case BAD_PARTITION:{
+											printf("ERROR - LA PARTICION DEBE SER UN NUMERO. \n");
+											break;
+											}
+						case BAD_REQUEST:{
+										  printf("ERROR - SINTAXIS INCORRECTA. \n");
+										  break;
+										  }
+						case NULL_REQUEST:{
+										  break;
+										  }
+
+						}
 						 break;}
 			case RETORNO: {Retorno * retorno = instruccion_parseada->instruccion_a_realizar;
 						   printf("Key: %i Value: %s TS: %zu \n", retorno->key, retorno-> value, retorno->timestamp);

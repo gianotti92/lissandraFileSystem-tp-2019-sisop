@@ -112,6 +112,7 @@ void insertInTableMetadata(char*tableName,struct TableMetadata tMetadata);
 void deleteInTableMetadata(char*tableName);
 void destroyTableMetadata(void);
 void loadCurrentTableMetadata(void);
+void showTableMetadata(void);
 
 /* Registros */
 long getTimestamp(void);
@@ -142,6 +143,7 @@ struct TableMetadata setTableMetadata(Consistencias consistencia, int numero_par
 
 /* Filesystem */
 int fs_init(void);
+void fs_destroy(void);
 /*
 	fs_read() : implementacion FS de lectura de archivo
 		char* filename : nombre de archivo a abrir

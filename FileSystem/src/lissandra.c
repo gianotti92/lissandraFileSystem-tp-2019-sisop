@@ -47,11 +47,6 @@ int main(void) {
 	*/
 	// Creo thread que va a ejecutar el monitoreo del archivo de configuracion
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL);
-
-	/*// Creo thread de compactacion
-	pthread_create(&T_compactacion,NULL,TH_compactacion,NULL);*/
-
-
 	// Creo thread de dump
 	pthread_create(&T_dump,NULL,TH_dump,NULL);
 	// Creo thread que va a ejecutar la escucha por consola
@@ -77,13 +72,6 @@ int main(void) {
 	if((int)TR_server != 0) {
 		log_error(LOGGER,"Error con el thread server: %d",(int)TR_server);
 	}
-	/*
-	// Espero el fin del thread compactacion
-	pthread_join(T_compactacion,&TR_compactacion);
-	if((int)TR_compactacion != 0) {
-		log_error(LOGGER,"Error con el thread de compactacion: %d",(int)TR_compactacion);
-	}
-	*/
 	// Espero el fin del thread dump
 	pthread_join(T_dump,&TR_dump);
 	if((int)TR_dump != 0) {
@@ -100,6 +88,7 @@ int main(void) {
 	pthread_mutex_destroy(&tableMetadataMutex);
 	log_destroy(LOGGER);
 	global_conf_destroy();
+	fs_destroy();
 	return 0;	
 }
 
@@ -128,7 +117,7 @@ void *TH_server(void * p){
 	void manejo_instruccion(Instruccion* instruccion, int fd_cliente) {
 		controller(instruccion);
 	}
-	servidor_comunicacion(&manejo_instruccion,global_conf.puerto);
+	//servidor_comunicacion(&manejo_instruccion,global_conf.puerto);
 	return (void *)0;
 }
 
@@ -361,4 +350,7 @@ void* TH_compactacion(void* p){
 		list_destroy(tmpc_files);
 	}
 	return (void*)0;
+}
+void retornarControl(Instruccion *instruccion, int socket_cliente){
+	return;
 }

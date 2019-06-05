@@ -211,7 +211,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 		}
 		else {
-			instruccion_respuesta = respuesta_error(BAD_REQUEST);
+			instruccion_respuesta = instruccion_parseada;
 		}
 
 		free_consulta(instruccion_parseada);
@@ -542,7 +542,7 @@ int lanzar_journal(t_timestamp timestamp_journal){
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
 					printf("La consulta fue enviada al FILESYSTEM \n");
 
-					if(instruccion_respuesta->instruccion = ERROR){
+					if(instruccion_respuesta->instruccion == ERROR){
 						free_consulta(instruccion);
 						return -1;
 					}
