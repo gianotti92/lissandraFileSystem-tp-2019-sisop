@@ -195,30 +195,6 @@ int read_temp_files(char* tabla,t_list* listaRegistros){
 	free(path);
 	return 0;
 }
-char *consistencia2string(Consistencias consistencia){
-	char* str=malloc(4);
-	switch(consistencia){
-		case EC:
-			strcpy(str,"EC");
-		break;
-		case SC:
-			strcpy(str,"SC");
-		break;
-		case SHC:
-			strcpy(str,"SHC");
-		break;
-	}
-	return str;
-}
-int string2consistencia(char* consistencia){
-	if(strcmp(consistencia,"EC")==0){
-		return EC;
-	}
-	if(strcmp(consistencia,"SC")==0){
-		return SC;
-	}
-	return SHC;
-}
 char* getTablePath(char*tabla){
 	char*path = malloc(strlen(global_conf.directorio_tablas)+strlen(tabla)+1);
 	sprintf(path,"%s%s",global_conf.directorio_tablas,tabla);

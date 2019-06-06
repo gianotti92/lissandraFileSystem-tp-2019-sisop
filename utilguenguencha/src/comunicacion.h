@@ -142,6 +142,9 @@ typedef struct {
 	int value;
 } Value;
 
+char *consistencia2string(Consistencias consistencia);
+int string2consistencia(char* consistencia);
+
 void retornarControl(Instruccion *instruccion, int socket_cliente);
 void servidor_comunicacion(Comunicacion *comunicacion);
 int iniciar_servidor(char* puerto);

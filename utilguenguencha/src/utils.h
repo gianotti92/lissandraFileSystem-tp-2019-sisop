@@ -13,7 +13,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
 t_log * LOGGER;
 /*
 typedef struct{
@@ -26,7 +25,6 @@ typedef struct{
 }Proceso;
 */
 void configure_logger();
-
 void exit_gracefully(int);
 //Proceso *dame_siguiente(Proceso* proceso);
 

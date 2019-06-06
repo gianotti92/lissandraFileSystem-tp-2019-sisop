@@ -22,9 +22,8 @@ typedef struct{
 	bool esProcesoRun;
 }Proceso;
 
-char *CONSISTENCIAS_STRING[] = {
-    "EC", "SC", "SHC",
-};
+pthread_mutex_t mutexRecursosCompartidos;
+sem_t semaforoSePuedePlanificar, semaforoNewToReady;
 
 // Funciones del proceso
 void configuracion_inicial(void);
@@ -62,9 +61,6 @@ void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
 int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
 		Procesos proceso_del_que_envio);
-// Hay que definirla ya que no tiene definición en kernel y sino rompería, de todos modos no se usa
-void retornarControl(Instruccion *instruccion, int socket_cliente){};
-
 
 // Variables del proceso
 t_list *estadoReady;
