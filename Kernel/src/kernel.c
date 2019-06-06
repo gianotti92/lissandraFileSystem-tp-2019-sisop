@@ -34,8 +34,12 @@ int main(void) {
 		pthread_create(&multiProcesamientoKernell, NULL, (void*) ejecutar,
 						NULL);
 		cantMultiprocesamiento++;
-}
+	}
 	pthread_join(consolaKernel, NULL);
+	pthread_detach(consolaKernel);
+	pthread_detach(memoriasDisponibles);
+	pthread_detach(pasarNewToReady);
+	pthread_detach(calcularMetrics);
 }
 
 void configuracion_inicial(void) {
@@ -269,7 +273,9 @@ int logicaCreate(Create * create){
 
 void logicaAdd(Add * add){
 	Memoria * memoria = NULL;
+	pthread_mutex_lock(&mutexRecursosCompartidos);
 	int tamTabla = dictionary_size(memoriasDisponibles);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
 	int i;
 
 	for(i = 0; i <= tamTabla; i++){
@@ -534,23 +540,40 @@ void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
 
 void preguntarPorMemoriasDisponibles(){
 	while(true){
-		Memoria * m = malloc(sizeof(Memoria));
+		sleep(30);
+		Instruccion *instruccion = malloc(sizeof(Instruccion));
+		instruccion->instruccion = GOSSIP;
 
-		/* funcion de conexiones que me devuelve memoria disponible */
-		m->idMemoria = 1;
-		char * ip = string_new();
-		char * puerto = string_new();
-		string_append(&ip, "127.0.0.1");
-		string_append(&puerto, "8080");
-		m->puerto = puerto;
-		m->ip = ip;
-		/* funcion de conexiones que me devuelve memoria disponible */
+		Instruccion * instruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion, KERNEL, T_GOSSIPING);
+		free(instruccion->instruccion);
+		free(instruccion);
 
-		char * key = string_new();
-		sprintf(key, "%d", m->idMemoria);
-		putMemorySafe(memoriasDisponibles, key , m);
+		switch(instruccionRespuesta->instruccion){
+			case ERROR:;
+				log_error("Kernel. Error al recibir la respuesta");
+				break;
 
-		sleep(5);
+			case GOSSIP:;
+				Gossip * gossip = (Gossip *) instruccionRespuesta->instruccion_a_realizar;
+				t_list * listaMemDisp =  gossip->lista_memorias;
+
+				while(list_size(listaMemDisp) > 0){
+					Memoria * mem = list_remove(listaMemDisp, 0);
+
+					char * key = string_new();
+
+					sprintf(key, "%d", mem->idMemoria);
+
+					pthread_mutex_lock(&mutexRecursosCompartidos);
+					dictionary_put(memoriasDisponibles, key, mem);
+					pthread_mutex_unlock(&mutexRecursosCompartidos);
+				}
+				break;
+
+			default:;
+				log_error(LOGGER, "KERNEL. Error no debería pasar por aca.")
+				break;
+		}
 	}
 }
 
@@ -667,8 +690,7 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 }
 
 /* MOCK */
-int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
-		Procesos proceso_del_que_envio){
+int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio){
 	if(ip == NULL){
 		return -1;
 	}
@@ -678,6 +700,7 @@ int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
 	if(instruccion == NULL){
 		return -3;
 	}
+
 	return 6;
 }
 /* MOCK */
