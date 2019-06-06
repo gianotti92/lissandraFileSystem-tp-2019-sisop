@@ -34,7 +34,7 @@ typedef enum {
 } Instruction_set;
 
 typedef enum {
-	BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE, CONNECTION_ERROR, MEMORY_FULL, LARGE_VALUE, TIMEOUT
+	BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE, CONNECTION_ERROR, MEMORY_FULL, LARGE_VALUE, TIMEOUT, BAD_RESPONSE
 } Error_set;
 
 typedef enum {
@@ -128,9 +128,8 @@ typedef struct {
 } t_paquete;
 
 typedef struct {
-	Tipo_Comunicacion comunicacion;
-	Procesos source;
-	Tipo_Retorno header;
+	Instruction_set header;
+	Tipo_Retorno retorno;
 	t_buffer* buffer;
 } t_paquete_retorno;
 
@@ -143,10 +142,6 @@ typedef struct {
 typedef struct {
 	t_list *lista_memorias;
 } Gossip;
-
-typedef struct {
-	t_list *lista_describe;
-} Retorno_Describe_List;
 
 typedef struct {
 	char *value;
@@ -218,7 +213,10 @@ t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_e
 * 		 char *puerto -> puerto al que le enviamos la instruccion
 * 		 Procesos proceso_del_que_envio -> El source desde donde envio la instruccion
 * 		 Tipo_Comunicacion tipo_comu -> Es el tipo de comunicacion que realizo
-* @RET:  Instruccion *respuesta -> Solo puede ser del tipo RETORNO o ERRROR segun corresponda
+* @RET:  Instruccion *respuesta -> respuesta que obtenemos del que nos envia
+*		 Solo puede ser RETORNO->(Seteado con el que corresponda)
+*		 					(VALOR, DATOS_DESCRIBE, TAMANIO_VALOR_MAXIMO, SUCCESS)
+*		 				ERROR->(Seteado con el que corresponda)
 */
 Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu);
 /**
@@ -304,7 +302,7 @@ void empaquetar_gossip(t_paquete * paquete, Gossip * gossip);
 * @DESC: Devuelve un puntero a un stream en el que se contiene todo
 * @ARGS: t_paquete *paquete -> paquete a serializar
 * 		 int bytes -> cantidad de bytes que tendra el tream de output
-* @RET:  void
+* @RET:  void *
 */
 void* serializar_paquete(t_paquete* paquete, int bytes);
 /**
@@ -388,12 +386,12 @@ Instruccion *responder(int fd_a_responder, Instruccion *instruccion);
 * @NAME: recibir_respuesta
 * @DESC: Se bloquea (Temporalmente) esperando respuesta de a quien le envie
 * @ARGS: int fd_a_escuchar -> a donde temos que escuchar
-*		 Instruccion *respuesta -> respuesta que obtenemos del que nos envia
+* @RET:	 Instruccion *respuesta -> respuesta que obtenemos del que nos envia
 *		 Solo puede ser RETORNO->(Seteado con el que corresponda)
+*		 					(VALOR, DATOS_DESCRIBE, TAMANIO_VALOR_MAXIMO, SUCCESS)
 *		 				ERROR->(Seteado con el que corresponda)
-* @RET:	 void
 */
-void recibir_respuesta(int fd_a_escuchar, Instruccion *respuesta);
+Instruccion *recibir_respuesta(int fd_a_escuchar);
 /**
 * @NAME: respuesta_error
 * @DESC: Devuelve una estructura Instruccion ERROR con el error seteado
@@ -430,5 +428,36 @@ Instruccion *armar_retorno_value(char *value, t_timestamp timestamp);
 * @RET:  Instruccion *respuesta -> La respuesta con el error asiciado
 */
 Instruccion *recibir_error(int fd_a_escuchar);
+/**
+* @NAME: crear_paquete_retorno
+* @DESC: Crea un paquete de retorno para enviar
+* @ARGS: Instruccion* instruccion -> el retorno o error a enviar
+* @RET:  t_paquete *paquete -> paquete armado
+*/
+t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion);
+/**
+* @NAME: serializar_paquete_retorno
+* @DESC: Devuelve un puntero a un stream en el que se contiene todo
+* @ARGS: t_paquete_retorno *paquete -> paquete a serializar
+* 		 int bytes -> cantidad de bytes que tendra el tream de output
+* @RET:  void*
+*/
+void *serializar_paquete_retorno(t_paquete_retorno *paquete, int bytes);
+/**
+* @NAME: enviar_paquete_retorno
+* @DESC: Funcion que serializa el paquete y lo envia al fd indicado
+* @ARGS: t_paquete_retorno *paquete -> paquete a enviar
+* 		 int socket_cliente -> fd del destino al que le envio le paquete
+* @RET:  bool Enviado / No Enviado
+*/
+bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente);
+Instruccion *armar_retorno_max_value(size_t max_value);
+bool set_timeout(int fd, __time_t timeout);
+Instruccion *armar_retorno_describe(t_list *lista_describes);
+void empaquetar_retorno_valor(t_paquete_retorno *paquete, Retorno_Value *ret_val);
+void empaquetar_retorno_describe(t_paquete_retorno *paquete, t_list *list_of_describes);
+void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *max_val);
+void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error);
+void empaquetar_retorno_success(t_paquete_retorno *paquete);
 
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */
