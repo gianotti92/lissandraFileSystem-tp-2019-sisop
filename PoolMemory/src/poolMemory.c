@@ -3,7 +3,7 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
-	MAX_VALUE = 100; // esto hay que reemplazarlo por el valor del FS
+	MAX_VAL = 100; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
 	pthread_t consolaPoolMemory, gossiping, servidorPM;
@@ -75,7 +75,7 @@ void inicializar_memoria(){
 		exit_gracefully(-1);
 	}
 
-	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VALUE + sizeof(bool); //calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF
+	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VAL + sizeof(bool); //calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF
 
 	l_maestro_paginas = list_create(); //creo la tabla maestra de paginas, es una t_list global
 
@@ -110,8 +110,8 @@ void inicializar_memoria(){
 
 
 		char* palabra = "\0";
-		memcpy(desplazamiento, palabra, MAX_VALUE);
-		desplazamiento += MAX_VALUE;				//lugar de value
+		memcpy(desplazamiento, palabra, MAX_VAL);
+		desplazamiento += MAX_VAL;				//lugar de value
 
 
 		*(t_flag*) desplazamiento = 0;
@@ -409,7 +409,7 @@ char* get_value_pagina( void* p_pagina){
 
 t_flag* get_modificado_pagina( void* p_pagina){
 	void* p_modif = p_pagina;
-	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VALUE);
+	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VAL);
 	return (t_flag*) p_modif;
 }
 
@@ -428,13 +428,13 @@ void set_timestamp_pagina( void* p_pagina, t_timestamp timestamp){
 void set_value_pagina( void* p_pagina, char* value){
 	void* p_value =  p_pagina;
 	p_value += (sizeof(t_key) + sizeof(t_timestamp));
-	memcpy(p_value, value, MAX_VALUE);
+	memcpy(p_value, value, MAX_VAL);
 
 }
 
 void set_modificado_pagina( void* p_pagina, t_flag estado){
 	void* p_modif = p_pagina;
-	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VALUE);
+	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VAL);
 	*(t_flag*) p_modif = estado;
 }
 
@@ -617,5 +617,5 @@ bool pagina_en_uso(Pagina_general* pagina_general){
 }
 
 bool memoria_full(){
-	return list_all_satisfy(l_maestro_paginas, pagina_en_uso);
+	return list_all_satisfy(l_maestro_paginas, (void*)pagina_en_uso);
 }
