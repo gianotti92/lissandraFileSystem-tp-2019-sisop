@@ -379,6 +379,12 @@ void eliminar_paquete(t_paquete* paquete) {
 	free(paquete);
 }
 
+void eliminar_paquete_retorno(t_paquete_retorno* paquete){
+free(paquete->buffer->stream);
+	free(paquete->buffer);
+	free(paquete);
+}
+
 t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_envio,
 		Instruccion* instruccion) {
 	t_paquete* paquete = malloc(sizeof(t_paquete));
@@ -415,8 +421,7 @@ t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_e
 				(Gossip*) instruccion->instruccion_a_realizar);
 		break;
 	default:
-		free(paquete->buffer);
-		free(paquete);
+		eliminar_paquete(paquete);
 		return (t_paquete*) NULL;
 		break;
 	}
@@ -441,8 +446,11 @@ t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion){
 				case TAMANIO_VALOR_MAXIMO:
 					empaquetar_retorno_max_val(paquete, (Retorno_Max_Value *)retorno->retorno);
 					break;
+				case RETORNO_GOSSIP:
+					empaquetar_retorno_gossip(paquete, (Gossip *)retorno->retorno);
+					break;
 				case SUCCESS:
-					empaquetar_retorno_success(paquete);
+					// El Success no lleva paquete
 					break;
 			}
 			break;
@@ -454,6 +462,7 @@ t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion){
 			break;
 		}
 		default:
+			eliminar_paquete_retorno(paquete);
 			break;
 	}
 	return paquete;
@@ -741,7 +750,7 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 		return receiver == POOLMEMORY && (sender == KERNEL || sender == POOLMEMORY);
 		break;
 	case T_VALUE:
-		return receiver == FILESYSTEM && sender == POOLMEMORY;
+		return sender == POOLMEMORY && receiver == FILESYSTEM;
 		break;
 	default:
 		return false;
@@ -753,9 +762,11 @@ Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 	if(instruccion->instruccion == RETORNO || instruccion->instruccion == ERROR){
 		t_paquete_retorno *paquete = crear_paquete_retorno(instruccion);
 		if(enviar_paquete_retorno(paquete, fd_a_responder)){
+			eliminar_paquete_retorno(paquete);
 			liberar_conexion(fd_a_responder);
 			return respuesta_success();
 		}else{
+			eliminar_paquete_retorno(paquete);
 			liberar_conexion(fd_a_responder);
 			log_error(LOGGER, "No se pudo enviar la respuesta");
 			return respuesta_error(CONNECTION_ERROR);
@@ -825,7 +836,7 @@ Instruccion *recibir_retorno(int fd_a_escuchar){
 		}
 	}
 	switch(tipo_ret){
-		case VALOR:{
+		case VALOR:;
 			size_t size_val;
 			if ((bytes_recibidos = recv(fd_a_escuchar, &size_val, sizeof(size_t), MSG_DONTWAIT)) <= 0){
 				liberar_conexion(fd_a_escuchar);
@@ -852,10 +863,10 @@ Instruccion *recibir_retorno(int fd_a_escuchar){
 				}else{
 					return respuesta_error(CONNECTION_ERROR);
 				}
-			}
+			
 			return armar_retorno_value(value, timestamp);
 		}
-		case DATOS_DESCRIBE:{
+		case DATOS_DESCRIBE:;
 			t_list *lista_describes;
 			lista_describes = list_create();
 			size_t cantidad_describes, tamanio;
@@ -916,8 +927,8 @@ Instruccion *recibir_retorno(int fd_a_escuchar){
 				cantidad_describes --;
 			}
 			return armar_retorno_describe(lista_describes);
-		}
-		case TAMANIO_VALOR_MAXIMO:{
+		
+		case TAMANIO_VALOR_MAXIMO:;
 			size_t max_value;
 
 			if ((bytes_recibidos = recv(fd_a_escuchar, &max_value, sizeof(size_t), MSG_DONTWAIT)) <= 0){
@@ -930,8 +941,10 @@ Instruccion *recibir_retorno(int fd_a_escuchar){
 				}
 			}
 			return armar_retorno_max_value(max_value);
-		}
+		
 		case SUCCESS:
+			return respuesta_success();
+		case RETORNO_GOSSIP:;
 			return respuesta_success();
 		default:
 			return respuesta_error(UNKNOWN);
@@ -1004,21 +1017,78 @@ Instruccion *armar_retorno_describe(t_list *lista_describes){
 }
 
 void empaquetar_retorno_valor(t_paquete_retorno *paquete, Retorno_Value *ret_val){
-	//Meter en paquete value_size, value y timestamp
+	size_t tamanio_value = strlen(ret_val->value + 1);
+	paquete->buffer->stream = malloc(sizeof(tamanio_value) + tamanio_value + sizeof(ret_val->timestamp));
+	memcpy(paquete->buffer->stream, &tamanio_value, sizeof(tamanio_value));
+	paquete->buffer->size += sizeof(tamanio_value);
+	memcpy(paquete->buffer->stream, ret_val->value, tamanio_value);
+	paquete->buffer->size += tamanio_value;
+	memcpy(paquete->buffer->stream, &ret_val->timestamp, sizeof(ret_val->timestamp));
+	paquete->buffer->size += sizeof(ret_val->timestamp); 
 }
 
 void empaquetar_retorno_describe(t_paquete_retorno *paquete, t_list *list_of_describes){
-	//Meter en paquete la info de todas las tablas que esten en la estructura de describe
+	size_t cantidad_describes = list_size(list_of_describes);
+	paquete->buffer->stream = malloc(sizeof(cantidad_describes));
+	memcpy(paquete->buffer->stream, &cantidad_describes, sizeof(cantidad_describes));
+	paquete->buffer->size += sizeof(cantidad_describes);
+	while(cantidad_describes > 0){
+		Retorno_Describe *ret_desc = malloc(sizeof(Retorno_Describe));
+		ret_desc = list_get(list_of_describes, cantidad_describes-1);
+		size_t tamanio_nombre_tabla = strlen(ret_desc->nombre_tabla +1);
+		size_t tamanio = sizeof(tamanio_nombre_tabla) + tamanio_nombre_tabla + sizeof(ret_desc->consistencia) + sizeof(ret_desc->particiones) + sizeof(ret_desc->compactation_time);
+		paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio);
+		memcpy(paquete->buffer->stream, &tamanio_nombre_tabla, sizeof(tamanio_nombre_tabla));
+		paquete->buffer->size += sizeof(tamanio_nombre_tabla);
+		memcpy(paquete->buffer->stream, ret_desc->nombre_tabla, tamanio_nombre_tabla);
+		paquete->buffer->size += tamanio_nombre_tabla;
+		memcpy(paquete->buffer->stream, &ret_desc->consistencia, sizeof(ret_desc->consistencia));
+		paquete->buffer->size += sizeof(ret_desc->consistencia);
+		memcpy(paquete->buffer->stream, &ret_desc->particiones, sizeof(ret_desc->particiones));
+		paquete->buffer->size += sizeof(ret_desc->particiones);
+		memcpy(paquete->buffer->stream, &ret_desc->compactation_time, sizeof(ret_desc->compactation_time));
+		paquete->buffer->size += sizeof(ret_desc->compactation_time);
+		cantidad_describes--;
+		free(ret_desc);
+	}
 }
 
 void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *max_val){
-	//Meter la info del max_value que esta
-}
-
-void empaquetar_retorno_success(t_paquete_retorno *paquete){
-	//Meter solo un succes y luego el buffer en nulo
+	paquete->buffer->stream = malloc(sizeof(max_val->value_size));
+	memcpy(paquete->buffer->stream, &max_val->value_size, sizeof(max_val->value_size));
+	paquete->buffer->size += sizeof(max_val->value_size);
 }
 
 void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error){
-	//Meter la estructura de error
+	paquete->buffer->stream = malloc(sizeof(error->error));
+	memcpy(paquete->buffer->stream, &error->error, sizeof(error->error));
+	paquete->buffer->size += sizeof(error->error);
+}
+
+void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip* gossip){
+	int cantidad_memorias = list_size(gossip->lista_memorias);
+	paquete->buffer->stream = malloc(sizeof(int));
+	memcpy(paquete->buffer->stream, &cantidad_memorias, sizeof(int));
+	paquete->buffer->size += sizeof(int);
+	while(cantidad_memorias > 0){
+		Memoria *memoria = malloc(sizeof(Memoria));
+		memoria = list_get(gossip->lista_memorias, cantidad_memorias - 1);
+		size_t tamanio_ip = (strlen(memoria->ip) + 1 );
+		size_t tamanio_puerto = (strlen(memoria->puerto) + 1 );
+		size_t tamanio_id = sizeof(memoria->idMemoria);
+		size_t tamanio = tamanio_ip + sizeof(size_t) + tamanio_puerto + sizeof(size_t) + tamanio_id;
+		paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_ip, sizeof(size_t));
+		paquete->buffer->size += sizeof(size_t);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, memoria->ip, (strlen(memoria->ip)+1));
+		paquete->buffer->size += strlen(memoria->ip) + 1;
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_puerto, sizeof(size_t));
+		paquete->buffer->size += sizeof(size_t);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, memoria->puerto, (strlen(memoria->puerto)+1));
+		paquete->buffer->size += strlen(memoria->puerto) + 1;
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &memoria->idMemoria, sizeof(memoria->idMemoria));
+		paquete->buffer->size += sizeof(memoria->idMemoria);
+		cantidad_memorias--;
+		free(memoria);
+	}
 }

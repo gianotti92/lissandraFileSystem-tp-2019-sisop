@@ -10,11 +10,16 @@ all: default
 
 default: clean dir poolmemory
 
+general: dir poolmemory_general
+
 .PHONY: dir
 dir:
 	mkdir -p Release
 
 poolmemory: src/*.* utilguenguencha
+	gcc src/*.c $(utilguenguencha_path)Release/*.o $(FLAGS) $(LIBS) -o Release/$@
+
+poolmemory_general: src/*.*
 	gcc src/*.c $(utilguenguencha_path)Release/*.o $(FLAGS) $(LIBS) -o Release/$@
 
 .PHONY: utilguenguencha

@@ -33,7 +33,7 @@ typedef enum {
 } Instruction_set;
 
 typedef enum {
-	TIMEOUT, BAD_RESPONSE, BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE, CONNECTION_ERROR, MEMORY_FULL, LARGE_VALUE, INSERT_FAILURE, NULL_REQUEST, BAD_OPERATION, BAD_PARTITION, BAD_COMPACTATION, BAD_CONSISTENCY, BAD_MEMORY
+	TIMEOUT, BAD_RESPONSE, BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE, CONNECTION_ERROR, MEMORY_FULL, LARGE_VALUE, INSERT_FAILURE, NULL_REQUEST, BAD_OPERATION, BAD_PARTITION, BAD_COMPACTATION, BAD_CONSISTENCY, BAD_MEMORY, JOURNAL_FAILURE
 } Error_set;
 
 typedef enum {
@@ -41,11 +41,11 @@ typedef enum {
 } Procesos;
 
 typedef enum {
-	T_GOSSIPING, T_INSTRUCCION, T_VALUE, T_RETORNO
+	T_GOSSIPING, T_INSTRUCCION, T_VALUE
 } Tipo_Comunicacion;
 
 typedef enum {
-	VALOR, DATOS_DESCRIBE, TAMANIO_VALOR_MAXIMO, SUCCESS
+	VALOR, DATOS_DESCRIBE, TAMANIO_VALOR_MAXIMO, SUCCESS, RETORNO_GOSSIP
 } Tipo_Retorno;
 
 typedef struct {
@@ -185,7 +185,7 @@ void retornarControl(Instruccion *instruccion, int socket_cliente);
 * @ARGS: Comunicacion *comunicacion
 * 		 -> char* puerto_servidor -> puerto donde quiero escuchar nuevas instrucciones
 *		 -> Procesos proceso (KERNEL, FILESYSTEM, POOLMEMORY) -> Proceso que ejecuta el servidor
-*		 -> Tipo_Comunicacion tipo_comunicacion (T_GOSSIPING, T_INSTRUCCION, T_VALUE, T_RETORNO)
+*		 -> Tipo_Comunicacion tipo_comunicacion (T_GOSSIPING, T_INSTRUCCION, T_VALUE)
 * @RET: void
 */
 void servidor_comunicacion(Comunicacion *comunicacion);
@@ -213,6 +213,21 @@ int crear_conexion(char* ip, char* puerto);
 * @RET: t_paquete *paquete -> paquete a enviar
 */
 t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_envio, Instruccion* instruccion);
+/**
+* @NAME: set_timeout()
+* @DESC: Recibe un fd por parametro y le setea un timeout que tambien recibe en seg
+* @ARGS: int fd -> fd al cual asociarle el timeout
+* 		 __time_t timeout -> segundos de timeout
+* @RET:  bool pudo setearlo o no
+*/
+bool set_timeout(int fd, __time_t timeout);
+/**
+* @NAME: crear_paquete_retorno
+* @DESC: Crea un paquete de retorno para enviar
+* @ARGS: Instruccion* instruccion -> el retorno o error a enviar
+* @RET:  t_paquete *paquete -> paquete armado
+*/
+t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion);
 /**
 * @NAME: enviar_instruccion
 * @DESC: Esta funcion recibe una instruccion y se la envia a la IP:PUERTO designados segun tipo_comu
@@ -248,6 +263,13 @@ void liberar_conexion(int socket_cliente);
 * @RET:  void
 */
 void eliminar_paquete(t_paquete* paquete);
+/**
+* @NAME: eliminar_paquete_retorno()
+* @DESC: Borra las estrucutas del paquete
+* @ARGS: t_paquete *paquete -> paquete a borrar
+* @RET:  void
+*/
+void eliminar_paquete_retorno(t_paquete_retorno* paquete);
 /**
 * @NAME: empaquetar_select
 * @DESC: Empaqueta la estructura de un select en el paquete enviado
@@ -436,13 +458,6 @@ Instruccion *armar_retorno_value(char *value, t_timestamp timestamp);
 */
 Instruccion *recibir_error(int fd_a_escuchar);
 /**
-* @NAME: crear_paquete_retorno
-* @DESC: Crea un paquete de retorno para enviar
-* @ARGS: Instruccion* instruccion -> el retorno o error a enviar
-* @RET:  t_paquete *paquete -> paquete armado
-*/
-t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion);
-/**
 * @NAME: serializar_paquete_retorno
 * @DESC: Devuelve un puntero a un stream en el que se contiene todo
 * @ARGS: t_paquete_retorno *paquete -> paquete a serializar
@@ -458,13 +473,60 @@ void *serializar_paquete_retorno(t_paquete_retorno *paquete, int bytes);
 * @RET:  bool Enviado / No Enviado
 */
 bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente);
+/**
+* @NAME: armar_retorno_max_value()
+* @DESC: Devuelve una instruccion con el MAX_VALUE seteado
+* @ARGS: size_t max_value -> corresponde al valor maximo de dato en tabla
+* @RET:  Instruccion* instruccion -> instruccion con el max value seteado
+*/
 Instruccion *armar_retorno_max_value(size_t max_value);
-bool set_timeout(int fd, __time_t timeout);
+/**
+* @NAME: armar_retorno_describe()
+* @DESC: Recibe una lista de describes y devuelve una instruccion de retorno
+*		 con la lista
+* @ARGS: t_list *lista_describes -> lista a meter en la instruccion
+* @RET:  Instruccion* instruccion -> instruccion con la lista dentro
+*/
 Instruccion *armar_retorno_describe(t_list *lista_describes);
+/**
+* @NAME: empaquetar_retorno_valor()
+* @DESC: Mete en el paquete los datos necesarios
+* @ARGS: t_paquete *paquete -> paquete donde meter todo
+*		 Retorno_Value *ret_val -> lo que necesito meter en el paquete
+* @RET:  void
+*/
 void empaquetar_retorno_valor(t_paquete_retorno *paquete, Retorno_Value *ret_val);
+/**
+* @NAME: empaquetar_retorno_describe()
+* @DESC: Mete en el paquete los datos necesarios
+* @ARGS: t_paquete *paquete -> paquete donde meter todo
+*		 t_list* list_of_describes -> lo que necesito meter en el paquete
+* @RET:  void
+*/
 void empaquetar_retorno_describe(t_paquete_retorno *paquete, t_list *list_of_describes);
+/**
+* @NAME: empaquetar_retorno_max_val()
+* @DESC: Mete en el paquete los datos necesarios
+* @ARGS: t_paquete *paquete -> paquete donde meter todo
+*		 Retorno_Max_Value *max_val -> lo que necesito meter en el paquete
+* @RET:  void
+*/
 void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *max_val);
+/**
+* @NAME: empaquetar_retorno_error()
+* @DESC: Mete en el paquete los datos necesarios
+* @ARGS: t_paquete *paquete -> paquete donde meter todo
+*		 Error *error -> lo que necesito meter en el paquete
+* @RET:  void
+*/
 void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error);
-void empaquetar_retorno_success(t_paquete_retorno *paquete);
+/**
+* @NAME: empaquetar_retorno_gossip()
+* @DESC: Mete en el paquete los datos necesarios
+* @ARGS: t_paquete *paquete -> paquete donde meter todo
+*		 Gossip *ret_gos -> lo que necesito meter en el paquete
+* @RET:  void
+*/
+void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip *ret_gos);
 
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */
