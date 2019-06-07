@@ -55,9 +55,9 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	print_instruccion_parseada(instruccion);
 	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
 
-	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
+	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta, siempre va a ser RETORNO o ERROR
 
-	//responder(respuesta, cliente);
+	responder(cliente, respuesta);
 
 	//liberar_conexion(cliente); // Para liberar el fd del socket
 	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
@@ -154,6 +154,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 						if (result < 0){
 							instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 						}
+					} else {
+						instruccion_respuesta = respuesta; //devuelvo el error del FS
 					}
 				}
 			}

@@ -19,6 +19,7 @@ typedef struct{
 	int quantumProcesado;
 	int numeroInstruccion;
 	int segundosQueTardo;
+	bool esProcesoRun;
 }Proceso;
 
 char *CONSISTENCIAS_STRING[] = {
@@ -32,19 +33,24 @@ void iniciarEstados();
 void leerArchivo(char * path);
 void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
+Memoria * desencolarMemoria(t_list * lista);
 void putMemorySafe(t_dictionary * dic, char* key, Memoria * value);
+void putMemoryListSafe(t_dictionary * dic, char* key, t_list * value);
+t_list * getMemoriasAsociadasSafe(t_dictionary * dic, char*key);
 void putTablaSafe(t_dictionary * dic, char* key, char * value);
 Memoria* getMemoriaSafe(t_dictionary * dic, char*key);
 char* getTablasSafe(t_dictionary * dic, char*key);
 void ejecutar();
 void iniciarEstructurasAsociadas();
-void asignarConsistenciaAMemoria(uint32_t id, Consistencias leido);
+void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia);
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void preguntarPorMemoriasDisponibles();
 void newToReady();
 int logicaCreate(Create * create);
-void logicaRun(Run * run, Proceso * proceso);
+Proceso * logicaRun(Run * run, Proceso * proceso);
+int logicaDescribe(Describe * describe);
+int logicaJournal(Journal * journal);
 int logicaDrop(Drop * drop);
 int logicaSelect(Select * select);
 void logicaAdd(Add * add);
@@ -69,6 +75,10 @@ t_list *estadoExit;
 t_dictionary * memoriasDisponibles;
 t_dictionary * memoriasAsociadas;
 t_dictionary * tablasPorConsistencia;
+
+t_list * memoriasSc;
+t_list * memoriasHc;
+t_list * memoriasEv;
 
 char* PUERTO_DE_ESCUCHA;
 

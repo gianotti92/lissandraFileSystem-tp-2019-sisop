@@ -129,7 +129,7 @@ unsigned long int string_to_ulint(char*);
 * @NAME: leer_por_consola
 * @DESC: Readline que luego de leer aplica f sobre lo leido.
 */
-void* leer_por_consola(void (*f) (char*));
+void leer_por_consola(void (*f) (char*));
 
 /**
 * @NAME: free_consulta

@@ -56,7 +56,7 @@ dkms.conf
 *.swo
 .project
 .cproject
-*/Release/
-*/Debug/
-*/.settings/
+*/Release/*
+*/Debug/*
+*/.settings/*
 */RemoteSystemsTempFiles/*

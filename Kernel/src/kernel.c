@@ -71,7 +71,11 @@ void iniciarEstructurasAsociadas(){
 	memoriasAsociadas = dictionary_create();
 	tablasPorConsistencia = dictionary_create();
 	memoriasDisponibles = dictionary_create();
-} 
+
+	memoriasSc = list_create();
+	memoriasHc = list_create();
+	memoriasEv = list_create();
+}
 
 void retorno_consola(char* leido) {
 
@@ -109,12 +113,15 @@ void ejecutar() {
 		switch(proceso->instruccion->instruccion){
 			case RUN:;
 				Run * run = (Run *) proceso->instruccion->instruccion_a_realizar;
-				logicaRun(run, proceso);
+				proceso = logicaRun(run, proceso);
+				proceso->esProcesoRun=true;
+				proceso->quantumProcesado = 0;
 				break;
 
 			case METRICS:;
 				bool dormir = true;
 				calculoMetrics((void*)&dormir);
+				proceso->esProcesoRun=false;
 				break;
 
 			case SELECT:;
@@ -123,6 +130,7 @@ void ejecutar() {
 				fin = get_timestamp();
 				diff = difftime(fin ,select->timestamp);
 				proceso->segundosQueTardo = diff;
+				proceso->esProcesoRun=false;
 				break;
 
 			case INSERT:;
@@ -131,37 +139,51 @@ void ejecutar() {
 				fin = get_timestamp();
 				diff = difftime(fin, insert->timestamp);
 				proceso->segundosQueTardo = diff;
+				proceso->esProcesoRun=false;
 				break;
 
 			case CREATE:;
 				Create * create = (Create *) proceso->instruccion->instruccion_a_realizar;
 				proceso->file_descriptor = logicaCreate(create);
+				proceso->esProcesoRun=false;
 				break;
 
 			case DROP:;
 				Drop * drop = (Drop *) proceso->instruccion->instruccion_a_realizar;
 				proceso->file_descriptor = logicaDrop(drop);
+				proceso->esProcesoRun=false;
 				break;
 
 			case ADD:;
 				Add * add = (Add *) proceso->instruccion->instruccion_a_realizar;
 				logicaAdd(add);
+				proceso->esProcesoRun=false;
 				break;
 
 			case DESCRIBE:;
+				Describe * describe = (Describe*) proceso->instruccion->instruccion_a_realizar;
+				logicaDescribe(describe);
+				proceso->esProcesoRun=false;
 				break;
 
-			case JOURNAL:
+			case JOURNAL:;
+				Journal * journal = (Journal*) proceso->instruccion->instruccion_a_realizar;
+				logicaJournal(journal);
+				proceso->esProcesoRun=false;
 				break;
 
 			default:
 				break;
 		}
-		encolar(estadoExit, proceso);
+		if(!proceso->esProcesoRun || proceso->instruccionAProcesar->instruccion == ERROR){
+			encolar(estadoExit, proceso);
+		}else{
+			sem_post(&semaforoSePuedePlanificar);
+		}
 	}
 }
 
-void logicaRun(Run * run, Proceso * proceso){
+Proceso * logicaRun(Run * run, Proceso * proceso){
 	char * proximainstruccionChar = leer_linea(run->path, proceso->numeroInstruccion);
 
 	while(proximainstruccionChar != NULL && proceso->quantumProcesado < QUANTUM){
@@ -170,23 +192,37 @@ void logicaRun(Run * run, Proceso * proceso){
 		proceso->instruccionAProcesar = instruccionAProcesar;
 		Instruction_set tipoInstruccionAProcesar = instruccionAProcesar->instruccion;
 
+		time_t fin;
+		int diff;
 		switch(tipoInstruccionAProcesar){
 			case CREATE:;
-//				logicaCreate(instruccionAProcesar);
+				Create * create = (Create *) proceso->instruccionAProcesar->instruccion_a_realizar;
+				proceso->file_descriptor = logicaCreate(create);
 				break;
 
 			case SELECT:;
-//				logicaSelect(instruccionAProcesar);
+				Select * select = (Select *) proceso->instruccionAProcesar->instruccion_a_realizar;
+				proceso->file_descriptor = logicaSelect(select);
+				fin = get_timestamp();
+				diff = difftime(fin ,select->timestamp);
+				proceso->segundosQueTardo = diff;
 				break;
 
 			case INSERT:;
+				Insert * insert = (Insert *) proceso->instruccionAProcesar->instruccion_a_realizar;
+				proceso->file_descriptor = logicaInsert(insert);
+				fin = get_timestamp();
+				diff = difftime(fin, insert->timestamp);
+				proceso->segundosQueTardo = diff;
 				break;
 
 			case DROP:;
+				Drop * drop = (Drop *) proceso->instruccionAProcesar->instruccion_a_realizar;
+				proceso->file_descriptor = logicaDrop(drop);
 				break;
 
 			case ERROR:;
-				break;
+				return proceso;
 
 			default:
 				break;
@@ -200,31 +236,39 @@ void logicaRun(Run * run, Proceso * proceso){
 
 	if(esFinQuantum(proceso, proximainstruccionChar)){
 		encolar(estadoReady, proceso);
-		return;
+		return proceso;
 	}else if(esFinLectura(proceso, proximainstruccionChar)){
 		encolar(estadoExit, proceso);
-		return;
+		return proceso;
 	}else{
 		encolar(estadoExit, proceso);
-		return;
+		return proceso;
 	}
 }
 
 int logicaCreate(Create * create){
 	Instruccion * i = malloc(sizeof(Instruccion));
 	llenarTablasPorConsistencia(create->nombre_tabla, CONSISTENCIAS_STRING[create->consistencia]);
-	Memoria * mem = (Memoria*) getMemoriaSafe(tablasPorConsistencia, create->nombre_tabla);
-	if(mem != NULL){
-		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
-		free(i);
-		return fd;
+	t_list * listaMemoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, CONSISTENCIAS_STRING[create->consistencia]);
+	if(listaMemoriasAsoc != NULL && list_size(listaMemoriasAsoc) > 0){
+
+		Memoria * m = (Memoria * ) desencolarMemoria(listaMemoriasAsoc);
+		if(m != NULL){
+			int fd = enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
+			free(i);
+			return fd;
+		}else{
+			log_error(LOGGER, "Error al extraer memorias asociadas");
+			free(i);
+			return -100;
+		}
 	}
 	free(i);
 	return -100;
 }
 
 void logicaAdd(Add * add){
-	Memoria * memoria;
+	Memoria * memoria = NULL;
 	int tamTabla = dictionary_size(memoriasDisponibles);
 	int i;
 
@@ -232,53 +276,63 @@ void logicaAdd(Add * add){
 		char * key = string_new();
 		sprintf(key, "%d", i);
 		memoria = (Memoria*)getMemoriaSafe(memoriasDisponibles, key);
-		if(memoria != NULL){
+		if(memoria != NULL && memoria->idMemoria == add->memoria){
 			break;
 		}
 	}
-	asignarConsistenciaAMemoria(memoria->idMemoria, add->consistencia);
+	asignarConsistenciaAMemoria(memoria, add->consistencia);
 }
 
 int logicaSelect(Select * select){
-	char * nombreTabla = string_new();
-
-	string_append(&nombreTabla, select->nombre_tabla);
 
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) select;
 	i->instruccion = SELECT;
 
-	Memoria * mem = (Memoria*)getMemoriaSafe(tablasPorConsistencia,nombreTabla);
-	if(mem != NULL){
-		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto,
+	char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, select->nombre_tabla);
+
+	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+	int max = list_size(memoriasAsoc);
+	int randomId = rand() % max + 1;
+	Memoria * m = NULL;
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	m = list_get(memoriasAsoc, randomId - 1);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+
+	if(m != NULL){
+		int fd = enviarInstruccionLuqui(m->ip, m->puerto,
 					i,
 					KERNEL);
 		free(i);
-		free(nombreTabla);
 
 		return fd;
 	}
 	free(i);
-	free(nombreTabla);
 	return -100;
 }
 
 int logicaInsert(Insert * insert){
-	char * nombreTabla = string_new();
-	string_append(&nombreTabla, insert->nombre_tabla);
-
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) insert;
 	i->instruccion = INSERT;
-	Memoria * mem = (Memoria*)getMemoriaSafe(tablasPorConsistencia, nombreTabla);
+
+	char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, insert->nombre_tabla);
+
+	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+	int max = list_size(memoriasAsoc);
+	int randomId = rand() % max + 1;
+	Memoria * mem = NULL;
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	mem = list_get(memoriasAsoc, randomId - 1);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+
 	if(mem != NULL){
 		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
 
-		free(nombreTabla);
 		free(i);
 		return fd;
 	}
-	free(nombreTabla);
 	free(i);
 	return -100;
 }
@@ -289,8 +343,18 @@ int logicaDrop(Drop * drop){
 	i->instruccion = DROP;
 
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	Memoria * mem = dictionary_remove(tablasPorConsistencia, drop->nombre_tabla);
+	char * consistencia = (char*)dictionary_remove(tablasPorConsistencia, drop->nombre_tabla);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+	int max = list_size(memoriasAsoc);
+	int randomId = rand() % max + 1;
+	Memoria * mem = NULL;
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	mem = list_get(memoriasAsoc, randomId - 1);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+
 	if(mem != NULL){
 		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
 		free(i);
@@ -301,6 +365,76 @@ int logicaDrop(Drop * drop){
 	free(i);
 	return -100;
 
+}
+
+int logicaJournal(Journal * journal){
+	Instruccion * i = malloc(sizeof(Instruccion));
+	i->instruccion_a_realizar = (void *) journal;
+	i->instruccion = JOURNAL;
+
+	t_list * memoriasSc = getMemoriasAsociadasSafe(memoriasAsociadas, "SC");
+	t_list * memoriasHc = getMemoriasAsociadasSafe(memoriasAsociadas, "HC");
+	t_list * memoriasEc = getMemoriasAsociadasSafe(memoriasAsociadas, "EC");
+
+	Memoria * m = desencolarMemoria(memoriasEc);
+	while(m != NULL){
+		m = desencolarMemoria(memoriasEc);
+
+		enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
+	}
+
+	m = desencolarMemoria(memoriasHc);
+	while(m != NULL){
+		enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
+		m = desencolarMemoria(memoriasHc);
+	}
+
+	m = desencolarMemoria(memoriasSc);
+	while(m != NULL){
+		enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
+		m = desencolarMemoria(memoriasSc);
+	}
+	free(i);
+	return 1;
+
+}
+
+int logicaDescribe(Describe * describe){
+	Instruccion * inst = malloc(sizeof(Instruccion));
+	inst->instruccion_a_realizar = (void *) describe;
+	inst->instruccion = DESCRIBE;
+
+	if(describe->nombre_tabla != NULL){
+
+		char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, describe->nombre_tabla);
+
+		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+		int max = list_size(memoriasAsoc);
+		int randomId = rand() % max + 1;
+		Memoria * mem = NULL;
+		pthread_mutex_lock(&mutexRecursosCompartidos);
+		mem = list_get(memoriasAsoc, randomId - 1);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+		if(mem != NULL){
+			enviarInstruccionLuqui(mem->ip, mem->puerto, inst, KERNEL);
+		}
+		free(inst);
+		return 1;
+
+	}else{
+		int i;
+		for(i = 0; i < dictionary_size(memoriasDisponibles); i++){
+			char * key = string_new();
+			sprintf(key, "%d", i);
+			Memoria * m = getMemoriaSafe(memoriasDisponibles, key);
+			if(m != NULL){
+				enviarInstruccionLuqui(m->ip, m->puerto, inst, KERNEL);
+			}
+		}
+		free(inst);
+		return 1;
+	}
 }
 
 bool esFinQuantum(Proceso * p, char * instruccionALeer){
@@ -324,7 +458,20 @@ Proceso * desencolar(t_list * cola){
 	return p;
 }
 
+Memoria * desencolarMemoria(t_list * lista){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	Memoria * m = list_get(lista, 0);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	return m;
+}
+
 void putTablaSafe(t_dictionary * dic, char* key, char * value){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	dictionary_put(dic, key, value);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+}
+
+void putMemoryListSafe(t_dictionary * dic, char* key, t_list * value){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	dictionary_put(dic, key, value);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
@@ -335,12 +482,22 @@ void putMemorySafe(t_dictionary * dic, char* key, Memoria * value){
 	dictionary_put(dic, key, value);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
+
 Memoria * getMemoriaSafe(t_dictionary * dic, char*key){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	Memoria * m = (Memoria*)dictionary_get(dic, key);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 	return m;
 }
+
+t_list * getMemoriasAsociadasSafe(t_dictionary * dic, char*key){
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	t_list * listaMemorias = dictionary_get(dic, key);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	return listaMemorias;
+}
+
+
 char* getTablasSafe(t_dictionary * dic, char*key){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	char * nombre = (char*)dictionary_get(dic, key);
@@ -348,26 +505,31 @@ char* getTablasSafe(t_dictionary * dic, char*key){
 	return nombre;
 }
 
-void asignarConsistenciaAMemoria(uint32_t idMemoria, Consistencias consistencia){
-	char * key = string_new();
-	sprintf(key, "%d", idMemoria);
+void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 	Memoria * m = malloc(sizeof(Memoria));
-	m = getMemoriaSafe(memoriasDisponibles, key);
+	m = memoria;
+
 	if(m != NULL){
-		putMemorySafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], m);
+		if( consistencia == SC){
+			list_clean(memoriasSc);
+			list_add(memoriasSc,m);
+			putMemoryListSafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], memoriasSc);
+		}else if(consistencia == EC){
+			list_add(memoriasEv, m);
+			putMemoryListSafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], memoriasEv);
+		}else{
+			list_add(memoriasHc, m);
+			putMemoryListSafe(memoriasAsociadas, CONSISTENCIAS_STRING[consistencia], memoriasHc);
+		}
+
 	}else{
-		/*Fallo el log*/
-		printf("Fallo el ADD");
+		log_error(LOGGER, "Error al asignar una memoria");
 	}
+
 }
 
 void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
-	Memoria * mem = (Memoria*)getMemoriaSafe(memoriasAsociadas, consistencia);
-	if(mem != NULL){
-		putTablaSafe(tablasPorConsistencia, nombreTable, consistencia);
-	}else{
-		printf("fallo create, no existe memoria con dicha consistencia");
-	}
+	putTablaSafe(tablasPorConsistencia, nombreTable, consistencia);
 }
 
 void preguntarPorMemoriasDisponibles(){
@@ -516,9 +678,6 @@ int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
 	if(instruccion == NULL){
 		return -3;
 	}
-
-	sleep(10);
-
 	return 6;
 }
 /* MOCK */

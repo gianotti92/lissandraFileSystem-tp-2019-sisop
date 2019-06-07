@@ -25,14 +25,17 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 					if (socket_cliente < 0) {
 						exit_gracefully(EXIT_FAILURE);
 					}
+					if(!set_timeout(socket_cliente, 1)){
+						liberar_conexion(socket_cliente);
+						continue;
+					}
 					FD_SET(socket_cliente, &fd_set_master);
 					if (socket_cliente > fd_max) {
 						fd_max = socket_cliente;
 					}
 				} else {
 					Tipo_Comunicacion tipo_comu;
-					if ((bytes_recibidos = recv(aux1, &tipo_comu, sizeof(Tipo_Comunicacion),
-					MSG_WAITALL)) <= 0) {
+					if ((bytes_recibidos = recv(aux1, &tipo_comu, sizeof(Tipo_Comunicacion), MSG_DONTWAIT)) <= 0) {
 						liberar_conexion(aux1);
 						FD_CLR(aux1, &fd_set_master);
 					} else {
@@ -40,11 +43,11 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 						Instruccion *instruccion = malloc(sizeof(Instruccion));
 						if(tipo_comu == comunicacion->tipo_comunicacion){
 							Procesos proceso_que_envia;
-							if ((bytes_recibidos = recv(aux1, &proceso_que_envia, sizeof(Procesos), MSG_WAITALL)) <= 0) {
+							if ((bytes_recibidos = recv(aux1, &proceso_que_envia, sizeof(Procesos), MSG_DONTWAIT)) <= 0) {
 								liberar_conexion(aux1);
 								FD_CLR(aux1, &fd_set_master);
 							}else if(validar_sender(proceso_que_envia, comunicacion->proceso, comunicacion->tipo_comunicacion)){
-								if ((bytes_recibidos = recv(aux1, &inst_op,sizeof(Instruction_set), MSG_WAITALL))<= 0) {
+								if ((bytes_recibidos = recv(aux1, &inst_op,sizeof(Instruction_set), MSG_DONTWAIT))<= 0) {
 									liberar_conexion(aux1);
 									FD_CLR(aux1, &fd_set_master);
 								}
@@ -116,13 +119,11 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 	switch (inst_op) {
 	case SELECT:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t),
-			MSG_WAITALL)) <= 0) {
+			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_DONTWAIT)) <= 0) {
 				return false;
 			}
 			stream = malloc(buffer_size);
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
-					<= 0) {
+			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_DONTWAIT)) <= 0) {
 				free(stream);
 				return false;
 			}
@@ -137,13 +138,11 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 		}
 	case INSERT:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t),
-			MSG_WAITALL)) <= 0) {
+			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_DONTWAIT)) <= 0) {
 				return false;
 			}
 			stream = malloc(buffer_size);
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
-					<= 0) {
+			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_DONTWAIT)) <= 0) {
 				free(stream);
 				return false;
 			}
@@ -158,13 +157,11 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 		}
 	case CREATE:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t),
-			MSG_WAITALL)) <= 0) {
+			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_DONTWAIT)) <= 0) {
 				return false;
 			}
 			stream = malloc(buffer_size);
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
-					<= 0) {
+			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_DONTWAIT)) <= 0) {
 				free(stream);
 				return false;
 			}
@@ -179,13 +176,11 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 		}
 	case DESCRIBE:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t),
-			MSG_WAITALL)) <= 0) {
+			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_DONTWAIT)) <= 0) {
 				return false;
 			}
 			stream = malloc(buffer_size);
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
-					<= 0) {
+			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_DONTWAIT)) <= 0) {
 				free(stream);
 				return false;
 			}
@@ -200,13 +195,11 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 		}
 	case DROP:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t),
-			MSG_WAITALL)) <= 0) {
+			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_DONTWAIT)) <= 0) {
 				return false;
 			}
 			stream = malloc(buffer_size);
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
-					<= 0) {
+			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_DONTWAIT)) <= 0) {
 				free(stream);
 				return false;
 			}
@@ -221,13 +214,11 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 		}
 	case JOURNAL:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t),
-			MSG_WAITALL)) <= 0) {
+			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_DONTWAIT)) <= 0) {
 				return false;
 			}
 			stream = malloc(buffer_size);
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
-					<= 0) {
+			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_DONTWAIT))<= 0) {
 				free(stream);
 				return false;
 			}
@@ -242,13 +233,11 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 		}
 	case GOSSIP:
 		if(tipo_comu == T_GOSSIPING){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t),
-			MSG_WAITALL)) <= 0) {
+			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_DONTWAIT)) <= 0) {
 				return false;
 			}
 			stream = malloc(buffer_size);
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))
-					<= 0) {
+			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_DONTWAIT)) <= 0) {
 				free(stream);
 				return false;
 			}
@@ -261,9 +250,9 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 		}else{
 			return false;
 		}
-	case VALUE:
+	case MAX_VALUE:
 		if(tipo_comu == T_VALUE){
-			instruccion->instruccion = VALUE;
+			instruccion->instruccion = MAX_VALUE;
 			return true;
 		}else{
 			return false;
@@ -273,19 +262,20 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 	}
 }
 
-Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion,
-		Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
+Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
 	int server_fd = crear_conexion(ip, puerto);
-	Instruccion *respuesta;
 	if (server_fd == -1) {
 		log_error(LOGGER, "No se puede establecer comunicacion con destino");
 		return respuesta_error(CONNECTION_ERROR);
 	} else {
+		if(!set_timeout(server_fd, 1)){
+			liberar_conexion(server_fd);
+			return respuesta_error(CONNECTION_ERROR);
+		}
 		t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
 		if (enviar_paquete(paquete, server_fd)) {
 			eliminar_paquete(paquete);
-			recibir_respuesta(server_fd, respuesta);
-			return respuesta;
+			return recibir_respuesta(server_fd);
 		}else{
 			liberar_conexion(server_fd);
 			log_error(LOGGER, "No se pudo enviar la instruccion");
@@ -305,11 +295,9 @@ int crear_conexion(char *ip, char* puerto) {
 
 	getaddrinfo(ip, puerto, &hints, &server_info);
 
-	int socket_cliente = socket(server_info->ai_family,
-			server_info->ai_socktype, server_info->ai_protocol);
+	int socket_cliente = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 
-	if (connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen)
-			== -1) {
+	if (connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen) == -1) {
 		return -1;
 	}
 	freeaddrinfo(server_info);
@@ -327,11 +315,37 @@ bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
 	return true;
 }
 
+bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente) {
+	int bytes = paquete->buffer->size + 3 * sizeof(int);
+	void* a_enviar = serializar_paquete_retorno(paquete, bytes);
+	if ((send(socket_cliente, a_enviar, bytes, 0)) < 0) {
+		return false;
+	}
+	free(a_enviar);
+	return true;
+}
+
 void liberar_conexion(int socket_cliente) {
 	close(socket_cliente);
 }
 
-void* serializar_paquete(t_paquete* paquete, int bytes) {
+void *serializar_paquete_retorno(t_paquete_retorno *paquete, int bytes){
+	void *magic = malloc(bytes);
+	int desplazamiento = 0;
+	memcpy(magic + desplazamiento, &paquete->header, sizeof(paquete->header));
+	desplazamiento += sizeof(paquete->header);
+	memcpy(magic + desplazamiento, &paquete->retorno, sizeof(paquete->retorno));
+	desplazamiento += sizeof(paquete->retorno);
+	if(paquete->buffer->size > 0){
+		memcpy(magic + desplazamiento, &paquete->buffer->size, sizeof(paquete->buffer->size));
+		desplazamiento += sizeof(paquete->buffer->size);
+		memcpy(magic + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
+		desplazamiento += paquete->buffer->size;
+	}
+	return magic;
+}
+
+void *serializar_paquete(t_paquete* paquete, int bytes) {
 	void * magic = malloc(bytes);
 	int desplazamiento = 0;
 	memcpy(magic + desplazamiento, &(paquete->comunicacion), sizeof(paquete->comunicacion));
@@ -348,6 +362,12 @@ void* serializar_paquete(t_paquete* paquete, int bytes) {
 }
 
 void crear_buffer(t_paquete* paquete) {
+	paquete->buffer = malloc(sizeof(t_buffer));
+	paquete->buffer->size = 0;
+	paquete->buffer->stream = NULL;
+}
+
+void crear_buffer_retorno(t_paquete_retorno* paquete) {
 	paquete->buffer = malloc(sizeof(t_buffer));
 	paquete->buffer->size = 0;
 	paquete->buffer->stream = NULL;
@@ -394,15 +414,47 @@ t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_e
 		empaquetar_gossip(paquete,
 				(Gossip*) instruccion->instruccion_a_realizar);
 		break;
-	case VALUE:
-		empaquetar_value(paquete,
-				(Value*) instruccion->instruccion_a_realizar);
-		break;
 	default:
 		free(paquete->buffer);
 		free(paquete);
 		return (t_paquete*) NULL;
 		break;
+	}
+	return paquete;
+}
+
+t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion){
+	t_paquete_retorno *paquete = malloc(sizeof(t_paquete_retorno));
+	paquete->header = instruccion->instruccion;
+	crear_buffer_retorno(paquete);
+	switch (instruccion->instruccion) {
+		case RETORNO:{
+			paquete->retorno = RETORNO;
+			Retorno_Generico *retorno = instruccion->instruccion_a_realizar;
+			switch(retorno->tipo_retorno){
+				case VALOR:
+					empaquetar_retorno_valor(paquete, (Retorno_Value*) retorno->retorno);
+					break;
+				case DATOS_DESCRIBE:
+					empaquetar_retorno_describe(paquete, (t_list *)retorno->retorno);
+					break;
+				case TAMANIO_VALOR_MAXIMO:
+					empaquetar_retorno_max_val(paquete, (Retorno_Max_Value *)retorno->retorno);
+					break;
+				case SUCCESS:
+					empaquetar_retorno_success(paquete);
+					break;
+			}
+			break;
+		}
+		case ERROR:{
+			paquete->retorno = ERROR;
+			Error *error = instruccion->instruccion_a_realizar;
+			empaquetar_retorno_error(paquete, error);
+			break;
+		}
+		default:
+			break;
 	}
 	return paquete;
 }
@@ -542,12 +594,6 @@ void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
 		cantidad_memorias--;
 		free(memoria);
 	}
-}
-
-void empaquetar_value(t_paquete * paquete, Value * value){
-	paquete->buffer->stream = malloc(sizeof(value->value));
-	memcpy(paquete->buffer->stream, &value->value, sizeof(value->value));
-	paquete->buffer->size += sizeof(value->value);
 }
 
 Select *desempaquetar_select(void* stream) {
@@ -704,33 +750,275 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 }
 
 Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
-	if(instruccion->instruccion == RETORNO){
-		// en este caso hay q preguntar los tipos y en base a cada uno empaquetar y enviar
-
-
-		return respuesta_success();
+	if(instruccion->instruccion == RETORNO || instruccion->instruccion == ERROR){
+		t_paquete_retorno *paquete = crear_paquete_retorno(instruccion);
+		if(enviar_paquete_retorno(paquete, fd_a_responder)){
+			liberar_conexion(fd_a_responder);
+			return respuesta_success();
+		}else{
+			liberar_conexion(fd_a_responder);
+			log_error(LOGGER, "No se pudo enviar la respuesta");
+			return respuesta_error(CONNECTION_ERROR);
+		}
 	}else{
-		return respuesta_error(BAD_REQUEST);
+		return respuesta_error(BAD_RESPONSE);
 	}
 }
 
-void recibir_respuesta(int fd_a_escuchar, Instruccion *respuesta){
-	//Aca tengo que poner los datos de la respuesta y malloquear la isntruccion
-	// en caso de q este mal respondo con error y tipo en la respuesta
+Instruccion *recibir_respuesta(int fd_a_escuchar){
+	int bytes_recibidos;
+	Instruction_set retorno;
+	if((bytes_recibidos = recv(fd_a_escuchar, &retorno, sizeof(Instruction_set), MSG_DONTWAIT)) <= 0){
+		liberar_conexion(fd_a_escuchar);
+		if(errno == EAGAIN || errno == EWOULDBLOCK){
+			return respuesta_error(TIMEOUT);
+		}else{
+			return respuesta_error(CONNECTION_ERROR);
+		}
+	}switch(retorno){
+	case RETORNO:
+		return recibir_retorno(fd_a_escuchar);
+	case ERROR:
+		return recibir_error(fd_a_escuchar);
+	default:
+		return respuesta_error(UNKNOWN);
+	}
 }
 
+Instruccion *recibir_error(int fd_a_escuchar){
+	Error_set tipo_error;
+	int bytes_recibidos;
+			if ((bytes_recibidos = recv(fd_a_escuchar, &tipo_error, sizeof(Error_set), MSG_DONTWAIT)) <= 0){
+				liberar_conexion(fd_a_escuchar);
+				return respuesta_error(CONNECTION_ERROR);
+			}else{
+				switch(tipo_error){
+				case BAD_KEY:
+					return respuesta_error(BAD_KEY);
+				case MISSING_TABLE:
+					return respuesta_error(MISSING_TABLE);
+				case BAD_REQUEST:
+					return respuesta_error(BAD_REQUEST);
+				case MISSING_FILE:
+					return respuesta_error(MISSING_FILE);
+				case CONNECTION_ERROR:
+					return respuesta_error(CONNECTION_ERROR);
+				case MEMORY_FULL:
+					return respuesta_error(MEMORY_FULL);
+				case LARGE_VALUE:
+					return respuesta_error(LARGE_VALUE);
+				default:
+					return respuesta_error(UNKNOWN);
+				}
+			}
+}
+
+Instruccion *recibir_retorno(int fd_a_escuchar){
+	Tipo_Retorno tipo_ret;
+	int bytes_recibidos;
+	if ((bytes_recibidos = recv(fd_a_escuchar, &tipo_ret, sizeof(Tipo_Retorno), MSG_DONTWAIT)) <= 0){
+		liberar_conexion(fd_a_escuchar);
+		if(errno == EAGAIN || errno == EWOULDBLOCK){
+			return respuesta_error(TIMEOUT);
+		}else{
+			return respuesta_error(CONNECTION_ERROR);
+		}
+	}
+	switch(tipo_ret){
+		case VALOR:{
+			size_t size_val;
+			if ((bytes_recibidos = recv(fd_a_escuchar, &size_val, sizeof(size_t), MSG_DONTWAIT)) <= 0){
+				liberar_conexion(fd_a_escuchar);
+				if(errno == EAGAIN || errno == EWOULDBLOCK){
+					return respuesta_error(TIMEOUT);
+				}else{
+					return respuesta_error(CONNECTION_ERROR);
+				}
+			}
+			char* value = malloc(size_val);
+			if ((bytes_recibidos = recv(fd_a_escuchar, value, size_val, MSG_DONTWAIT)) <= 0){
+				liberar_conexion(fd_a_escuchar);
+				if(errno == EAGAIN || errno == EWOULDBLOCK){
+					return respuesta_error(TIMEOUT);
+				}else{
+					return respuesta_error(CONNECTION_ERROR);
+				}
+			}
+			t_timestamp timestamp;
+			if ((bytes_recibidos = recv(fd_a_escuchar, &timestamp, sizeof(t_timestamp), MSG_DONTWAIT)) <= 0){
+				liberar_conexion(fd_a_escuchar);
+				if(errno == EAGAIN || errno == EWOULDBLOCK){
+					return respuesta_error(TIMEOUT);
+				}else{
+					return respuesta_error(CONNECTION_ERROR);
+				}
+			}
+			return armar_retorno_value(value, timestamp);
+		}
+		case DATOS_DESCRIBE:{
+			t_list *lista_describes;
+			lista_describes = list_create();
+			size_t cantidad_describes, tamanio;
+			if ((bytes_recibidos = recv(fd_a_escuchar, &cantidad_describes, sizeof(cantidad_describes), MSG_DONTWAIT)) <= 0){
+				liberar_conexion(fd_a_escuchar);
+				if(errno == EAGAIN || errno == EWOULDBLOCK){
+					return respuesta_error(TIMEOUT);
+				}else{
+					return respuesta_error(CONNECTION_ERROR);
+				}
+			}
+			while(cantidad_describes != 0){
+				Retorno_Describe *ret_desc = malloc(sizeof(Retorno_Describe));
+				if ((bytes_recibidos = recv(fd_a_escuchar, &ret_desc->compactation_time, sizeof(ret_desc->compactation_time), MSG_DONTWAIT)) <= 0){
+					liberar_conexion(fd_a_escuchar);
+					if(errno == EAGAIN || errno == EWOULDBLOCK){
+						return respuesta_error(TIMEOUT);
+					}else{
+						return respuesta_error(CONNECTION_ERROR);
+					}
+				}
+				if ((bytes_recibidos = recv(fd_a_escuchar, &ret_desc->consistencia, sizeof(ret_desc->consistencia), MSG_DONTWAIT)) <= 0){
+					liberar_conexion(fd_a_escuchar);
+					if(errno == EAGAIN || errno == EWOULDBLOCK){
+						return respuesta_error(TIMEOUT);
+					}else{
+						return respuesta_error(CONNECTION_ERROR);
+					}
+				}
+				if ((bytes_recibidos = recv(fd_a_escuchar, &ret_desc->particiones, sizeof(ret_desc->particiones), MSG_DONTWAIT)) <= 0){
+					liberar_conexion(fd_a_escuchar);
+					if(errno == EAGAIN || errno == EWOULDBLOCK){
+						return respuesta_error(TIMEOUT);
+					}else{
+						return respuesta_error(CONNECTION_ERROR);
+					}
+				}
+				if ((bytes_recibidos = recv(fd_a_escuchar, &tamanio, sizeof(tamanio), MSG_DONTWAIT)) <= 0){
+					liberar_conexion(fd_a_escuchar);
+					if(errno == EAGAIN || errno == EWOULDBLOCK){
+						return respuesta_error(TIMEOUT);
+					}else{
+						return respuesta_error(CONNECTION_ERROR);
+					}
+				}
+				ret_desc->nombre_tabla = malloc(tamanio);
+				if ((bytes_recibidos = recv(fd_a_escuchar, ret_desc->nombre_tabla, tamanio, MSG_DONTWAIT)) <= 0){
+					liberar_conexion(fd_a_escuchar);
+					if(errno == EAGAIN || errno == EWOULDBLOCK){
+						return respuesta_error(TIMEOUT);
+					}else{
+						return respuesta_error(CONNECTION_ERROR);
+					}
+				}
+				list_add(lista_describes, ret_desc);
+				free(ret_desc->nombre_tabla);
+				free(ret_desc);
+				cantidad_describes --;
+			}
+			return armar_retorno_describe(lista_describes);
+		}
+		case TAMANIO_VALOR_MAXIMO:{
+			size_t max_value;
+
+			if ((bytes_recibidos = recv(fd_a_escuchar, &max_value, sizeof(size_t), MSG_DONTWAIT)) <= 0){
+				liberar_conexion(fd_a_escuchar);
+				if(errno == EAGAIN || errno == EWOULDBLOCK){
+					return respuesta_error(TIMEOUT);
+				}else{
+					return respuesta_error(CONNECTION_ERROR);
+					break;
+				}
+			}
+			return armar_retorno_max_value(max_value);
+		}
+		case SUCCESS:
+			return respuesta_success();
+		default:
+			return respuesta_error(UNKNOWN);
+	}
+}
 
 Instruccion *respuesta_error(Error_set error){
-	Instruccion *respuesta_error = malloc(sizeof(Instruccion));
-	Error * error_respuesta = malloc(sizeof(Error));
-	error_respuesta->error = error;
-	respuesta_error->instruccion = ERROR;
-	respuesta_error->instruccion_a_realizar = error_respuesta;
-	return respuesta_error;
+	Instruccion *respuesta = malloc(sizeof(Instruccion));
+	Error * error_a_responder = malloc(sizeof(Error));
+	error_a_responder->error = error;
+	respuesta->instruccion = ERROR;
+	respuesta->instruccion_a_realizar = error_a_responder;
+	return respuesta;
 }
 
 Instruccion *respuesta_success(void){
 	Instruccion *respuesta_success = malloc(sizeof(Instruccion));
-	respuesta_success->instruccion = SUCCESS;
+	Retorno_Generico *success = malloc(sizeof(Retorno_Generico));
+	success->tipo_retorno = SUCCESS;
+	respuesta_success->instruccion = RETORNO;
+	respuesta_success->instruccion_a_realizar = success;
 	return respuesta_success;
+}
+
+
+bool set_timeout(int fd, __time_t timeout){
+	struct timeval tv;
+	tv.tv_sec = timeout;
+	tv.tv_usec = 0;
+	if(setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv)){
+		return true;
+	}
+	log_error(LOGGER, "No se pudo setear Timeout para el fd: %d", fd);
+	return false;
+}
+
+Instruccion *armar_retorno_value(char *value, t_timestamp timestamp){
+	Instruccion *instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion = RETORNO;
+	Retorno_Generico *retorno = malloc(sizeof(Retorno_Generico));
+	retorno->tipo_retorno = VALOR;
+	Retorno_Value *ret_val = malloc(sizeof(Retorno_Value));
+	ret_val->timestamp = timestamp;
+	ret_val->value = value;
+	retorno->retorno = ret_val;
+	instruccion->instruccion_a_realizar = retorno;
+	return instruccion;
+}
+
+Instruccion *armar_retorno_max_value(size_t max_value){
+	Instruccion *instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion = RETORNO;
+	Retorno_Generico *retorno = malloc(sizeof(Retorno_Generico));
+	retorno->tipo_retorno = MAX_VALUE;
+	Retorno_Max_Value *ret_max_value = malloc(sizeof(Retorno_Max_Value));
+	ret_max_value->value_size = max_value;
+	retorno->retorno = ret_max_value;
+	instruccion->instruccion_a_realizar = retorno;
+	return instruccion;
+}
+
+Instruccion *armar_retorno_describe(t_list *lista_describes){
+	Instruccion *instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion = RETORNO;
+	Retorno_Generico *retorno = malloc(sizeof(Retorno_Generico));
+	retorno->tipo_retorno = DATOS_DESCRIBE;
+	retorno->retorno = lista_describes;
+	instruccion->instruccion_a_realizar = retorno;
+	return instruccion;
+}
+
+void empaquetar_retorno_valor(t_paquete_retorno *paquete, Retorno_Value *ret_val){
+	//Meter en paquete value_size, value y timestamp
+}
+
+void empaquetar_retorno_describe(t_paquete_retorno *paquete, t_list *list_of_describes){
+	//Meter en paquete la info de todas las tablas que esten en la estructura de describe
+}
+
+void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *max_val){
+	//Meter la info del max_value que esta
+}
+
+void empaquetar_retorno_success(t_paquete_retorno *paquete){
+	//Meter solo un succes y luego el buffer en nulo
+}
+
+void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error){
+	//Meter la estructura de error
 }
