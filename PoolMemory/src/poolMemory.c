@@ -3,17 +3,19 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
-	MAX_VALUE = 100; // esto hay que reemplazarlo por el valor del FS
+	MAX_VAL = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
 	pthread_t consolaPoolMemory, gossiping, servidorPM;
 	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);
 	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
-	Comunicacion *comunicacion = malloc(sizeof(Comunicacion));
-	comunicacion->puerto_servidor = PUERTO_DE_ESCUCHA;
-	comunicacion->proceso = POOLMEMORY;
-	comunicacion->tipo_comunicacion = T_INSTRUCCION;
-	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion);
+
+	Comunicacion *comunicacion_instrucciones = malloc(sizeof(Comunicacion));
+	comunicacion_instrucciones->puerto_servidor = PUERTO_DE_ESCUCHA;
+	comunicacion_instrucciones->proceso = POOLMEMORY;
+	comunicacion_instrucciones->tipo_comunicacion = T_INSTRUCCION;
+	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion_instrucciones);
+
 	pthread_join(servidorPM, NULL);
 	pthread_join(consolaPoolMemory, NULL);
 	pthread_join(gossiping, NULL);
@@ -57,7 +59,12 @@ void retornarControl(Instruccion *instruccion, int cliente){
 
 	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
 
-	//responder(respuesta, cliente);
+
+
+
+
+
+	responder(cliente, respuesta);
 
 	//liberar_conexion(cliente); // Para liberar el fd del socket
 	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
@@ -75,7 +82,7 @@ void inicializar_memoria(){
 		exit_gracefully(-1);
 	}
 
-	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VALUE + sizeof(bool); //calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF
+	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VAL + sizeof(bool); //calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF
 
 	l_maestro_paginas = list_create(); //creo la tabla maestra de paginas, es una t_list global
 
@@ -110,8 +117,8 @@ void inicializar_memoria(){
 
 
 		char* palabra = "\0";
-		memcpy(desplazamiento, palabra, MAX_VALUE);
-		desplazamiento += MAX_VALUE;				//lugar de value
+		memcpy(desplazamiento, palabra, MAX_VAL);
+		desplazamiento += MAX_VAL;				//lugar de value
 
 
 		*(t_flag*) desplazamiento = 0;
@@ -147,27 +154,38 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			// no tenemos la tabla-key en memoria
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
 
-					if (instruccion_respuesta->instruccion != ERROR){
-						Retorno* respuesta = instruccion_respuesta->instruccion_a_realizar;
-						int result = insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, respuesta->value, respuesta->timestamp, false);
+					if (instruccion_respuesta->instruccion == RETORNO){
+						Retorno_Generico* resp_retorno_generico = instruccion_respuesta->instruccion_a_realizar;
 
-						if (result < 0){
-							instruccion_respuesta = respuesta_error(INSERT_FAILURE);
+						if (resp_retorno_generico->tipo_retorno == VALOR){
+							Retorno_Value* resp_retorno_value = resp_retorno_generico->retorno;
+
+							int result_insert = insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
+
+							if (result_insert < 0){
+								instruccion_respuesta = respuesta_error(INSERT_FAILURE);
+							}
+
+						} else {
+							instruccion_respuesta = respuesta_error(BAD_RESPONSE);
 						}
 					}
 				}
-			}
-			else{
+			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
+			} else {
 			// tenemos la tabla-key en memoria
 
 				instruccion_respuesta->instruccion = RETORNO;
-				Retorno* p_retorno = malloc(sizeof(Retorno));
+				Retorno_Generico* p_retorno_generico = malloc(sizeof(Retorno_Generico));
+				Retorno_Value* p_retorno_valor = malloc(sizeof(Retorno_Value));
 
-				p_retorno->key = *get_key_pagina(pagina);
-				p_retorno->timestamp = *get_timestamp_pagina(pagina);
-				p_retorno->value = get_value_pagina(pagina);
+				p_retorno_valor->timestamp = *get_timestamp_pagina(pagina);
+				p_retorno_valor->value = get_value_pagina(pagina);
 
-				instruccion_respuesta->instruccion_a_realizar = p_retorno;
+				p_retorno_generico->tipo_retorno = VALOR;
+				p_retorno_generico->retorno = p_retorno_valor;
+
+				instruccion_respuesta->instruccion_a_realizar = p_retorno_generico;
 			}
 		}
 		else if (instruccion_parseada->instruccion == INSERT){
@@ -200,7 +218,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			if (result >= 0){
 				instruccion_respuesta = respuesta_success();
 			} else {
-				instruccion_respuesta = respuesta_error(INSERT_FAILURE);
+				instruccion_respuesta = respuesta_error(JOURNAL_FAILURE);
 			}
 		}
 		else if(instruccion_parseada->instruccion != ERROR &&
@@ -211,7 +229,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 		}
 		else {
-			instruccion_respuesta = instruccion_parseada;
+			instruccion_respuesta = respuesta_error(BAD_REQUEST);
 		}
 
 		free_consulta(instruccion_parseada);
@@ -409,7 +427,7 @@ char* get_value_pagina( void* p_pagina){
 
 t_flag* get_modificado_pagina( void* p_pagina){
 	void* p_modif = p_pagina;
-	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VALUE);
+	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VAL);
 	return (t_flag*) p_modif;
 }
 
@@ -428,13 +446,13 @@ void set_timestamp_pagina( void* p_pagina, t_timestamp timestamp){
 void set_value_pagina( void* p_pagina, char* value){
 	void* p_value =  p_pagina;
 	p_value += (sizeof(t_key) + sizeof(t_timestamp));
-	memcpy(p_value, value, MAX_VALUE);
+	memcpy(p_value, value, MAX_VAL);
 
 }
 
 void set_modificado_pagina( void* p_pagina, t_flag estado){
 	void* p_modif = p_pagina;
-	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VALUE);
+	p_modif += (sizeof(t_key) + sizeof(t_timestamp) + MAX_VAL);
 	*(t_flag*) p_modif = estado;
 }
 
@@ -540,7 +558,6 @@ int lanzar_journal(t_timestamp timestamp_journal){
 
 				Instruccion* instruccion_respuesta;
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
-					printf("La consulta fue enviada al FILESYSTEM \n");
 
 					if(instruccion_respuesta->instruccion == ERROR){
 						free_consulta(instruccion);
@@ -617,5 +634,5 @@ bool pagina_en_uso(Pagina_general* pagina_general){
 }
 
 bool memoria_full(){
-	return list_all_satisfy(l_maestro_paginas, pagina_en_uso);
+	return list_all_satisfy(l_maestro_paginas, (void*)pagina_en_uso);
 }

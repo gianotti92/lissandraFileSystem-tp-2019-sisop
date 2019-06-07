@@ -10,11 +10,16 @@ all: default
 
 default: clean dir kernel
 
+general: dir kernel_general
+
 .PHONY: dir
 dir:
 	mkdir -p Release
 
 kernel: src/*.* utilguenguencha
+	gcc src/*.c $(utilguenguencha_path)Release/*.o $(FLAGS) $(LIBS) -o Release/$@
+
+kernel_general: src/*.*
 	gcc src/*.c $(utilguenguencha_path)Release/*.o $(FLAGS) $(LIBS) -o Release/$@
 
 .PHONY: utilguenguencha

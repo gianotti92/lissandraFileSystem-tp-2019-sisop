@@ -8,7 +8,7 @@
 
 // Variables globales del proceso
 char* PUERTO_DE_ESCUCHA;
-int MAX_VALUE;
+int MAX_VAL;
 char* IP_FS;
 char* PUERTO_FS;
 char* IP_SEEDS;

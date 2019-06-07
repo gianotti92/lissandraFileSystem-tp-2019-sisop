@@ -10,11 +10,16 @@ all: default
 
 default: clean dir fileSystem
 
+general: dir fileSystem_general
+
 .PHONY: dir
 dir:
 	mkdir -p Release
 
 fileSystem: src/*.* utilguenguencha
+	gcc src/*.c $(utilguenguencha_path)Release/*.o $(FLAGS) $(LIBS) -o Release/$@
+
+fileSystem_general: src/*.*
 	gcc src/*.c $(utilguenguencha_path)Release/*.o $(FLAGS) $(LIBS) -o Release/$@
 
 .PHONY: utilguenguencha
