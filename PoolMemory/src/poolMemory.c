@@ -3,7 +3,7 @@
 int main(void) {
 	configure_logger();
 	configuracion_inicial();
-	MAX_VALUE = 100; // esto hay que reemplazarlo por el valor del FS
+	MAX_VALUE = 15; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
 	pthread_t consolaPoolMemory, gossiping, servidorPM;
