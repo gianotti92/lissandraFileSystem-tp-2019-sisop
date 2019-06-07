@@ -68,13 +68,12 @@ int logicaCreate(Create * create){
 	char* consistencia = consistencia2string(create->consistencia);
 	llenarTablasPorConsistencia(create->nombre_tabla,consistencia);
 	t_list * listaMemoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas,consistencia);
-	free(consistencia);
+//	free(consistencia);
 	if(listaMemoriasAsoc != NULL && list_size(listaMemoriasAsoc) > 0){
 
 		Memoria * m = (Memoria * ) desencolarMemoria(listaMemoriasAsoc);
 		if(m != NULL){
 			int fd = enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
-			free(i);
 			return fd;
 		}else{
 			log_error(LOGGER, "Error al extraer memorias asociadas");

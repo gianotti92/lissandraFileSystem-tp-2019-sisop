@@ -7,6 +7,7 @@
 #include "../../utilguenguencha/src/parser.h"
 #include "../../utilguenguencha/src/utils.h"
 #include <commons/collections/dictionary.h>
+#include <commons/collections/list.h>
 #include <semaphore.h>
 #include <stdlib.h>
 #include <time.h>

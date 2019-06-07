@@ -55,7 +55,6 @@ void retorno_consola(char* leido) {
 		encolar(estadoNew, proceso);
 		sem_post(&semaforoNewToReady);
 	}
-	free_consulta(instruccion);
 }
 
 void newToReady(){
@@ -140,7 +139,7 @@ void ejecutar() {
 		}
 		if(!proceso->esProcesoRun || proceso->instruccionAProcesar->instruccion == ERROR){
 			encolar(estadoExit, proceso);
-		}else{
+		}else {
 			sem_post(&semaforoSePuedePlanificar);
 		}
 	}
