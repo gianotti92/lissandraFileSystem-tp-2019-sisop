@@ -126,8 +126,6 @@ struct tableMetadataItem* get_table_metadata(char* tabla);
 int deleteTable(char* tabla);
 void clean_registers_list(t_list*registers);
 int read_temp_files(char* tabla,t_list* listaRegistros);
-char *consistencia2string(Consistencias consistencia);
-int string2consistencia(char* consistencia);
 char* getTablePath(char*tabla);
 int digitos(int num);
 int digitos_long(long num);

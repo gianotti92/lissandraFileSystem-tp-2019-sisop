@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-
+#include "tipos_guenguencha.h"
 
 t_log * LOGGER;
 /*
@@ -26,8 +26,9 @@ typedef struct{
 }Proceso;
 */
 void configure_logger();
-
 void exit_gracefully(int);
+char *consistencia2string(Consistencias consistencia);
+int string2consistencia(char* consistencia);
 //Proceso *dame_siguiente(Proceso* proceso);
 
 
