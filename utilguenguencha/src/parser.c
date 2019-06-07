@@ -351,18 +351,18 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 		puts("ERROR: Las operaciones disponibles son:");
 
 		switch (procesoOrigen) {
-		case KERNEL: {
+		case KERNEL:;
 			puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, ADD MEMORY, RUN, METRICS, JOURNAL]");
 			break;
-		}
-		case POOLMEMORY: {
+
+		case POOLMEMORY:;
 			puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP, JOURNAL]");
 			break;
-		}
-		case FILESYSTEM: {
+
+		case FILESYSTEM:;
 			puts("[SELECT, INSERT, CREATE, DESCRIBE, DROP]");
 			break;
-		}
+
 		}
 
 		log_error(LOGGER, "Parser: Operacion no reconocida.");
@@ -475,6 +475,22 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 			printf("TS: %zu \n", metrics->timestamp);
 			break;
 
+		case RETORNO:;
+		Retorno_Generico * retorno_generico = instruccion_parseada->instruccion_a_realizar;
+			switch(retorno_generico->tipo_retorno){
+			case VALOR:;
+				Retorno_Value* retorno_value = retorno_generico->retorno;
+				printf("Value: %s TS: %zu \n", retorno_value->value, retorno_value->timestamp);
+				break;
+
+			case SUCCESS:;
+				printf("Operacion completada correctamente. \n");
+				break;
+			default:
+				break;
+			}
+		break;
+
 		case ERROR:;
 			Error* error = instruccion_parseada->instruccion_a_realizar;
 			switch (error->error) {
@@ -504,6 +520,14 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 
 				case BAD_REQUEST:;
 					printf("ERROR - SINTAXIS INCORRECTA. \n");
+					break;
+
+				case CONNECTION_ERROR:;
+					printf("ERROR - ERROR DE CONECCION. \n");
+					break;
+
+				case JOURNAL_FAILURE:;
+					printf("ERROR - ERROR AL EJECUTAR JOURNAL. \n");
 					break;
 
 				case NULL_REQUEST:;
