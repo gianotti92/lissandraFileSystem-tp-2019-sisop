@@ -7,19 +7,22 @@
 
 
 // Variables globales del proceso
+
 char* PUERTO_DE_ESCUCHA;
-int MAX_VAL;
 char* IP_FS;
 char* PUERTO_FS;
 char* IP_SEEDS;
 char* PUERTOS_SEEDS;
-uint32_t RETARDO_MEM;
-uint32_t RETARDO_FS;
 int SIZE_MEM;
-uint32_t TIEMPO_JOURNAL;
-uint32_t TIEMPO_GOSSIPING;
+t_timestamp RETARDO_MEM;
+t_timestamp RETARDO_FS;
+t_timestamp RETARDO_JOURNAL;
+t_timestamp RETARDO_GOSSIPING;
 int NUMERO_MEMORIA;
-void* memoria_principal;
+
+int MAX_VAL;
+
+void* memoria_principal; //puntero a malloc gigante
 t_list* l_maestro_paginas;
 t_list* l_segmentos;
 t_list* l_memorias;

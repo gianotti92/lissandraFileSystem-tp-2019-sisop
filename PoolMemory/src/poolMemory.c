@@ -31,18 +31,26 @@ int main(void) {
 void configuracion_inicial(void){
 	t_config* CONFIG;
 	CONFIG = config_create("config.cfg");
+
 	if (!CONFIG) {
-		printf("No encuentro el archivo config\n");
+		printf("Memoria: Archivo de configuracion no encontrado. \n");
 		exit_gracefully(EXIT_FAILURE);
 	}
+
 	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
 	IP_FS = config_get_string_value(CONFIG,"IP_FS");
 	PUERTO_FS = config_get_string_value(CONFIG,"PUERTO_FS");
-	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
 	IP_SEEDS = config_get_string_value(CONFIG,"IP_SEEDS");
 	PUERTOS_SEEDS = config_get_string_value(CONFIG,"PUERTOS_SEEDS");
+	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
 
+	RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
+	RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
+	RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
+	RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
+	NUMERO_MEMORIA = config_get_int_value(CONFIG,"NUMERO_MEMORIA");
 
+	//config_destroy(CONFIG);
 }
 
 void retorno_consola(char* leido){
@@ -60,11 +68,6 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
 
 	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
-
-
-
-
-
 
 	responder(cliente, respuesta);
 
@@ -649,21 +652,31 @@ bool memoria_full(){
 */
 void *TH_confMonitor(void * p){
 
+	printf("entro");
 	int confMonitor_cb(void){
-		t_config* conf = config_create("config.cfg");
-		if(conf == NULL) {
+		t_config* CONFIG = config_create("config.cfg");
+
+		if(CONFIG == NULL) {
 			log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
 			return 1;
 		}
-		//global_conf_update(conf);
-		//log_info(LOGGER,"Se ha actualizado el archivo de configuracion: retardo: %d, tiempo_dump: %d",global_conf.retardo,global_conf.tiempo_dump);
-		config_destroy(conf);
+
+		RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
+		RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
+		RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
+		RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
+
+		printf("modifico");
+
+		log_info(LOGGER,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
+		config_destroy(CONFIG);
 		return 0;
 	}
 
-	int retMon = monitorNode("config.cfg",IN_MODIFY,&confMonitor_cb);
+	int retMon = monitorNode("config.cfg", IN_MODIFY, &confMonitor_cb);
 	if(retMon!=0){
 		return (void*)1;
 	}
 	return (void*)0;
 }
+
