@@ -9,6 +9,10 @@ int main(void) {
 	pthread_t consolaPoolMemory, gossiping, servidorPM, T_confMonitor;
 	void *TR_confMonitor;
 
+	pthread_mutex_init(&mutexMarcos, NULL);
+	pthread_mutex_init(&mutexSegmentos, NULL);
+	pthread_mutex_init(&mutexMemorias, NULL);
+
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL); 										//se encarga de mantener actualizados los valores del config
 	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);			//consola - sale por retorno_consola()
 	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);								//crea y mantiene actualizada la lista de memorias - gossiping
