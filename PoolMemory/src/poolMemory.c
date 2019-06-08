@@ -139,8 +139,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 		Instruccion* instruccion_respuesta = malloc(sizeof(Instruccion));
 
-		if (instruccion_parseada->instruccion == SELECT){
-
+		switch	(instruccion_parseada->instruccion){
+		case SELECT:;
 			Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
 
 			Segmento* segmento = buscar_segmento(instruccion_select->nombre_tabla);
@@ -159,13 +159,11 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 						if (resp_retorno_generico->tipo_retorno == VALOR){
 							Retorno_Value* resp_retorno_value = resp_retorno_generico->retorno;
-
 							int result_insert = insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
 
-							if (result_insert < 0){
+							if(result_insert < 0){
 								instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 							}
-
 						} else {
 							instruccion_respuesta = respuesta_error(BAD_RESPONSE);
 						}
@@ -174,7 +172,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
 			} else {
 			// tenemos la tabla-key en memoria
-
 				instruccion_respuesta->instruccion = RETORNO;
 				Retorno_Generico* p_retorno_generico = malloc(sizeof(Retorno_Generico));
 				Retorno_Value* p_retorno_valor = malloc(sizeof(Retorno_Value));
@@ -187,49 +184,57 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 				instruccion_respuesta->instruccion_a_realizar = p_retorno_generico;
 			}
-		}
-		else if (instruccion_parseada->instruccion == INSERT){
 
+			break;
+
+		case INSERT:;
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
 
-			int result = insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
+			int result_insert = insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
 
-			if (result >= 0){
+			if (result_insert >= 0){
 				instruccion_respuesta = respuesta_success();
 			} else {
 				instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 			}
-		}
-		else if (instruccion_parseada->instruccion == DROP){
 
+			break;
+
+		case DROP:;
 			Drop* instruccion_drop = (Drop*) instruccion_parseada->instruccion_a_realizar;
 
 			eliminar_de_memoria(instruccion_drop->nombre_tabla);
 
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 
-		}
-		else if (instruccion_parseada->instruccion == JOURNAL){
+			break;
 
+		case JOURNAL:;
 			Journal* instruccion_journal = (Journal*) instruccion_parseada->instruccion_a_realizar;
 
-			int result = lanzar_journal(instruccion_journal->timestamp);
+			int result_journal = lanzar_journal(instruccion_journal->timestamp);
 
-			if (result >= 0){
+			if (result_journal >= 0){
 				instruccion_respuesta = respuesta_success();
 			} else {
 				instruccion_respuesta = respuesta_error(JOURNAL_FAILURE);
 			}
-		}
-		else if(instruccion_parseada->instruccion != ERROR &&
-				instruccion_parseada->instruccion != METRICS &&
-				instruccion_parseada->instruccion != ADD &&
-				instruccion_parseada->instruccion != RUN &&
-				instruccion_parseada->instruccion != JOURNAL){
-			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
-		}
-		else {
-			instruccion_respuesta = respuesta_error(BAD_REQUEST);
+
+			break;
+
+		case GOSSIP:;
+			break;
+
+		default:;
+			if(instruccion_parseada->instruccion != ERROR &&
+			   instruccion_parseada->instruccion != METRICS &&
+			   instruccion_parseada->instruccion != ADD &&
+			   instruccion_parseada->instruccion != RUN &&
+			   instruccion_parseada->instruccion != JOURNAL){
+				instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
+			} else {
+				instruccion_respuesta = respuesta_error(BAD_REQUEST);
+			}
 		}
 
 		free_consulta(instruccion_parseada);
