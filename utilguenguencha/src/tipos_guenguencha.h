@@ -110,13 +110,6 @@ typedef struct {
 	t_buffer* buffer;
 } t_paquete;
 
-typedef struct{
- //Definir los tipos
-	t_key key;
-	char* value;
-	t_timestamp timestamp;
-} Retorno;
-
 typedef struct {
 	Instruction_set header;
 	Tipo_Retorno retorno;

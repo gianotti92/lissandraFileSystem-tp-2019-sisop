@@ -61,15 +61,12 @@ void deleteInTableMetadata(char*tableName) {
 	}
 	struct tableMetadataItem* found = list_find(global_table_metadata,(void*)condition);
 	if (found != NULL) {
-		pthread_rwlock_destroy(&found->lock);
-		found->endFlag=1;
 		/* Hilo asesino */
 		pthread_t hilo_asesino;
-		pthread_create(&hilo_asesino,NULL,TH_asesino,(void*)found->thread);
+		pthread_create(&hilo_asesino,NULL,TH_asesino,(void*)found);
 		pthread_detach(hilo_asesino);
+		list_remove_by_condition(global_table_metadata,(void*)condition);
 	}
-	struct tableMetadataItem* removido = list_remove_by_condition(global_table_metadata,(void*)condition);
-	free(removido);
 }
 void destroyTableMetadata(void){
 	void destroyMutex(struct tableMetadataItem * item){
@@ -105,18 +102,19 @@ void loadCurrentTableMetadata(void){
 		closedir(d);
 	}
 }
-void showTableMetadata(void){
+void loadDescribesTableMetadata(t_list*lista_describes){
 	void show(struct tableMetadataItem * item){
-		char*consistencia=consistencia2string(item->metadata.consistencia);
-		printf("Table: %s - Consistency: %s, Partitions: %d, Compaction time: %d\n",item->tableName,consistencia,item->metadata.numero_particiones,item->metadata.compaction_time);
-		free(consistencia);
+		list_add(lista_describes,pack_describe(item->tableName,item->metadata.consistencia,item->metadata.numero_particiones,item->metadata.compaction_time));
 	}
 	pthread_mutex_lock(&tableMetadataMutex);
 	list_iterate(global_table_metadata,(void*)show);
 	pthread_mutex_unlock(&tableMetadataMutex);
 }
 void* TH_asesino(void*p){
-	pthread_t victima = (pthread_t)p;
-	pthread_join(victima,NULL);
+	struct tableMetadataItem* item = (struct tableMetadataItem*)p;
+	pthread_rwlock_destroy(&item->lock);
+	item->endFlag=1;
+	pthread_join(item->thread,NULL);
+	free(item);
 	return (void*)0;
 }

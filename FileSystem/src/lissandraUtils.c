@@ -210,3 +210,17 @@ int digitos_long(long num){
 	while(num){l++; num/=10;}
 	return (int)l;
 }
+/* Describe */
+Retorno_Describe* pack_describe(char *nombre_tabla,Consistencias consistencia,uint8_t particiones,t_timestamp compactation_time){
+	Retorno_Describe* respuesta = malloc(sizeof(Retorno_Describe));
+	respuesta->nombre_tabla=nombre_tabla;
+	respuesta->consistencia=consistencia;
+	respuesta->particiones=particiones;
+	respuesta->compactation_time=compactation_time;
+	return respuesta;
+}
+void showDescribeList(Retorno_Describe* describe){
+	char* consistencia=consistencia2string(describe->consistencia);
+	printf("Tabla: %s - Consistencia: %s - Particiones: %d - Tiempo de Compactacion: %d\n",describe->nombre_tabla,consistencia,describe->particiones,describe->compactation_time);
+	free(consistencia);
+}
