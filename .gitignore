@@ -54,5 +54,11 @@ dkms.conf
 # Los xml que se generan subanlos porque es donde quedan las configuraciones de los proyectos.
 # Tales como las librerías usadas.
 
-*.project
-*.cproject
+
+*.swo
+.project
+.cproject
+*/Release/*
+*/Debug/*
+*/.settings/*
+*/RemoteSystemsTempFiles/*
