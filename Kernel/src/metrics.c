@@ -64,7 +64,7 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	char * readLatency = string_new();
 	char * writeLatency = string_new();
 	//FIXME: fijarse porque al principio me devuelve un cantidad read 0.003333 ya que deberia estar vacia lista exit
-	string_append(&reads, "Cantidad de reads: ");
+	string_append(&reads, "\nCantidad de reads: ");
 	string_append(&writes, "Cantidad de writres: ");
 	string_append(&memLoad, "Memory load: ");
 	string_append(&readLatency, "Read latency: ");
@@ -94,11 +94,11 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	string_append(&readLatency, rlChar);
 	string_append(&writeLatency,wlChar);
 
-	log_info(LOGGER, reads);
-	log_info(LOGGER, writes);
-	log_info(LOGGER, memLoad);
-	log_info(LOGGER, writeLatency);
-	log_info(LOGGER, readLatency);
+	log_info(LOGGER_METRICS, reads);
+	log_info(LOGGER_METRICS, writes);
+	log_info(LOGGER_METRICS, memLoad);
+	log_info(LOGGER_METRICS, writeLatency);
+	log_info(LOGGER_METRICS, readLatency);
 
 	free(reads);
 	free(writes);

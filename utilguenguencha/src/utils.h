@@ -15,21 +15,12 @@
 #include "tipos_guenguencha.h"
 
 t_log * LOGGER;
-/*
-typedef struct{
-	Instruccion* instruccion;
-	Instruccion* instruccionActual;
-	int file_descriptor;
-	int quantumProcesado;
-	int numeroInstruccion;
-	int instruccionesTotales;
-}Proceso;
-*/
+t_log * LOGGER_METRICS;
+
 void configure_logger();
 void exit_gracefully(int);
 char *consistencia2string(Consistencias consistencia);
 int string2consistencia(char* consistencia);
-//Proceso *dame_siguiente(Proceso* proceso);
 
 
 #endif /* UTILGUENGUENCHA_UTILS_H_ */
