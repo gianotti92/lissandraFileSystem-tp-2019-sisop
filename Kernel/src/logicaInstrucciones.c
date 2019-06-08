@@ -66,7 +66,7 @@ Proceso * logicaRun(Run * run, Proceso * proceso){
 int logicaCreate(Create * create){
 	Instruccion * i = malloc(sizeof(Instruccion));
 	char* consistencia = consistencia2string(create->consistencia);
-	llenarTablasPorConsistencia(create->nombre_tabla,consistencia);
+
 	t_list * listaMemoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas,consistencia);
 	if(listaMemoriasAsoc != NULL && list_size(listaMemoriasAsoc) > 0){
 
@@ -107,12 +107,11 @@ void logicaAdd(Add * add){
 }
 
 int logicaSelect(Select * select){
-
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) select;
 	i->instruccion = SELECT;
 
-	char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, select->nombre_tabla);
+	char * consistencia = obtenerConsistencia(select->nombre_tabla);
 
 	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 	int max = list_size(memoriasAsoc);
@@ -132,8 +131,12 @@ int logicaSelect(Select * select){
 		free(instruccionRespuesta);
 		free(i->instruccion_a_realizar);
 		free(i);
+		free(consistencia);
 		return 1;
 	}else{
+		free(i->instruccion_a_realizar);
+		free(i);
+		free(consistencia);
 		return -100;
 	}
 }
@@ -143,7 +146,8 @@ int logicaInsert(Insert * insert){
 	i->instruccion_a_realizar = (void *) insert;
 	i->instruccion = INSERT;
 
-	char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, insert->nombre_tabla);
+	/*TODO: hacer describe*/
+	char * consistencia = "SC";
 
 	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 	int max = list_size(memoriasAsoc);
@@ -173,7 +177,8 @@ int logicaDrop(Drop * drop){
 	i->instruccion = DROP;
 
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	char * consistencia = (char*)dictionary_remove(tablasPorConsistencia, drop->nombre_tabla);
+	/*TODO: hacer describe*/
+	char * consistencia = "SC";
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 
 	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
@@ -236,7 +241,8 @@ int logicaDescribe(Describe * describe){
 
 	if(describe->nombre_tabla != NULL){
 
-		char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, describe->nombre_tabla);
+		/*TODO: hacer describe con memoria principal*/
+		char * consistencia = "SC";
 
 		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 		int max = list_size(memoriasAsoc);
@@ -265,4 +271,49 @@ int logicaDescribe(Describe * describe){
 		free(inst);
 		return 1;
 	}
+}
+
+char * obtenerConsistencia(char * nombreTabla){
+	Instruccion * instruccionDescribe = malloc(sizeof(Instruccion));
+	Describe * describe = malloc(sizeof(Describe));
+
+	describe->nombre_tabla = nombreTabla;
+
+	instruccionDescribe->instruccion = DESCRIBE;
+	instruccionDescribe->instruccion_a_realizar = (void *) describe;
+
+	char * consistencia = malloc(3 * sizeof(char));
+
+	//fixme: siempre se debe preguntar el describe a la memoria principal? que pasa si tengo varios procesos en exec y todos hacen describe?
+	Instruccion * describeResponse = enviar_instruccion(IP_MEMORIA_PPAL,PUERTO_MEMORIA_PPAL,instruccionDescribe, KERNEL, T_INSTRUCCION);
+
+	switch (describeResponse->instruccion) {
+		case RETORNO:;
+			Retorno_Generico * retornoGenerico = (Retorno_Generico*)  describeResponse->instruccion_a_realizar;
+
+			switch (retornoGenerico->tipo_retorno) {
+				case DATOS_DESCRIBE:;
+					Retorno_Describe * retornoDescribe = (Retorno_Describe *) retornoGenerico->retorno;
+					consistencia = consistencia2string(retornoDescribe->consistencia);
+					break;
+				default:
+					break;
+			}
+
+			break;
+		case ERROR:
+
+			break;
+
+
+		default:
+			break;
+	}
+
+	free(describe->nombre_tabla);
+	free(describe);
+	free(instruccionDescribe->instruccion_a_realizar);
+	free(instruccionDescribe);
+	free(describeResponse->instruccion_a_realizar);
+	return consistencia;
 }

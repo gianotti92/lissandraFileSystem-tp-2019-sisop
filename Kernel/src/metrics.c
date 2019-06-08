@@ -9,7 +9,7 @@ void calculoMetrics(bool * direct){
 	int tiempoPromedioInsert = 0;
 	while(1){
 		if(!(*direct)){
-			sleep(30);
+			sleep(SEGUNDOS_METRICS);
 		}
 		Proceso * proceso = desencolar(estadoExit);
 		while(proceso != NULL){

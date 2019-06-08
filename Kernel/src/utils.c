@@ -92,13 +92,9 @@ void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 
 }
 
-void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
-	putTablaSafe(tablasPorConsistencia, nombreTable, consistencia);
-}
-
 //void preguntarPorMemoriasDisponibles(){
 //	while(true){
-//		sleep(30);
+//		sleep(PREGUNTAR_POR_MEMORIAS);
 //		Instruccion *instruccion = malloc(sizeof(Instruccion));
 //		instruccion->instruccion = GOSSIP;
 //

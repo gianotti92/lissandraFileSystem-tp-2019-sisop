@@ -43,7 +43,6 @@ char* getTablasSafe(t_dictionary * dic, char*key);
 void ejecutar();
 void iniciarEstructurasAsociadas();
 void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia);
-void llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void preguntarPorMemoriasDisponibles();
 void newToReady();
@@ -62,6 +61,7 @@ void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
 int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
 		Procesos proceso_del_que_envio);
+char * obtenerConsistencia(char * nombreTabla);
 
 // Variables del proceso
 t_list *estadoReady;
@@ -71,7 +71,6 @@ t_list *estadoExit;
 // tablas del proceso
 t_dictionary * memoriasDisponibles;
 t_dictionary * memoriasAsociadas;
-t_dictionary * tablasPorConsistencia;
 
 t_list * memoriasSc;
 t_list * memoriasHc;
@@ -87,5 +86,7 @@ uint32_t REFRESH_METADATA;
 uint32_t RETARDO;
 int TAMANO_MAXIMO_LECTURA_ARCHIVO;
 int HILOS_KERNEL;
+int SEGUNDOS_METRICS;
+int PREGUNTAR_POR_MEMORIAS;
 
 #endif /* KERNEL_H_ */
