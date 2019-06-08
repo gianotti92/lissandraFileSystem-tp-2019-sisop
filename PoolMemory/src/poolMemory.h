@@ -22,10 +22,11 @@ int NUMERO_MEMORIA;
 
 int MAX_VAL;
 
-void* memoria_principal; //puntero a malloc gigante
-t_list* l_maestro_paginas;
-t_list* l_segmentos;
-t_list* l_memorias;
+void* MEMORIA_PRINCIPAL; //puntero a malloc gigante
+int PAGINAS_MODIFICADAS; //contador de paginas en uso, para simplificar el memory_full
+t_list* L_MARCOS;
+t_list* L_SEGMENTOS;
+t_list* L_MEMORIAS;
 
 
 //  estructuras
@@ -37,7 +38,7 @@ typedef struct{
 typedef struct{
 	void* pagina;
 	t_flag en_uso;
-}Pagina_general;
+}Marco;
 
 
 // Funciones del proceso
@@ -50,7 +51,7 @@ void agregar_pagina_en_segmento(Segmento*, void*);
 void* buscar_segmento(char*);
 int index_segmento(char*);
 void* buscar_pagina_en_segmento(Segmento*, t_key);
-Pagina_general* buscar_pagina_general(void*);
+Marco* buscar_marco(void*);
 bool coincide_segmento (char*, Segmento*);
 bool coincide_pagina (t_key, void*);
 void eliminar_de_memoria(char*);
@@ -70,7 +71,7 @@ void print_memorias ();
 void* pedir_pagina();
 void* seleccionar_pagina ();
 Segmento* crear_segmento(char*);
-bool pagina_en_uso(Pagina_general*);
+bool pagina_en_uso(Marco*);
 bool memoria_full();
 Instruccion* crear_error(Error_set);
 void *TH_confMonitor(void * p);

@@ -172,6 +172,7 @@ void *TH_confMonitor(void * p){
 			log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
 			return 1;
 		}
+		printf("conf: %p",conf);
 		global_conf_update(conf);
 		log_info(LOGGER,"Se ha actualizado el archivo de configuracion: retardo: %d, tiempo_dump: %d",global_conf.retardo,global_conf.tiempo_dump);
 		config_destroy(conf);
