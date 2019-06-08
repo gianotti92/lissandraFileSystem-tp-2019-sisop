@@ -21,9 +21,9 @@ Proceso * desencolar(t_list * cola){
 	return p;
 }
 
-Memoria * desencolarMemoria(t_list * lista){
+Memoria * desencolarMemoria(t_list * lista, int posicion){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	Memoria * m = list_get(lista, 0);
+	Memoria * m = list_get(lista, posicion);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 	return m;
 }

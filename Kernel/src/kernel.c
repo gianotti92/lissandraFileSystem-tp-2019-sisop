@@ -143,20 +143,3 @@ void ejecutar() {
 		}
 	}
 }
-
-
-/* MOCK */
-int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
-		Procesos proceso_del_que_envio){
-	if(ip == NULL){
-		return -1;
-	}
-	if(puerto == NULL){
-		return -2;
-	}
-	if(instruccion == NULL){
-		return -3;
-	}
-	return 6;
-}
-/* MOCK */

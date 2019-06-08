@@ -33,7 +33,7 @@ void iniciarEstados();
 void leerArchivo(char * path);
 void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
-Memoria * desencolarMemoria(t_list * lista);
+Memoria * desencolarMemoria(t_list * lista, int posicion);
 void putMemorySafe(t_dictionary * dic, char* key, Memoria * value);
 void putMemoryListSafe(t_dictionary * dic, char* key, t_list * value);
 t_list * getMemoriasAsociadasSafe(t_dictionary * dic, char*key);
@@ -59,9 +59,8 @@ bool esFinQuantum(Proceso * p, char * instruccionALeer);
 void calculoMetrics();
 void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
-int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
-		Procesos proceso_del_que_envio);
 char * obtenerConsistencia(char * nombreTabla);
+int generarHash(char * nombreTabla, int tamLista, int key);
 
 // Variables del proceso
 t_list *estadoReady;
