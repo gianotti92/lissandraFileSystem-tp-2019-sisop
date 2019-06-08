@@ -103,12 +103,10 @@ void preguntarPorMemoriasDisponibles(){
 		instruccion->instruccion = GOSSIP;
 
 		Instruccion * instruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion, KERNEL, T_GOSSIPING);
-		free(instruccion->instruccion);
-		free(instruccion);
 
 		switch(instruccionRespuesta->instruccion){
 			case ERROR:;
-				log_error("Kernel. Error al recibir la respuesta");
+				log_error(LOGGER, "Kernel. Error al recibir la respuesta");
 				break;
 
 			case GOSSIP:;
@@ -129,7 +127,7 @@ void preguntarPorMemoriasDisponibles(){
 				break;
 
 			default:;
-				log_error(LOGGER, "KERNEL. Error no debería pasar por aca.")
+				log_error(LOGGER, "KERNEL. Error no debería pasar por aca.");
 				break;
 		}
 	}
