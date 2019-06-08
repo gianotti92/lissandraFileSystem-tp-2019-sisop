@@ -68,13 +68,18 @@ int logicaCreate(Create * create){
 	char* consistencia = consistencia2string(create->consistencia);
 	llenarTablasPorConsistencia(create->nombre_tabla,consistencia);
 	t_list * listaMemoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas,consistencia);
-//	free(consistencia);
 	if(listaMemoriasAsoc != NULL && list_size(listaMemoriasAsoc) > 0){
 
 		Memoria * m = (Memoria * ) desencolarMemoria(listaMemoriasAsoc);
 		if(m != NULL){
-			int fd = enviarInstruccionLuqui(m->ip, m->puerto, i, KERNEL);
-			return fd;
+			Instruccion * instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, i, KERNEL, T_INSTRUCCION);
+			print_instruccion_parseada(instruccionRespuesta);
+			free(i->instruccion_a_realizar);
+			free(i);
+			free(instruccionRespuesta->instruccion_a_realizar);
+			free(instruccionRespuesta);
+
+			return 1;
 		}else{
 			log_error(LOGGER, "Error al extraer memorias asociadas");
 			free(i);
@@ -119,15 +124,18 @@ int logicaSelect(Select * select){
 
 
 	if(m != NULL){
-		int fd = enviarInstruccionLuqui(m->ip, m->puerto,
-					i,
-					KERNEL);
-		free(i);
+		Instruccion * instruccionRespuesta = malloc(sizeof(Instruccion));
+		instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, i, KERNEL, T_INSTRUCCION);
+		print_instruccion_parseada(instruccionRespuesta);
 
-		return fd;
+		free(instruccionRespuesta->instruccion_a_realizar);
+		free(instruccionRespuesta);
+		free(i->instruccion_a_realizar);
+		free(i);
+		return 1;
+	}else{
+		return -100;
 	}
-	free(i);
-	return -100;
 }
 
 int logicaInsert(Insert * insert){
@@ -146,10 +154,14 @@ int logicaInsert(Insert * insert){
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 
 	if(mem != NULL){
-		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
+		Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
+		print_instruccion_parseada(instruccionRespuesta);
 
+		free(i->instruccion_a_realizar);
 		free(i);
-		return fd;
+		free(instruccionRespuesta->instruccion_a_realizar);
+		free(instruccionRespuesta);
+		return 1;
 	}
 	free(i);
 	return -100;
