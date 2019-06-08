@@ -17,7 +17,6 @@ int main(void) {
 	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics;
 
 	pthread_create(&memoriasDisponibles, NULL, (void*) preguntarPorMemoriasDisponibles, NULL);
-
 	pthread_detach(memoriasDisponibles);
 
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,

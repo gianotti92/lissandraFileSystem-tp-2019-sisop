@@ -96,39 +96,58 @@ void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
 	putTablaSafe(tablasPorConsistencia, nombreTable, consistencia);
 }
 
+//void preguntarPorMemoriasDisponibles(){
+//	while(true){
+//		sleep(30);
+//		Instruccion *instruccion = malloc(sizeof(Instruccion));
+//		instruccion->instruccion = GOSSIP;
+//
+//		Instruccion * instruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion, KERNEL, T_GOSSIPING);
+//
+//		switch(instruccionRespuesta->instruccion){
+//			case ERROR:;
+//				log_error(LOGGER, "Kernel. Error al recibir la respuesta");
+//				break;
+//
+//			case GOSSIP:;
+//				Gossip * gossip = (Gossip *) instruccionRespuesta->instruccion_a_realizar;
+//				t_list * listaMemDisp =  gossip->lista_memorias;
+//
+//				while(list_size(listaMemDisp) > 0){
+//					Memoria * mem = list_remove(listaMemDisp, 0);
+//
+//					char * key = string_new();
+//
+//					sprintf(key, "%d", mem->idMemoria);
+//
+//					pthread_mutex_lock(&mutexRecursosCompartidos);
+//					dictionary_put(memoriasDisponibles, key, mem);
+//					pthread_mutex_unlock(&mutexRecursosCompartidos);
+//				}
+//				break;
+//
+//			default:;
+//				log_error(LOGGER, "KERNEL. Error no debería pasar por aca.");
+//				break;
+//		}
+//	}
+//}
+
 void preguntarPorMemoriasDisponibles(){
-	while(true){
-		sleep(30);
-		Instruccion *instruccion = malloc(sizeof(Instruccion));
-		instruccion->instruccion = GOSSIP;
+	Memoria * m = malloc(sizeof(Memoria));
 
-		Instruccion * instruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion, KERNEL, T_GOSSIPING);
+	/* funcion de conexiones que me devuelve memoria disponible */
+	m->idMemoria = 1;
+	char * ip = string_new();
+	char * puerto = string_new();
+	string_append(&ip, IP_MEMORIA_PPAL);
+	string_append(&puerto, PUERTO_MEMORIA_PPAL);
+	m->puerto = puerto;
+	m->ip = ip;
+	/* funcion de conexiones que me devuelve memoria disponible */
 
-		switch(instruccionRespuesta->instruccion){
-			case ERROR:;
-				log_error(LOGGER, "Kernel. Error al recibir la respuesta");
-				break;
-
-			case GOSSIP:;
-				Gossip * gossip = (Gossip *) instruccionRespuesta->instruccion_a_realizar;
-				t_list * listaMemDisp =  gossip->lista_memorias;
-
-				while(list_size(listaMemDisp) > 0){
-					Memoria * mem = list_remove(listaMemDisp, 0);
-
-					char * key = string_new();
-
-					sprintf(key, "%d", mem->idMemoria);
-
-					pthread_mutex_lock(&mutexRecursosCompartidos);
-					dictionary_put(memoriasDisponibles, key, mem);
-					pthread_mutex_unlock(&mutexRecursosCompartidos);
-				}
-				break;
-
-			default:;
-				log_error(LOGGER, "KERNEL. Error no debería pasar por aca.");
-				break;
-		}
-	}
+	char * key = string_new();
+	sprintf(key, "%d", m->idMemoria);
+	putMemorySafe(memoriasDisponibles, key , m);
 }
+
