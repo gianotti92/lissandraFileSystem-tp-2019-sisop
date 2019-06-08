@@ -13,7 +13,6 @@ int main(void) {
 	Comunicacion *comunicacion_instrucciones = malloc(sizeof(Comunicacion));
 	comunicacion_instrucciones->puerto_servidor = PUERTO_DE_ESCUCHA;
 	comunicacion_instrucciones->proceso = POOLMEMORY;
-	comunicacion_instrucciones->tipo_comunicacion = T_INSTRUCCION;
 	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion_instrucciones);
 
 	pthread_join(servidorPM, NULL);

@@ -96,7 +96,8 @@ Instruccion* _select(Select* select){
 
 	clean_registers_list(listaRegistros);
 	list_destroy(listaRegistros);
-	return armar_retorno_value(max.value,max.timestamp);
+
+	return armarRetornoValue(max.value,max.timestamp);
 	//free(max.value);
 }
 Instruccion* _create(Create* create){
@@ -125,9 +126,7 @@ Instruccion* _create(Create* create){
 Instruccion* _describe(Describe * describe){
 	usleep(global_conf.retardo*1000);
 	if(describe->nombre_tabla==NULL){
-		t_list* lista_describes=list_create();
-		loadDescribesTableMetadata(lista_describes);
-		return armar_retorno_describe(lista_describes);
+		return armarRetornoDescribe();
 	}
 	if(!tableExists(describe->nombre_tabla)) {
 		log_error(LOGGER,"DESCRIBE: no existe la tabla '%s'",describe->nombre_tabla);
@@ -138,9 +137,10 @@ Instruccion* _describe(Describe * describe){
 		log_error(LOGGER,"DESCRIBE: No se encontro la metadata de la tabla %s",describe->nombre_tabla);
 		return respuesta_error(UNKNOWN); // CHEQUEAR
 	}
-	t_list* lista_describes=list_create();
-	list_add(lista_describes,pack_describe(describe->nombre_tabla,found->metadata.consistencia,found->metadata.numero_particiones,found->metadata.compaction_time));
-	return armar_retorno_describe(lista_describes); // LEAK, falta liberar la lista
+	Describes *describes = malloc(sizeof(Describes));
+	describes->lista_describes=list_create();
+	list_add(describes->lista_describes,pack_describe(describe->nombre_tabla,found->metadata.consistencia,found->metadata.numero_particiones,found->metadata.compaction_time));
+	return armar_retorno_describe(describes); // LEAK, falta liberar la lista
 }
 Instruccion* _drop(Drop* drop){
 	usleep(global_conf.retardo*1000);

@@ -62,14 +62,6 @@ int crear_conexion(char* ip, char* puerto);
 */
 t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_envio, Instruccion* instruccion);
 /**
-* @NAME: set_timeout()
-* @DESC: Recibe un fd por parametro y le setea un timeout que tambien recibe en seg
-* @ARGS: int fd -> fd al cual asociarle el timeout
-* 		 __time_t timeout -> segundos de timeout
-* @RET:  bool pudo setearlo o no
-*/
-bool set_timeout(int fd, __time_t timeout);
-/**
 * @NAME: crear_paquete_retorno
 * @DESC: Crea un paquete de retorno para enviar
 * @ARGS: Instruccion* instruccion -> el retorno o error a enviar
@@ -297,7 +289,7 @@ Instruccion *recibir_retorno(int fd_a_escuchar);
 * 		 t_timestamp timestamp -> el timestamp correspondiente
 * @RET:  Instruccion *respuesta -> La respuesta del retorno con el value
 */
-Instruccion *armar_retorno_value(char *value, t_timestamp timestamp);
+Instruccion *armar_retorno_value(void *chunk);
 /**
 * @NAME: recibir_error
 * @DESC: Recibe el error correspondiente en el fd que le enviamos por parametro
@@ -305,6 +297,13 @@ Instruccion *armar_retorno_value(char *value, t_timestamp timestamp);
 * @RET:  Instruccion *respuesta -> La respuesta con el error asiciado
 */
 Instruccion *recibir_error(int fd_a_escuchar);
+/**
+* @NAME: armar_retorno_gossip()
+* @DESC: 
+* @ARGS: 
+* @RET:  
+*/
+Instruccion *armar_retorno_gossip(void *chunk);
 /**
 * @NAME: serializar_paquete_retorno
 * @DESC: Devuelve un puntero a un stream en el que se contiene todo
@@ -327,7 +326,7 @@ bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente);
 * @ARGS: size_t max_value -> corresponde al valor maximo de dato en tabla
 * @RET:  Instruccion* instruccion -> instruccion con el max value seteado
 */
-Instruccion *armar_retorno_max_value(size_t max_value);
+Instruccion *armar_retorno_max_value(void *chunk);
 /**
 * @NAME: armar_retorno_describe()
 * @DESC: Recibe una lista de describes y devuelve una instruccion de retorno
@@ -335,7 +334,7 @@ Instruccion *armar_retorno_max_value(size_t max_value);
 * @ARGS: t_list *lista_describes -> lista a meter en la instruccion
 * @RET:  Instruccion* instruccion -> instruccion con la lista dentro
 */
-Instruccion *armar_retorno_describe(t_list *lista_describes);
+Instruccion *armar_retorno_describe(void *chunk);
 /**
 * @NAME: empaquetar_retorno_valor()
 * @DESC: Mete en el paquete los datos necesarios
@@ -351,7 +350,7 @@ void empaquetar_retorno_valor(t_paquete_retorno *paquete, Retorno_Value *ret_val
 *		 t_list* list_of_describes -> lo que necesito meter en el paquete
 * @RET:  void
 */
-void empaquetar_retorno_describe(t_paquete_retorno *paquete, t_list *list_of_describes);
+void empaquetar_retorno_describe(t_paquete_retorno *paquete, Describes *describes);
 /**
 * @NAME: empaquetar_retorno_max_val()
 * @DESC: Mete en el paquete los datos necesarios
@@ -376,5 +375,12 @@ void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error);
 * @RET:  void
 */
 void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip *ret_gos);
+/**
+* @NAME: empaquetar_retorno_success()
+* @DESC: Empaqueta un success
+* @ARGS: t_paquete *paquete -> paquete donde meter todo
+* @RET:  void
+*/
+void empaquetar_retorno_success(t_paquete_retorno *paquete);
 
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */

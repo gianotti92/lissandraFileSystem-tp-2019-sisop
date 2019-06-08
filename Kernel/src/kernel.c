@@ -14,7 +14,8 @@ int main(void) {
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
 
-	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics;
+	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady;
+	//, calcularMetrics;
 
 	pthread_create(&memoriasDisponibles, NULL, (void*) preguntarPorMemoriasDisponibles, NULL);
 	pthread_detach(memoriasDisponibles);
@@ -24,12 +25,12 @@ int main(void) {
 
 	pthread_create(&pasarNewToReady, NULL, (void*) newToReady, NULL);
 	pthread_detach(pasarNewToReady);
-
+/*
 	bool dormir = false;
 
 	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, (void*)&dormir);
 	pthread_detach(calcularMetrics);
-
+*/
 
 	int cantMultiprocesamiento = 0;
 	while(cantMultiprocesamiento <  HILOS_KERNEL){

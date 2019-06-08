@@ -17,7 +17,7 @@ typedef enum {
 } Instruction_set;
 
 typedef enum {
-	TIMEOUT, BAD_RESPONSE, BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE, CONNECTION_ERROR, MEMORY_FULL, LARGE_VALUE, INSERT_FAILURE, NULL_REQUEST, BAD_OPERATION, BAD_PARTITION, BAD_COMPACTATION, BAD_CONSISTENCY, BAD_MEMORY, JOURNAL_FAILURE
+	BAD_RESPONSE, BAD_KEY, MISSING_TABLE, UNKNOWN, BAD_REQUEST, MISSING_FILE, CONNECTION_ERROR, MEMORY_FULL, LARGE_VALUE, INSERT_FAILURE, NULL_REQUEST, BAD_OPERATION, BAD_PARTITION, BAD_COMPACTATION, BAD_CONSISTENCY, BAD_MEMORY, JOURNAL_FAILURE
 } Error_set;
 
 typedef enum {
@@ -35,7 +35,6 @@ typedef enum {
 typedef struct {
 	char* puerto_servidor;
 	Procesos proceso;
-	Tipo_Comunicacion tipo_comunicacion;
 } Comunicacion;
 
 typedef struct{
@@ -112,7 +111,6 @@ typedef struct {
 
 typedef struct {
 	Instruction_set header;
-	Tipo_Retorno retorno;
 	t_buffer* buffer;
 } t_paquete_retorno;
 
@@ -126,6 +124,9 @@ typedef struct {
 	t_list *lista_memorias;
 } Gossip;
 
+typedef struct {
+	t_list *lista_describes;
+} Describes;
 
 typedef struct {
 	char *value;

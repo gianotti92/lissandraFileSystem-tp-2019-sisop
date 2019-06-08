@@ -112,7 +112,9 @@ int logicaSelect(Select * select){
 	i->instruccion_a_realizar = (void *) select;
 	i->instruccion = SELECT;
 
-	char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, select->nombre_tabla);
+//	char * consistencia = (char*)getTablasSafe(tablasPorConsistencia, select->nombre_tabla);
+
+	char * consistencia = "SC";
 
 	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 	int max = list_size(memoriasAsoc);
