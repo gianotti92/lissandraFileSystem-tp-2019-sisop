@@ -65,6 +65,9 @@ Proceso * logicaRun(Run * run, Proceso * proceso){
 
 int logicaCreate(Create * create){
 	Instruccion * i = malloc(sizeof(Instruccion));
+	i->instruccion = CREATE;
+	i->instruccion_a_realizar = (void*) create;
+
 	char* consistencia = consistencia2string(create->consistencia);
 
 	t_list * listaMemoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas,consistencia);
@@ -78,11 +81,12 @@ int logicaCreate(Create * create){
 			free(i);
 			free(instruccionRespuesta->instruccion_a_realizar);
 			free(instruccionRespuesta);
-
+			free(consistencia);
 			return 1;
 		}else{
-			log_error(LOGGER, "Error al extraer memorias asociadas");
+			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s", consistencia);
 			free(i);
+			free(consistencia);
 			return -100;
 		}
 	}
@@ -134,6 +138,7 @@ int logicaSelect(Select * select){
 		free(consistencia);
 		return 1;
 	}else{
+		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s", consistencia);
 		free(i->instruccion_a_realizar);
 		free(i);
 		free(consistencia);
@@ -146,8 +151,7 @@ int logicaInsert(Insert * insert){
 	i->instruccion_a_realizar = (void *) insert;
 	i->instruccion = INSERT;
 
-	/*TODO: hacer describe*/
-	char * consistencia = "SC";
+	char * consistencia = obtenerConsistencia(insert->nombre_tabla);
 
 	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 	int max = list_size(memoriasAsoc);
@@ -165,9 +169,15 @@ int logicaInsert(Insert * insert){
 		free(i);
 		free(instruccionRespuesta->instruccion_a_realizar);
 		free(instruccionRespuesta);
+		free(consistencia);
 		return 1;
+	}else{
+		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s", consistencia);
+		free(i->instruccion_a_realizar);
+		free(consistencia);
+		free(i);
 	}
-	free(i);
+
 	return -100;
 }
 
@@ -176,10 +186,7 @@ int logicaDrop(Drop * drop){
 	i->instruccion_a_realizar = (void *) drop;
 	i->instruccion = DROP;
 
-	pthread_mutex_lock(&mutexRecursosCompartidos);
-	/*TODO: hacer describe*/
-	char * consistencia = "SC";
-	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	char * consistencia = obtenerConsistencia(drop->nombre_tabla);
 
 	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 	int max = list_size(memoriasAsoc);
@@ -194,12 +201,15 @@ int logicaDrop(Drop * drop){
 		int fd = enviarInstruccionLuqui(mem->ip, mem->puerto, i, KERNEL);
 		free(i);
 		free(mem);
+		free(consistencia);
 		return fd;
+	}else{
+		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s", consistencia);
+		free(i);
+		free(mem);
+		free(consistencia);
 	}
-
-	free(i);
 	return -100;
-
 }
 
 int logicaJournal(Journal * journal){
@@ -241,8 +251,7 @@ int logicaDescribe(Describe * describe){
 
 	if(describe->nombre_tabla != NULL){
 
-		/*TODO: hacer describe con memoria principal*/
-		char * consistencia = "SC";
+		char * consistencia = obtenerConsistencia(describe->nombre_tabla);
 
 		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 		int max = list_size(memoriasAsoc);
@@ -255,6 +264,8 @@ int logicaDescribe(Describe * describe){
 		if(mem != NULL){
 			enviarInstruccionLuqui(mem->ip, mem->puerto, inst, KERNEL);
 		}
+		free(consistencia);
+		free(inst->instruccion_a_realizar);
 		free(inst);
 		return 1;
 
