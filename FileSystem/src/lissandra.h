@@ -20,13 +20,10 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
-#include <sys/inotify.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 
-#define EVENT_SIZE (sizeof (struct inotify_event))
-#define EVENT_BUF_LEN (1024*(EVENT_SIZE + 16))
 
 
 /*
@@ -121,7 +118,6 @@ struct tableRegister createTableRegister(uint16_t key,char* value,long timestamp
 /* Utils */
 int tableExists(char * table);
 int getNumLastFile(char* prefix,char* extension,char* path);
-int monitorNode(char * node,int mode, int(*callback)(void));
 struct tableMetadataItem* get_table_metadata(char* tabla);
 int deleteTable(char* tabla);
 void clean_registers_list(t_list*registers);

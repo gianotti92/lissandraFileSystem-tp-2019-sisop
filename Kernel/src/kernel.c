@@ -14,7 +14,9 @@ int main(void) {
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
 
-	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics;
+	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics, T_confMonitor;
+
+	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL);
 
 	pthread_create(&memoriasDisponibles, NULL, (void*) preguntarPorMemoriasDisponibles, NULL);
 	pthread_detach(memoriasDisponibles);
@@ -160,3 +162,28 @@ int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
 	return 6;
 }
 /* MOCK */
+
+
+/*
+	Manejo Monitoreo
+*/
+void *TH_confMonitor(void * p){
+
+	int confMonitor_cb(void){
+		t_config* conf = config_create("config.cfg");
+		if(conf == NULL) {
+			log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
+			return 1;
+		}
+		//aca hay que modificar las variables globales
+		//log_info(LOGGER,"Se ha actualizado el archivo de configuracion: retardo: %d, tiempo_dump: %d",global_conf.retardo,global_conf.tiempo_dump);
+		config_destroy(conf);
+		return 0;
+	}
+
+	int retMon = monitorNode("config.cfg",IN_MODIFY,&confMonitor_cb);
+	if(retMon!=0){
+		return (void*)1;
+	}
+	return (void*)0;
+}

@@ -62,6 +62,7 @@ void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
 int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
 		Procesos proceso_del_que_envio);
+void *TH_confMonitor(void * p);
 
 // Variables del proceso
 t_list *estadoReady;

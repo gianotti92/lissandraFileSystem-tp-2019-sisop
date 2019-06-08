@@ -70,5 +70,6 @@ Segmento* crear_segmento(char*);
 bool pagina_en_uso(Pagina_general*);
 bool memoria_full();
 Instruccion* crear_error(Error_set);
+void *TH_confMonitor(void * p);
 
 #endif

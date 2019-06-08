@@ -80,34 +80,6 @@ int getNumLastFile(char* prefix,char* extension,char* path) {
 	return retnum;
 }
 
-int monitorNode(char * node,int mode,int(*callback)(void)){
-	char buffer[EVENT_BUF_LEN];
-	int infd = inotify_init();
-	if (infd < 0) {
-		log_error(LOGGER,"Problemas al crear el inotify para %s, %s",node,strerror(errno));
-		return 1;
-	}
-	int wfd = inotify_add_watch(infd,node,mode);
-	while(1){
-		int length = read(infd,buffer,EVENT_BUF_LEN);
-		if (length < 0) {
-			log_error(LOGGER,"Problemas al leer el inotify de %s, %s",node,strerror(errno));
-			inotify_rm_watch(infd,wfd);
-			close(infd);
-			return 1;
-		}
-		if((*callback)()!=0){
-			inotify_rm_watch(infd,wfd);
-			close(infd);
-			return 1;
-		}
-		inotify_rm_watch(infd,wfd);
-		wfd = inotify_add_watch(infd,node,mode);
-	}
-	inotify_rm_watch(infd,wfd);
-	close(infd);
-	return 0;
-}
 struct tableMetadataItem* get_table_metadata(char* tabla){
 	bool criterioTablename(struct tableMetadataItem* t){
 		return !strcmp(tabla,t->tableName);

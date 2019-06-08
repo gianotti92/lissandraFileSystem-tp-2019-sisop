@@ -6,7 +6,9 @@ int main(void) {
 	MAX_VAL = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
-	pthread_t consolaPoolMemory, gossiping, servidorPM;
+	pthread_t consolaPoolMemory, gossiping, servidorPM, T_confMonitor;
+
+	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL);
 	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);
 	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
 
@@ -640,4 +642,28 @@ bool pagina_en_uso(Pagina_general* pagina_general){
 
 bool memoria_full(){
 	return list_all_satisfy(l_maestro_paginas, (void*)pagina_en_uso);
+}
+
+/*
+	Manejo Monitoreo
+*/
+void *TH_confMonitor(void * p){
+
+	int confMonitor_cb(void){
+		t_config* conf = config_create("config.cfg");
+		if(conf == NULL) {
+			log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
+			return 1;
+		}
+		//global_conf_update(conf);
+		//log_info(LOGGER,"Se ha actualizado el archivo de configuracion: retardo: %d, tiempo_dump: %d",global_conf.retardo,global_conf.tiempo_dump);
+		config_destroy(conf);
+		return 0;
+	}
+
+	int retMon = monitorNode("config.cfg",IN_MODIFY,&confMonitor_cb);
+	if(retMon!=0){
+		return (void*)1;
+	}
+	return (void*)0;
 }
