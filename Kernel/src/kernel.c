@@ -4,7 +4,7 @@
 void retornarControl(Instruccion *instruccion, int socket_cliente){};
 
 int main(void) {
-
+	print_guenguencha();
 	pthread_mutex_init(&mutexRecursosCompartidos, NULL);
 	sem_init(&semaforoSePuedePlanificar,0,0);
 	sem_init(&semaforoNewToReady, 0, 0);

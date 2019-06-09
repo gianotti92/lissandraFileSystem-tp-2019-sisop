@@ -29,6 +29,7 @@ void configure_logger();
 void exit_gracefully(int);
 char *consistencia2string(Consistencias consistencia);
 int string2consistencia(char* consistencia);
+void print_guenguencha();
 //Proceso *dame_siguiente(Proceso* proceso);
 
 
