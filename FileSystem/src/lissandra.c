@@ -9,6 +9,7 @@ int main(void) {
 	/*
 		** Inicializaciones **
 	*/
+	print_guenguencha();
 	pthread_t T_consola,T_server,T_confMonitor,T_dump;
 	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump;
 

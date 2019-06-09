@@ -1,6 +1,7 @@
 #include "poolMemory.h"
 
 int main(void) {
+	print_guenguencha();
 	configure_logger();
 	configuracion_inicial();
 	MAX_VAL = 10; // esto hay que reemplazarlo por el valor del FS
