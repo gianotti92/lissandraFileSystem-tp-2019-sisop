@@ -48,6 +48,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 /.metadata/
+.DS_Store
 
 # Archivos autogenerados por ecplipse
 # Agreguemos acá todos los archivos que no nos sirvan de los que genera eclipse.
