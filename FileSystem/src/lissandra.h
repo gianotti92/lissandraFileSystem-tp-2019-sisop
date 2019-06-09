@@ -130,6 +130,11 @@ char* getTablePath(char*tabla);
 int digitos(int num);
 int digitos_long(long num);
 
+/* Armar Instruccion */
+Instruccion* armarRetornoValue(char *value,t_timestamp timestamp);
+Instruccion *armarRetornoDescribe(t_list* lista_describes);
+Instruccion* armarRetornoMaxValue(void);
+
 /* Describe */
 Retorno_Describe* pack_describe(char *nombre_tabla,Consistencias consistencia,uint8_t particiones,t_timestamp compactation_time);
 void showDescribeList(Retorno_Describe* describe);

@@ -126,7 +126,9 @@ Instruccion* _create(Create* create){
 Instruccion* _describe(Describe * describe){
 	usleep(global_conf.retardo*1000);
 	if(describe->nombre_tabla==NULL){
-		return armarRetornoDescribe();
+		t_list* lista_describes=list_create();
+		loadDescribesTableMetadata(lista_describes);
+		return armarRetornoDescribe(lista_describes);
 	}
 	if(!tableExists(describe->nombre_tabla)) {
 		log_error(LOGGER,"DESCRIBE: no existe la tabla '%s'",describe->nombre_tabla);
@@ -137,10 +139,10 @@ Instruccion* _describe(Describe * describe){
 		log_error(LOGGER,"DESCRIBE: No se encontro la metadata de la tabla %s",describe->nombre_tabla);
 		return respuesta_error(UNKNOWN); // CHEQUEAR
 	}
-	Describes *describes = malloc(sizeof(Describes));
-	describes->lista_describes=list_create();
-	list_add(describes->lista_describes,pack_describe(describe->nombre_tabla,found->metadata.consistencia,found->metadata.numero_particiones,found->metadata.compaction_time));
-	return armar_retorno_describe(describes); // LEAK, falta liberar la lista
+	Retorno_Describe* actualDescribe = pack_describe(found->tableName,found->metadata.consistencia,found->metadata.numero_particiones,found->metadata.compaction_time);
+	t_list* lista_describes=list_create();
+	list_add(lista_describes,actualDescribe);
+	return armarRetornoDescribe(lista_describes); // LEAK, falta liberar la lista
 }
 Instruccion* _drop(Drop* drop){
 	usleep(global_conf.retardo*1000);
@@ -176,7 +178,7 @@ Instruccion* controller(Instruccion* instruccion){
 			res=_drop((Drop*)instruccion->instruccion_a_realizar);
 		break;
 		case MAX_VALUE:
-			res=armar_retorno_max_value(global_conf.max_value_size);
+			res=armarRetornoMaxValue();
 		default:
 			res=respuesta_error(BAD_REQUEST);
 		break;

@@ -169,7 +169,15 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 						} else {
 							instruccion_respuesta = respuesta_error(BAD_RESPONSE);
 						}
+					} 
+
+					//manoseo
+					else {
+						if(instruccion_respuesta->instruccion == ERROR){
+							printf("Me devolvieron error %d\n",((Error*)instruccion_respuesta->instruccion_a_realizar)->error);
+						}
 					}
+
 				}
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
 			} else {

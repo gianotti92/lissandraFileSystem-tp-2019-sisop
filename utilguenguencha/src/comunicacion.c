@@ -926,15 +926,15 @@ Instruccion *armar_retorno_gossip(void *chunk){
 
 void empaquetar_retorno_valor(t_paquete_retorno *paquete, Retorno_Value *ret_val){
 	Tipo_Retorno header = VALOR;
-	size_t tamanio_value = strlen(ret_val->value + 1);
+	size_t tamanio_value = strlen(ret_val->value) + 1;
 	paquete->buffer->stream = malloc(sizeof(header) + sizeof(tamanio_value) + tamanio_value + sizeof(ret_val->timestamp));
-	memcpy(paquete->buffer->stream, &header, sizeof(header));
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &header, sizeof(header));
 	paquete->buffer->size += sizeof(header);
-	memcpy(paquete->buffer->stream, &tamanio_value, sizeof(tamanio_value));
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_value, sizeof(tamanio_value));
 	paquete->buffer->size += sizeof(tamanio_value);
-	memcpy(paquete->buffer->stream, ret_val->value, tamanio_value);
+	memcpy(paquete->buffer->stream + paquete->buffer->size, ret_val->value, tamanio_value);
 	paquete->buffer->size += tamanio_value;
-	memcpy(paquete->buffer->stream, &ret_val->timestamp, sizeof(ret_val->timestamp));
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &ret_val->timestamp, sizeof(ret_val->timestamp));
 	paquete->buffer->size += sizeof(ret_val->timestamp); 
 }
 
@@ -942,25 +942,25 @@ void empaquetar_retorno_describe(t_paquete_retorno *paquete, Describes *describe
 	Tipo_Retorno header = DATOS_DESCRIBE;
 	size_t cantidad_describes = list_size(describes->lista_describes);
 	paquete->buffer->stream = malloc(sizeof(header) + sizeof(cantidad_describes));
-	memcpy(paquete->buffer->stream, &header, sizeof(header));
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &header, sizeof(header));
 	paquete->buffer->size += sizeof(header);
-	memcpy(paquete->buffer->stream, &cantidad_describes, sizeof(cantidad_describes));
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &cantidad_describes, sizeof(cantidad_describes));
 	paquete->buffer->size += sizeof(cantidad_describes);
 	while(cantidad_describes > 0){
 		Retorno_Describe *ret_desc;
 		ret_desc = list_get(describes->lista_describes, cantidad_describes-1);
-		size_t tamanio_nombre_tabla = strlen(ret_desc->nombre_tabla +1);
+		size_t tamanio_nombre_tabla = strlen(ret_desc->nombre_tabla) + 1;
 		size_t tamanio = sizeof(tamanio_nombre_tabla) + tamanio_nombre_tabla + sizeof(ret_desc->consistencia) + sizeof(ret_desc->particiones) + sizeof(ret_desc->compactation_time);
 		paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio);
-		memcpy(paquete->buffer->stream, &tamanio_nombre_tabla, sizeof(tamanio_nombre_tabla));
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio_nombre_tabla, sizeof(tamanio_nombre_tabla));
 		paquete->buffer->size += sizeof(tamanio_nombre_tabla);
-		memcpy(paquete->buffer->stream, ret_desc->nombre_tabla, tamanio_nombre_tabla);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, ret_desc->nombre_tabla, tamanio_nombre_tabla);
 		paquete->buffer->size += tamanio_nombre_tabla;
-		memcpy(paquete->buffer->stream, &ret_desc->consistencia, sizeof(ret_desc->consistencia));
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &ret_desc->consistencia, sizeof(ret_desc->consistencia));
 		paquete->buffer->size += sizeof(ret_desc->consistencia);
-		memcpy(paquete->buffer->stream, &ret_desc->particiones, sizeof(ret_desc->particiones));
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &ret_desc->particiones, sizeof(ret_desc->particiones));
 		paquete->buffer->size += sizeof(ret_desc->particiones);
-		memcpy(paquete->buffer->stream, &ret_desc->compactation_time, sizeof(ret_desc->compactation_time));
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &ret_desc->compactation_time, sizeof(ret_desc->compactation_time));
 		paquete->buffer->size += sizeof(ret_desc->compactation_time);
 		cantidad_describes--;
 		free(ret_desc);
@@ -970,10 +970,10 @@ void empaquetar_retorno_describe(t_paquete_retorno *paquete, Describes *describe
 void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *max_val){
 	Tipo_Retorno header = TAMANIO_VALOR_MAXIMO;
 	paquete->buffer->stream = malloc(sizeof(header) + sizeof(max_val->value_size));
-	memcpy(paquete->buffer->stream, &header, sizeof(header));
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &header, sizeof(header));
 	paquete->buffer->size += sizeof(header);
 	paquete->buffer->stream = malloc(sizeof(max_val->value_size));
-	memcpy(paquete->buffer->stream, &max_val->value_size, sizeof(max_val->value_size));
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &max_val->value_size, sizeof(max_val->value_size));
 	paquete->buffer->size += sizeof(max_val->value_size);
 }
 
@@ -988,9 +988,9 @@ void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip* gossip){
 	int cantidad_memorias = list_size(gossip->lista_memorias);
 	Tipo_Retorno header = RETORNO_GOSSIP;
 	paquete->buffer->stream = malloc(sizeof(header) + sizeof(int));
-	memcpy(paquete->buffer->stream, &header, sizeof(header));
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &header, sizeof(header));
 	paquete->buffer->size += sizeof(header);
-	memcpy(paquete->buffer->stream, &cantidad_memorias, sizeof(int));
+	memcpy(paquete->buffer->stream + paquete->buffer->size, &cantidad_memorias, sizeof(int));
 	paquete->buffer->size += sizeof(int);
 	while(cantidad_memorias > 0){
 		Memoria *memoria = malloc(sizeof(Memoria));
