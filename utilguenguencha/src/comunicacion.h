@@ -33,7 +33,6 @@ void retornarControl(Instruccion *instruccion, int socket_cliente);
 * @ARGS: Comunicacion *comunicacion
 * 		 -> char* puerto_servidor -> puerto donde quiero escuchar nuevas instrucciones
 *		 -> Procesos proceso (KERNEL, FILESYSTEM, POOLMEMORY) -> Proceso que ejecuta el servidor
-*		 -> Tipo_Comunicacion tipo_comunicacion (T_GOSSIPING, T_INSTRUCCION, T_VALUE)
 * @RET: void
 */
 void servidor_comunicacion(Comunicacion *comunicacion);
@@ -299,9 +298,9 @@ Instruccion *armar_retorno_value(void *chunk);
 Instruccion *recibir_error(int fd_a_escuchar);
 /**
 * @NAME: armar_retorno_gossip()
-* @DESC: 
-* @ARGS: 
-* @RET:  
+* @DESC: Arma el retorno para el gossip
+* @ARGS: void *chunk -> chunk de datos
+* @RET:  Instruccion* i -> instruccion con los datos seteados
 */
 Instruccion *armar_retorno_gossip(void *chunk);
 /**
@@ -323,23 +322,22 @@ bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente);
 /**
 * @NAME: armar_retorno_max_value()
 * @DESC: Devuelve una instruccion con el MAX_VALUE seteado
-* @ARGS: size_t max_value -> corresponde al valor maximo de dato en tabla
-* @RET:  Instruccion* instruccion -> instruccion con el max value seteado
+* @ARGS: void *chunk -> chunk de datos
+* @RET:  Instruccion* i -> instruccion con los datos seteados
 */
 Instruccion *armar_retorno_max_value(void *chunk);
 /**
 * @NAME: armar_retorno_describe()
 * @DESC: Recibe una lista de describes y devuelve una instruccion de retorno
 *		 con la lista
-* @ARGS: t_list *lista_describes -> lista a meter en la instruccion
-* @RET:  Instruccion* instruccion -> instruccion con la lista dentro
+* @ARGS: void *chunk -> chunk de datos
+* @RET:  Instruccion* i -> instruccion con los datos seteados
 */
 Instruccion *armar_retorno_describe(void *chunk);
 /**
 * @NAME: empaquetar_retorno_valor()
 * @DESC: Mete en el paquete los datos necesarios
-* @ARGS: t_paquete *paquete -> paquete donde meter todo
-*		 Retorno_Value *ret_val -> lo que necesito meter en el paquete
+* @ARGS: void *chunk -> chunk de datos
 * @RET:  void
 */
 void empaquetar_retorno_valor(t_paquete_retorno *paquete, Retorno_Value *ret_val);

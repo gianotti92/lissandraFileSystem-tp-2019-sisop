@@ -756,6 +756,7 @@ Instruccion *recibir_respuesta(int fd_a_escuchar){
 	case ERROR:
 		return recibir_error(fd_a_escuchar);
 	default:
+		liberar_conexion(fd_a_escuchar);
 		return respuesta_error(UNKNOWN);
 	}
 }
@@ -772,6 +773,7 @@ Instruccion *recibir_error(int fd_a_escuchar){
 		liberar_conexion(fd_a_escuchar);
 		return respuesta_error(CONNECTION_ERROR);
 	}else{
+		liberar_conexion(fd_a_escuchar);
 		switch(tipo_error){
 		case BAD_KEY:
 			return respuesta_error(BAD_KEY);
@@ -825,6 +827,7 @@ Instruccion *recibir_retorno(int fd_a_escuchar){
 		default:
 			inst = respuesta_error(UNKNOWN);
 	}
+	liberar_conexion(fd_a_escuchar);
 	free(stream);
 	return inst;
 }
