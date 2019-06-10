@@ -140,7 +140,7 @@ void TH_consola(char* leido){
 						printf("Realizado\n");
 					break;
 					case DATOS_DESCRIBE:
-						list_iterate((t_list*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno,(void*)showDescribeList);
+						list_iterate(((Describes*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->lista_describes,(void*)showDescribeList);
 					break;
 					case VALOR:
 						printf("Valor: %s - Timestamp: %u - Key: %d",((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->value,((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->timestamp,((Select*)instruccion_parseada->instruccion_a_realizar)->key);

@@ -170,6 +170,13 @@ bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion,
 			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
 				return false;
 			}
+			if(buffer_size == 0){
+				instruccion->instruccion = DESCRIBE;
+				Describe *describe = malloc(sizeof(Describe));
+				describe->nombre_tabla = NULL;
+				instruccion->instruccion_a_realizar = describe;
+				return true;
+			}
 			stream = malloc(buffer_size);
 			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				free(stream);
@@ -522,6 +529,9 @@ void empaquetar_create(t_paquete * paquete, Create *create) {
 }
 
 void empaquetar_describe(t_paquete * paquete, Describe *describe) {
+	if(describe->nombre_tabla == NULL){
+		return;
+	}
 	size_t tamanio_nombre_tabla = (strlen(describe->nombre_tabla) + 1);
 	paquete->buffer->stream = malloc( sizeof(size_t) +
 			tamanio_nombre_tabla + sizeof(describe->timestamp));
@@ -730,7 +740,6 @@ Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 		t_paquete_retorno *paquete = crear_paquete_retorno(instruccion);
 		if(enviar_paquete_retorno(paquete, fd_a_responder)){
 			eliminar_paquete_retorno(paquete);
-			liberar_conexion(fd_a_responder);
 			return respuesta_success();
 		}else{
 			eliminar_paquete_retorno(paquete);
@@ -816,16 +825,22 @@ Instruccion *recibir_retorno(int fd_a_escuchar){
 	switch(tipo_ret){
 		case VALOR:;
 			inst = armar_retorno_value(chunk);
+			break;
 		case DATOS_DESCRIBE:;
 			inst = armar_retorno_describe(chunk);
+			break;
 		case TAMANIO_VALOR_MAXIMO:;
 			inst = armar_retorno_max_value(chunk);
+			break;
 		case SUCCESS:;
 			inst = respuesta_success();
+			break;
 		case RETORNO_GOSSIP:;
 			inst = armar_retorno_gossip(chunk);
+			break;
 		default:
 			inst = respuesta_error(UNKNOWN);
+			break;
 	}
 	liberar_conexion(fd_a_escuchar);
 	free(stream);
