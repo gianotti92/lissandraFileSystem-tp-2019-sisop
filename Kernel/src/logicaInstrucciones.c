@@ -116,7 +116,9 @@ int logicaSelect(Select * select){
 	i->instruccion_a_realizar = (void *) select;
 	i->instruccion = SELECT;
 
+
 	char * consistencia = obtenerConsistencia(select->nombre_tabla);
+
 	Memoria * m = NULL;
 	t_list *memoriasAsoc = memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 

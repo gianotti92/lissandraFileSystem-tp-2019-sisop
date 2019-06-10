@@ -9,6 +9,7 @@ int main(void) {
 	/*
 		** Inicializaciones **
 	*/
+	print_guenguencha();
 	pthread_t T_consola,T_server,T_confMonitor,T_dump;
 	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump;
 
@@ -91,8 +92,33 @@ int main(void) {
 	fs_destroy();
 	return 0;	
 }
-
-
+/*
+	Manejo Server
+*/
+void *TH_server(void * p){
+	Comunicacion com;
+	com.puerto_servidor=global_conf.puerto;
+	com.proceso=FILESYSTEM;
+	servidor_comunicacion(&com);
+	return (void *)0;
+}
+void retornarControl(Instruccion *instruccion, int socket_cliente){
+	Instruccion *resController = controller(instruccion);
+	Instruccion *res = responder(socket_cliente, resController);
+	//free_consulta(instruccion);
+	switch(res->instruccion){
+		case RETORNO:
+			log_info(LOGGER, "Lo respondi bien");
+		break;
+		case ERROR:
+			log_error(LOGGER, "Error al responder");
+		break;
+		default:
+			log_error(LOGGER, "Error desconocido al responder");
+		break;
+	}
+	//Liberar res y resController
+}
 /*
 	Manejo Consola
 */
@@ -105,22 +131,33 @@ void TH_consola(char* leido){
 		instruccion_parseada->instruccion != RUN &&
 		instruccion_parseada->instruccion != JOURNAL){
 		
-		controller(instruccion_parseada);
-	}
-	free_consulta(instruccion_parseada);
-}
+		Instruccion*res=controller(instruccion_parseada);
 
-/*
-	Manejo Server
-*/
-void *TH_server(void * p){
-	void manejo_instruccion(Instruccion* instruccion, int fd_cliente) {
-		controller(instruccion);
+		switch(res->instruccion){
+			case RETORNO:
+				switch(((Retorno_Generico*)res->instruccion_a_realizar)->tipo_retorno){
+					case SUCCESS:
+						printf("Realizado\n");
+					break;
+					case DATOS_DESCRIBE:
+						list_iterate(((Describes*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->lista_describes,(void*)showDescribeList);
+					break;
+					case VALOR:
+						printf("Valor: %s - Timestamp: %u - Key: %d",((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->value,((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->timestamp,((Select*)instruccion_parseada->instruccion_a_realizar)->key);
+					break;
+					default:
+						log_error(LOGGER, "Error procesar la consulta desde consola");
+					break;
+				}
+			break;
+			default:
+				// vemos
+			break;
+		}
+		// libero
 	}
-	//servidor_comunicacion(&manejo_instruccion,global_conf.puerto);
-	return (void *)0;
+	//free_consulta(instruccion_parseada);
 }
-
 /*
 	Manejo Monitoreo
 */
@@ -269,9 +306,13 @@ void* TH_compactacion(void* p){
 			break;
 
 		struct tableMetadataItem* fnd = get_table_metadata(item->tableName);
-		if(fnd == NULL) {
+		if(fnd == NULL && item->endFlag != 0) {
 			log_error(LOGGER,"Compaction: No se encontro la metadata de la tabla %s",item->tableName);
 			continue;
+		} else {
+			if(item->endFlag==1){
+				continue;
+			}
 		}
 
 		t_list* tmpc_files = list_create();
@@ -350,7 +391,4 @@ void* TH_compactacion(void* p){
 		list_destroy(tmpc_files);
 	}
 	return (void*)0;
-}
-void retornarControl(Instruccion *instruccion, int socket_cliente){
-	return;
 }

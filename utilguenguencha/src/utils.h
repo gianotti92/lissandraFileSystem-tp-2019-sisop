@@ -22,5 +22,6 @@ void exit_gracefully(int);
 char *consistencia2string(Consistencias consistencia);
 int string2consistencia(char* consistencia);
 
+void print_guenguencha();
 
 #endif /* UTILGUENGUENCHA_UTILS_H_ */

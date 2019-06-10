@@ -1,6 +1,7 @@
 #include "poolMemory.h"
 
 int main(void) {
+	print_guenguencha();
 	configure_logger();
 	configuracion_inicial();
 	MAX_VAL = 10; // esto hay que reemplazarlo por el valor del FS
@@ -13,7 +14,6 @@ int main(void) {
 	Comunicacion *comunicacion_instrucciones = malloc(sizeof(Comunicacion));
 	comunicacion_instrucciones->puerto_servidor = PUERTO_DE_ESCUCHA;
 	comunicacion_instrucciones->proceso = POOLMEMORY;
-	comunicacion_instrucciones->tipo_comunicacion = T_INSTRUCCION;
 	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion_instrucciones);
 
 	pthread_join(servidorPM, NULL);
@@ -169,7 +169,9 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 						} else {
 							instruccion_respuesta = respuesta_error(BAD_RESPONSE);
 						}
-					}
+					} 
+
+
 				}
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
 			} else {

@@ -96,7 +96,7 @@ pthread_mutex_t tableMetadataMutex;
 void *TH_compactacion(void* p);
 
 /* API */
-int controller(Instruccion* instruccion);
+Instruccion* controller(Instruccion* instruccion);
 
 /* Memtable */
 void initMemtable(void);
@@ -112,7 +112,7 @@ void insertInTableMetadata(char*tableName,struct TableMetadata tMetadata);
 void deleteInTableMetadata(char*tableName);
 void destroyTableMetadata(void);
 void loadCurrentTableMetadata(void);
-void showTableMetadata(void);
+void loadDescribesTableMetadata(t_list*lista_describes);
 
 /* Registros */
 long getTimestamp(void);
@@ -129,6 +129,15 @@ int read_temp_files(char* tabla,t_list* listaRegistros);
 char* getTablePath(char*tabla);
 int digitos(int num);
 int digitos_long(long num);
+
+/* Armar Instruccion */
+Instruccion* armarRetornoValue(char *value,t_timestamp timestamp);
+Instruccion *armarRetornoDescribe(t_list* lista_describes);
+Instruccion* armarRetornoMaxValue(void);
+
+/* Describe */
+Retorno_Describe* pack_describe(char *nombre_tabla,Consistencias consistencia,uint8_t particiones,t_timestamp compactation_time);
+void showDescribeList(Retorno_Describe* describe);
 
 /* Fmanager */
 int existeDirectorio(char path[]);
