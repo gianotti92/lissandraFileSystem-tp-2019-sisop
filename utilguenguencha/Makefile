@@ -28,3 +28,4 @@ utils: src/$@.*
 clean:
 	rm -rf Release Debug */logger.log
 	find ./ \( -name ".cproject" -or -name ".project" -or -name ".settings" \) -exec rm -rf {} \;
+	echo "Se hizo clean de las Utilguenguenchas"

@@ -50,4 +50,3 @@ clean:
 	make -sC $(kernel_path) clean
 	make -sC $(poolMemory_path) clean
 	make -sC $(utilguenguencha_path) clean
-	find ./ \( -name ".cproject" -or -name ".project" -or -name ".settings" -or -name "logger.log" -or -name ".DS_Store"  \) -exec rm -rf {} \;
