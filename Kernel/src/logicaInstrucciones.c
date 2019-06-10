@@ -120,10 +120,14 @@ int logicaSelect(Select * select){
 	char * consistencia = obtenerConsistencia(select->nombre_tabla);
 
 	Memoria * m = NULL;
-	t_list *memoriasAsoc = memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 
 	switch(string2consistencia(consistencia)){
 		case SC || EC :;
+			if(memoriasAsoc == NULL) {
+				log_error(LOGGER, "No Existen Memorias asociadas\n");
+				break;
+			}
 			int max = list_size(memoriasAsoc);
 			int randomId = rand() % max + 1;
 
@@ -140,7 +144,7 @@ int logicaSelect(Select * select){
 			break;
 
 		default:;
-			log_error(LOGGER, "Kernel.No deberia haber llegado aca chinguenguencha");
+			log_error(LOGGER, "Kernel.No deberia haber llegado aca chinguenguencha\n");
 			break;
 	}
 
@@ -156,7 +160,7 @@ int logicaSelect(Select * select){
 		free(consistencia);
 		return 1;
 	}else{
-		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s", consistencia);
+		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s \n", consistencia);
 		free(i->instruccion_a_realizar);
 		free(i);
 		free(consistencia);
@@ -190,7 +194,7 @@ int logicaInsert(Insert * insert){
 		free(consistencia);
 		return 1;
 	}else{
-		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s", consistencia);
+		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
 		free(i->instruccion_a_realizar);
 		free(consistencia);
 		free(i);
@@ -223,7 +227,7 @@ int logicaDrop(Drop * drop){
 		free(instruccionRespuesta);
 		return 19;
 	}else{
-		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s", consistencia);
+		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
 		free(i);
 		free(mem);
 		free(consistencia);
@@ -320,40 +324,41 @@ char * obtenerConsistencia(char * nombreTabla){
 
 	instruccionDescribe->instruccion = DESCRIBE;
 	instruccionDescribe->instruccion_a_realizar = (void *) describe;
-
-	char * consistencia = malloc(3 * sizeof(char));
-
 	//fixme: siempre se debe preguntar el describe a la memoria principal? que pasa si tengo varios procesos en exec y todos hacen describe?
 	Instruccion * describeResponse = enviar_instruccion(IP_MEMORIA_PPAL,PUERTO_MEMORIA_PPAL,instruccionDescribe, KERNEL, T_INSTRUCCION);
 
-	switch (describeResponse->instruccion) {
-		case RETORNO:;
-			Retorno_Generico * retornoGenerico = (Retorno_Generico*)  describeResponse->instruccion_a_realizar;
+	char * consistencia = NULL;
 
-			switch (retornoGenerico->tipo_retorno) {
+	switch(describeResponse->instruccion){
+		case RETORNO:
+			switch(((Retorno_Generico*)describeResponse->instruccion_a_realizar)->tipo_retorno){
+				case SUCCESS:
+
+				break;
 				case DATOS_DESCRIBE:;
-					Retorno_Describe * retornoDescribe = (Retorno_Describe *) retornoGenerico->retorno;
-					consistencia = consistencia2string(retornoDescribe->consistencia);
-					break;
+					t_list * describes = ((Describes*)((Retorno_Generico*)describeResponse->instruccion_a_realizar)->retorno)->lista_describes;
+					pthread_mutex_lock(&mutexRecursosCompartidos);
+					Retorno_Describe *describe = (Retorno_Describe *)list_get(describes, 0);
+					pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+					consistencia = consistencia2string(describe->consistencia);
+				break;
+				case VALOR:;
+				break;
 				default:
-					break;
+					log_error(LOGGER, "Error procesar la consulta desde consola\n");
+				break;
 			}
-
-			break;
-		case ERROR:
-
-			break;
-
-
+		break;
 		default:
-			break;
+			// vemos
+		break;
 	}
 
-	free(describe->nombre_tabla);
+
+	//TODO: kevin esta haciendo una funcion para liberar, reemplazar aqui.
 	free(describe);
-	free(instruccionDescribe->instruccion_a_realizar);
 	free(instruccionDescribe);
-	free(describeResponse->instruccion_a_realizar);
 	return consistencia;
 }
 

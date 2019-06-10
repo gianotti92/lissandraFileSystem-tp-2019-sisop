@@ -35,8 +35,10 @@ void putTablaSafe(t_dictionary * dic, char* key, char * value){
 }
 
 void putMemoryListSafe(t_dictionary * dic, char* key, t_list * value){
+	char * k = string_new();
+	string_append(&k, key);
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	dictionary_put(dic, key, value);
+	dictionary_put(dic, k, value);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
 
