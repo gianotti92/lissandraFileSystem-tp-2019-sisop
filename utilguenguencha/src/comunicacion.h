@@ -177,12 +177,11 @@ void* serializar_paquete(t_paquete* paquete, int bytes);
 * @NAME: recibir_buffer
 * @DESC: Abstraccion realizada para recibir lo correspondiente a un servidor
 * @ARGS: int aux1 -> fd donde estoy recibiendo
-* 		 Instruction_set inst_op -> Instruccion que estoy por leer
 * 		 Instruccion *instruccion -> instruccion donde dejo lo recibido
 * 		 Tipo_Comunicacion tipo_comu -> tipo de comunicacion que tealizo
 * @RET:  bool PUDE RECIBIR / NO PUDE RECIBIR
 */
-bool recibir_buffer(int aux1, Instruction_set inst_op, Instruccion *instruccion, Tipo_Comunicacion tipo_comu);
+bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_comu);
 /**
 * @NAME: desempaquetar_select
 * @DESC: Desempaqueta lo recibido en stream y lo mete en la estructura

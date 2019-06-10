@@ -512,7 +512,7 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					break;
 
 				case BAD_KEY:;
-					printf("ERROR - LA KEY DEBE SER UN NUMERO. \n");
+					printf("ERROR - NO EXISTE ESA KEY. \n");
 					break;
 
 				case BAD_MEMORY:;
