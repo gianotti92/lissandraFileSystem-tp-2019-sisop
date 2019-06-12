@@ -21,9 +21,9 @@ Proceso * desencolar(t_list * cola){
 	return p;
 }
 
-Memoria * desencolarMemoria(t_list * lista){
+Memoria * desencolarMemoria(t_list * lista, int posicion){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	Memoria * m = list_get(lista, 0);
+	Memoria * m = list_get(lista, posicion);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 	return m;
 }
@@ -35,8 +35,10 @@ void putTablaSafe(t_dictionary * dic, char* key, char * value){
 }
 
 void putMemoryListSafe(t_dictionary * dic, char* key, t_list * value){
+	char * k = string_new();
+	string_append(&k, key);
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	dictionary_put(dic, key, value);
+	dictionary_put(dic, k, value);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
 
@@ -92,13 +94,9 @@ void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 
 }
 
-void llenarTablasPorConsistencia(char * nombreTable, char * consistencia){
-	putTablaSafe(tablasPorConsistencia, nombreTable, consistencia);
-}
-
 //void preguntarPorMemoriasDisponibles(){
 //	while(true){
-//		sleep(30);
+//		sleep(PREGUNTAR_POR_MEMORIAS);
 //		Instruccion *instruccion = malloc(sizeof(Instruccion));
 //		instruccion->instruccion = GOSSIP;
 //
@@ -138,15 +136,11 @@ void preguntarPorMemoriasDisponibles(){
 
 	/* funcion de conexiones que me devuelve memoria disponible */
 	m->idMemoria = 1;
-	char * ip = string_new();
-	char * puerto = string_new();
-	string_append(&ip, IP_MEMORIA_PPAL);
-	string_append(&puerto, PUERTO_MEMORIA_PPAL);
-	m->puerto = puerto;
-	m->ip = ip;
+	m->puerto = PUERTO_MEMORIA_PPAL;
+	m->ip = IP_MEMORIA_PPAL;
 	/* funcion de conexiones que me devuelve memoria disponible */
 
-	char * key = string_new();
+	char * key = malloc(sizeof(char)*4);
 	sprintf(key, "%d", m->idMemoria);
 	putMemorySafe(memoriasDisponibles, key , m);
 }

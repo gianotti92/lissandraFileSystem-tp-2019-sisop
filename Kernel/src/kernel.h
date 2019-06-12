@@ -33,7 +33,7 @@ void iniciarEstados();
 void leerArchivo(char * path);
 void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
-Memoria * desencolarMemoria(t_list * lista);
+Memoria * desencolarMemoria(t_list * lista, int posicion);
 void putMemorySafe(t_dictionary * dic, char* key, Memoria * value);
 void putMemoryListSafe(t_dictionary * dic, char* key, t_list * value);
 t_list * getMemoriasAsociadasSafe(t_dictionary * dic, char*key);
@@ -43,7 +43,6 @@ char* getTablasSafe(t_dictionary * dic, char*key);
 void ejecutar();
 void iniciarEstructurasAsociadas();
 void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia);
-void llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void preguntarPorMemoriasDisponibles();
 void newToReady();
@@ -60,9 +59,9 @@ bool esFinQuantum(Proceso * p, char * instruccionALeer);
 void calculoMetrics();
 void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
-int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
-		Procesos proceso_del_que_envio);
 void *TH_confMonitor(void * p);
+char * obtenerConsistencia(char * nombreTabla);
+int generarHash(char * nombreTabla, int tamLista, int key);
 
 // Variables del proceso
 t_list *estadoReady;
@@ -72,7 +71,6 @@ t_list *estadoExit;
 // tablas del proceso
 t_dictionary * memoriasDisponibles;
 t_dictionary * memoriasAsociadas;
-t_dictionary * tablasPorConsistencia;
 
 t_list * memoriasSc;
 t_list * memoriasHc;
@@ -88,5 +86,7 @@ uint32_t REFRESH_METADATA;
 uint32_t RETARDO;
 int TAMANO_MAXIMO_LECTURA_ARCHIVO;
 int HILOS_KERNEL;
+int SEGUNDOS_METRICS;
+int PREGUNTAR_POR_MEMORIAS;
 
 #endif /* KERNEL_H_ */

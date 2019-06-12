@@ -418,6 +418,12 @@ bool es_numero(char* palabra) {
 	return true;
 }
 
+void show_describes(Retorno_Describe *describe){
+	char*consistencia=consistencia2string(describe->consistencia);
+	printf("Nombre tabla: %s\nConsistencia: %s\nParticiones: %d\nTiempo compactacion: %d\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
+	free(consistencia);
+}
+
 void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 
 	switch (instruccion_parseada->instruccion) {
@@ -486,6 +492,9 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 			case SUCCESS:;
 				printf("Operacion completada correctamente. \n");
 				break;
+			case DATOS_DESCRIBE:
+				list_iterate(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes, (void*)show_describes);
+				break;
 			default:
 				break;
 			}
@@ -503,7 +512,7 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					break;
 
 				case BAD_KEY:;
-					printf("ERROR - LA KEY DEBE SER UN NUMERO. \n");
+					printf("ERROR - NO EXISTE ESA KEY. \n");
 					break;
 
 				case BAD_MEMORY:;
@@ -528,6 +537,10 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 
 				case JOURNAL_FAILURE:;
 					printf("ERROR - ERROR AL EJECUTAR JOURNAL. \n");
+					break;
+
+				case MISSING_TABLE:;
+					printf("ERROR - LA TABLA NO EXISTE. \n");
 					break;
 
 				case NULL_REQUEST:;

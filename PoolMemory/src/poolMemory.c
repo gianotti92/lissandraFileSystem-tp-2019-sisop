@@ -1,10 +1,13 @@
 #include "poolMemory.h"
 
 int main(void) {
+
 	pthread_mutex_init(&mutexMarcos, NULL);
 	pthread_mutex_init(&mutexSegmentos, NULL);
 	pthread_mutex_init(&mutexMemorias, NULL);
 	sem_init(&semJournal, 0, 2);
+
+	print_guenguencha();
 
 	configure_logger();
 	configuracion_inicial();
@@ -21,8 +24,8 @@ int main(void) {
 	Comunicacion *comunicacion_instrucciones = malloc(sizeof(Comunicacion));
 	comunicacion_instrucciones->puerto_servidor = PUERTO_DE_ESCUCHA;
 	comunicacion_instrucciones->proceso = POOLMEMORY;
-	comunicacion_instrucciones->tipo_comunicacion = T_INSTRUCCION;
-	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion_instrucciones);	//servidor - sale por retorno_control()
+
+	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion_instrucciones);
 
 	pthread_join(servidorPM, NULL);
 	pthread_join(consolaPoolMemory, NULL);
@@ -197,7 +200,9 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 						} else {
 							instruccion_respuesta = respuesta_error(BAD_RESPONSE);
 						}
-					}
+					} 
+
+
 				}
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
 			} else {

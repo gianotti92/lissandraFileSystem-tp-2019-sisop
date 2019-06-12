@@ -9,6 +9,7 @@ int main(void) {
 	/*
 		** Inicializaciones **
 	*/
+	print_guenguencha();
 	pthread_t T_consola,T_server,T_confMonitor,T_dump;
 	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump;
 
@@ -98,23 +99,22 @@ void *TH_server(void * p){
 	Comunicacion com;
 	com.puerto_servidor=global_conf.puerto;
 	com.proceso=FILESYSTEM;
-	com.tipo_comunicacion=T_VALUE;
 	servidor_comunicacion(&com);
 	return (void *)0;
 }
 void retornarControl(Instruccion *instruccion, int socket_cliente){
-	Instruccion*resController=controller(instruccion);
-	Instruccion*res=responder(socket_cliente,resController);
-	free_consulta(instruccion);
+	Instruccion *resController = controller(instruccion);
+	Instruccion *res = responder(socket_cliente, resController);
+	//free_consulta(instruccion);
 	switch(res->instruccion){
-		case SUCCESS:
-		// veo
+		case RETORNO:
+			log_info(LOGGER, "Lo respondi bien");
 		break;
 		case ERROR:
-		// veo
+			log_error(LOGGER, "Error al responder");
 		break;
 		default:
-		// veo
+			log_error(LOGGER, "Error desconocido al responder");
 		break;
 	}
 	//Liberar res y resController
@@ -140,18 +140,15 @@ void TH_consola(char* leido){
 						printf("Realizado\n");
 					break;
 					case DATOS_DESCRIBE:
-						list_iterate((t_list*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno,(void*)showDescribeList);
+						list_iterate(((Describes*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->lista_describes,(void*)showDescribeList);
 					break;
 					case VALOR:
 						printf("Valor: %s - Timestamp: %u - Key: %d",((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->value,((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->timestamp,((Select*)instruccion_parseada->instruccion_a_realizar)->key);
 					break;
 					default:
-					// veo
+						log_error(LOGGER, "Error procesar la consulta desde consola");
 					break;
 				}
-			break;
-			case ERROR:
-				// vemos
 			break;
 			default:
 				// vemos
@@ -159,7 +156,7 @@ void TH_consola(char* leido){
 		}
 		// libero
 	}
-	free_consulta(instruccion_parseada);
+	//free_consulta(instruccion_parseada);
 }
 /*
 	Manejo Monitoreo

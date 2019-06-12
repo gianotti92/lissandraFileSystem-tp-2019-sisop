@@ -196,3 +196,40 @@ void showDescribeList(Retorno_Describe* describe){
 	printf("Tabla: %s - Consistencia: %s - Particiones: %d - Tiempo de Compactacion: %d\n",describe->nombre_tabla,consistencia,describe->particiones,describe->compactation_time);
 	free(consistencia);
 }
+
+/* Armar Instruccion */
+Instruccion* armarRetornoValue(char *value,t_timestamp timestamp){
+	Instruccion* instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion=RETORNO;
+	Retorno_Generico * retorno = malloc(sizeof(Retorno_Generico));
+	retorno->tipo_retorno=VALOR;
+	Retorno_Value * retval = malloc(sizeof(Retorno_Value));
+	retval->value=value;
+	retval->timestamp=timestamp;
+	retorno->retorno=retval;
+	instruccion->instruccion_a_realizar=retorno;
+	return instruccion;
+}
+Instruccion* armarRetornoDescribe(t_list* lista_describes){
+	Instruccion* instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion=RETORNO;
+	Retorno_Generico* retorno = malloc(sizeof(Retorno_Generico));
+	retorno->tipo_retorno=DATOS_DESCRIBE;
+	Describes* describes = malloc(sizeof(Describes));
+	describes->lista_describes = lista_describes;
+	retorno->retorno=describes;
+	instruccion->instruccion_a_realizar=retorno;
+	return instruccion;
+}
+Instruccion* armarRetornoMaxValue(void){
+	Instruccion* instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion=RETORNO;
+	Retorno_Generico* retorno = malloc(sizeof(Retorno_Generico));
+	retorno->tipo_retorno=TAMANIO_VALOR_MAXIMO;
+	Retorno_Max_Value* max_value = malloc(sizeof(Retorno_Max_Value));
+	max_value->value_size = global_conf.max_value_size;
+	retorno->retorno=max_value;
+	instruccion->instruccion_a_realizar=retorno;
+	return instruccion;
+}
+

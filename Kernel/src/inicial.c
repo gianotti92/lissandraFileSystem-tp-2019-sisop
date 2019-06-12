@@ -17,6 +17,9 @@ void configuracion_inicial(void) {
 			"TAMANO_MAXIMO_LECTURA_ARCHIVO");
 	HILOS_KERNEL = config_get_int_value(CONFIG,
 			"HILOS_KERNEL");
+
+	SEGUNDOS_METRICS = config_get_int_value(CONFIG, "TIEMPO_METRICS");
+	PREGUNTAR_POR_MEMORIAS = config_get_int_value(CONFIG, "TIEMPO_PREGUNTAR_MEMORIA");
 }
 
 void iniciarEstados() {
@@ -31,7 +34,6 @@ void iniciarEstados() {
 
 void iniciarEstructurasAsociadas(){
 	memoriasAsociadas = dictionary_create();
-	tablasPorConsistencia = dictionary_create();
 	memoriasDisponibles = dictionary_create();
 
 	memoriasSc = list_create();
