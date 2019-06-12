@@ -1,6 +1,6 @@
 #include "kernel.h"
 
-void calculoMetrics(bool * direct){
+void calculoMetrics(){
 	int contadorInsert = 0;
 	int contadorSelect = 0;
 	int contadorSelectInsert = 0;
@@ -8,9 +8,6 @@ void calculoMetrics(bool * direct){
 	int tiempoPromedioSelect = 0;
 	int tiempoPromedioInsert = 0;
 	while(1){
-		if(!(*direct)){
-			sleep(SEGUNDOS_METRICS);
-		}
 		Proceso * proceso = desencolar(estadoExit);
 		while(proceso != NULL){
 			operacionesTotales++;
@@ -49,10 +46,8 @@ void calculoMetrics(bool * direct){
 		contadorInsert = 0;
 		contadorSelect = 0;
 		contadorSelectInsert = 0;
-		if(*direct){
-			return;
-		}
 
+		sleep(SEGUNDOS_METRICS);
 	}
 }
 
@@ -64,7 +59,7 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	char * readLatency = string_new();
 	char * writeLatency = string_new();
 	//FIXME: fijarse porque al principio me devuelve un cantidad read 0.003333 ya que deberia estar vacia lista exit
-	string_append(&reads, "\nCantidad de reads: ");
+	string_append(&reads, "Cantidad de reads: ");
 	string_append(&writes, "Cantidad de writres: ");
 	string_append(&memLoad, "Memory load: ");
 	string_append(&readLatency, "Read latency: ");
@@ -76,17 +71,17 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	double rl = (double)tiempoPromedioSelect / contadorSelect;
 	double wl = (double)tiempoPromedioInsert / contadorSelectInsert;
 
-	char * rChar = string_new();
-	char * wChar = string_new();
-	char * mlChar = string_new();
-	char * rlChar = string_new();
-	char * wlChar = string_new();
+	char * rChar = malloc(sizeof(char) * 21);
+	char * wChar = malloc(sizeof(char) * 21);
+	char * mlChar = malloc(sizeof(char) * 21);
+	char * rlChar = malloc(sizeof(char) * 21);
+	char * wlChar = malloc(sizeof(char) * 21);
 
-	sprintf(rChar, "%f", r);
-	sprintf(wChar, "%f", w);
-	sprintf(mlChar, "%f", ml);
-	sprintf(rlChar, "%f",rl);
-	sprintf(wlChar, "%f", wl);
+	sprintf(rChar, "\n%lf", r);
+	sprintf(wChar, "%lf", w);
+	sprintf(mlChar, "%lf", ml);
+	sprintf(rlChar, "%lf",rl);
+	sprintf(wlChar, "%lf\n", wl);
 
 	string_append(&reads, rChar);
 	string_append(&writes, wChar);
@@ -100,14 +95,17 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	log_info(LOGGER_METRICS, writeLatency);
 	log_info(LOGGER_METRICS, readLatency);
 
-	free(reads);
-	free(writes);
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	dictionary_put(metrics, key1, reads);
+	dictionary_put(metrics, key2, writes);
+	dictionary_put(metrics, key3, memLoad);
+	dictionary_put(metrics, key4, writeLatency);
+	dictionary_put(metrics, key5, readLatency);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+
 	free(rChar);
 	free(wChar);
-	free(memLoad);
 	free(mlChar);
-	free(writeLatency);
-	free(readLatency);
 	free(rlChar);
 	free(wlChar);
 }

@@ -25,9 +25,7 @@ int main(void) {
 	pthread_create(&pasarNewToReady, NULL, (void*) newToReady, NULL);
 	pthread_detach(pasarNewToReady);
 
-	bool dormir = false;
-
-	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, (void*)&dormir);
+	pthread_create(&calcularMetrics, NULL, (void*) calculoMetrics, NULL);
 	pthread_detach(calcularMetrics);
 
 
@@ -80,8 +78,21 @@ void ejecutar() {
 				break;
 			}
 			case METRICS:{
-				bool dormir = true;
-				calculoMetrics((void*)&dormir);
+
+				pthread_mutex_lock(&mutexRecursosCompartidos);
+				char * campo1 = dictionary_get(metrics, key1);
+				char * campo2 = dictionary_get(metrics, key2);
+				char * campo3 = dictionary_get(metrics, key3);
+				char * campo4 = dictionary_get(metrics, key4);
+				char * campo5 = dictionary_get(metrics, key5);
+				pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+				log_info(LOGGER, campo1, "\n");
+				log_info(LOGGER, campo2, "\n");
+				log_info(LOGGER, campo3, "\n");
+				log_info(LOGGER, campo4, "\n");
+				log_info(LOGGER, campo5, "\n");
+
 				proceso->esProcesoRun=false;
 				break;
 			}

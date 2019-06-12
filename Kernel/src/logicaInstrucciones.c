@@ -81,9 +81,10 @@ void logicaAdd(Add * add){
 	int i;
 
 	for(i = 0; i <= tamTabla; i++){
-		char * key = string_new();
+		char * key = malloc(sizeof(char) * 4);
 		sprintf(key, "%d", i);
 		memoria = (Memoria*)getMemoriaSafe(memoriasDisponibles, key);
+		free(key);
 		if(memoria != NULL && memoria->idMemoria == add->memoria){
 			break;
 		}

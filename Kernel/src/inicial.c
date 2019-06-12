@@ -35,6 +35,7 @@ void iniciarEstados() {
 void iniciarEstructurasAsociadas(){
 	memoriasAsociadas = dictionary_create();
 	memoriasDisponibles = dictionary_create();
+	metrics = dictionary_create();
 
 	memoriasSc = list_create();
 	memoriasHc = list_create();

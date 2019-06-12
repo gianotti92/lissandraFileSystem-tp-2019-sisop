@@ -1,7 +1,7 @@
 #include "utils.h"
 
 void configure_logger() {
-	LOGGER = log_create("logger.log","tp-lissandra",0,LOG_LEVEL_DEBUG);
+	LOGGER = log_create("logger.log","tp-lissandra",1,LOG_LEVEL_DEBUG);
 	LOGGER_METRICS = log_create("logger_metrics.log", "log_metrics", 0, LOG_LEVEL_DEBUG);
 	log_info(LOGGER, "Inicia Proceso");
 }

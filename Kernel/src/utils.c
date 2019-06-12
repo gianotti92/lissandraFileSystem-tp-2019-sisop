@@ -136,15 +136,11 @@ void preguntarPorMemoriasDisponibles(){
 
 	/* funcion de conexiones que me devuelve memoria disponible */
 	m->idMemoria = 1;
-	char * ip = string_new();
-	char * puerto = string_new();
-	string_append(&ip, IP_MEMORIA_PPAL);
-	string_append(&puerto, PUERTO_MEMORIA_PPAL);
-	m->puerto = puerto;
-	m->ip = ip;
+	m->puerto = PUERTO_MEMORIA_PPAL;
+	m->ip = IP_MEMORIA_PPAL;
 	/* funcion de conexiones que me devuelve memoria disponible */
 
-	char * key = string_new();
+	char * key = malloc(sizeof(char)*4);
 	sprintf(key, "%d", m->idMemoria);
 	putMemorySafe(memoriasDisponibles, key , m);
 }

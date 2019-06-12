@@ -13,6 +13,12 @@
 #include <time.h>
 #include <sys/types.h>
 
+#define key1 "0"
+#define key2 "1"
+#define key3 "2"
+#define key4 "3"
+#define key5 "4"
+
 typedef struct{
 	Instruccion* instruccion;
 	Instruccion* instruccionAProcesar;
@@ -74,6 +80,8 @@ t_dictionary * memoriasAsociadas;
 t_list * memoriasSc;
 t_list * memoriasHc;
 t_list * memoriasEv;
+
+t_dictionary * metrics;
 
 char* PUERTO_DE_ESCUCHA;
 
