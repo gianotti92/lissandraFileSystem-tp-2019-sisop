@@ -30,6 +30,7 @@ t_list* L_MEMORIAS;		 //lista de IPs-PUERTO de las memorias disponibles
 
 
 pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias;
+sem_t semJournal;
 
 
 //  estructuras
@@ -57,7 +58,7 @@ void* buscar_pagina_en_segmento(Segmento*, t_key);
 Marco* buscar_marco(void*);
 bool coincide_segmento (char*, Segmento*);
 bool coincide_pagina (t_key, void*);
-void eliminar_de_memoria(char*);
+void eliminar_de_memoria(char*);  //elimina una tabla de memoria
 t_timestamp* get_timestamp_pagina( void*);
 t_key* get_key_pagina( void*);
 char* get_value_pagina( void*);

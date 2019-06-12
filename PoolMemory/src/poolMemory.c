@@ -1,6 +1,11 @@
 #include "poolMemory.h"
 
 int main(void) {
+	pthread_mutex_init(&mutexMarcos, NULL);
+	pthread_mutex_init(&mutexSegmentos, NULL);
+	pthread_mutex_init(&mutexMemorias, NULL);
+	sem_init(&semJournal, 0, 2);
+
 	configure_logger();
 	configuracion_inicial();
 	MAX_VAL = 10; // esto hay que reemplazarlo por el valor del FS
@@ -8,10 +13,6 @@ int main(void) {
 
 	pthread_t consolaPoolMemory, gossiping, servidorPM, T_confMonitor;
 	void *TR_confMonitor;
-
-	pthread_mutex_init(&mutexMarcos, NULL);
-	pthread_mutex_init(&mutexSegmentos, NULL);
-	pthread_mutex_init(&mutexMemorias, NULL);
 
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL); 										//se encarga de mantener actualizados los valores del config
 	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);			//consola - sale por retorno_consola()
@@ -88,12 +89,16 @@ void retornarControl(Instruccion *instruccion, int cliente){
 
 void inicializar_memoria(){
 
+	pthread_mutex_lock(&mutexMarcos);
+	pthread_mutex_lock(&mutexSegmentos);
 
 	MEMORIA_PRINCIPAL = malloc(SIZE_MEM); //resevo memoria para paginar
 	PAGINAS_MODIFICADAS = 0; //contador de paginas para saber si estoy full
 
 	if (MEMORIA_PRINCIPAL == NULL){
 		log_error(LOGGER, "Memoria: No se pudo malloquear la memoria principal.");
+		pthread_mutex_unlock(&mutexMarcos);
+		pthread_mutex_unlock(&mutexSegmentos);
 		exit_gracefully(-1);
 	}
 
@@ -142,16 +147,26 @@ void inicializar_memoria(){
 
 	}
 
+
+	pthread_mutex_unlock(&mutexMarcos);
+	pthread_mutex_unlock(&mutexSegmentos);
+
 	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
 	log_info(LOGGER, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
 }
 
 Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
+		sem_wait(&semJournal);
+
 		Instruccion* instruccion_respuesta = malloc(sizeof(Instruccion));
 
 		switch	(instruccion_parseada->instruccion){
 		case SELECT:;
+
+
+			pthread_mutex_lock(&mutexSegmentos);
+
 			Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
 
 			Segmento* segmento = buscar_segmento(instruccion_select->nombre_tabla);
@@ -160,6 +175,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			if (segmento != NULL){
 				pagina = buscar_pagina_en_segmento(segmento, instruccion_select->key);
 			}
+
+			pthread_mutex_unlock(&mutexSegmentos);
 
 			if(pagina == NULL){
 			// no tenemos la tabla-key en memoria
@@ -225,6 +242,9 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case JOURNAL:;
+
+			sem_wait(&semJournal);
+
 			Journal* instruccion_journal = (Journal*) instruccion_parseada->instruccion_a_realizar;
 
 			int result_journal = lanzar_journal(instruccion_journal->timestamp);
@@ -235,6 +255,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				instruccion_respuesta = respuesta_error(JOURNAL_FAILURE);
 			}
 
+			sem_post(&semJournal);
 			break;
 
 		case GOSSIP:;
@@ -253,15 +274,21 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			}
 		}
 
+
+		sem_post(&semJournal);
 		free_consulta(instruccion_parseada);
+
 		return instruccion_respuesta;
 }
 
 
 int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp timestamp_insert, t_flag modificado){
 
+	pthread_mutex_lock(&mutexSegmentos);
+
 	Segmento* segmento = buscar_segmento(nombre_tabla);
 	bool pagina_nueva = false;
+
 
 	if(segmento == NULL){
 		//no tenemos el segmento, creo uno
@@ -295,10 +322,15 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 		PAGINAS_MODIFICADAS++;
 	}
 
+	pthread_mutex_unlock(&mutexSegmentos);
+
 	return 1;
 }
 
 void eliminar_de_memoria(char* nombre_tabla){
+
+	pthread_mutex_lock(&mutexSegmentos);
+
 	Segmento* segmento = buscar_segmento(nombre_tabla);
 
 	if (segmento != NULL){
@@ -307,8 +339,14 @@ void eliminar_de_memoria(char* nombre_tabla){
 		Marco* marco_liberar;
 		void* pagina_liberar;
 
+
+
 		while (posicion >= 0){
+
+
 			pagina_liberar = list_get(paginas, posicion);
+
+			pthread_mutex_lock(&mutexMarcos);
 			marco_liberar = buscar_marco(pagina_liberar);
 
 			if(marco_liberar != NULL){
@@ -316,9 +354,13 @@ void eliminar_de_memoria(char* nombre_tabla){
 				PAGINAS_MODIFICADAS--;
 			}
 
+			pthread_mutex_unlock(&mutexMarcos);
+
 			posicion --;
 
 		}
+
+
 
 		list_destroy(paginas);
 
@@ -327,6 +369,8 @@ void eliminar_de_memoria(char* nombre_tabla){
 		if (index >= 0){
 			list_remove(L_SEGMENTOS, index);
 		}
+
+	pthread_mutex_unlock(&mutexSegmentos);
 	}
 }
 
