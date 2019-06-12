@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <error.h>
 #include "utils.h"
+#include <semaphore.h>
 
 #define BACKLOG 10     // Cuántas conexiones pendientes se mantienen en cola
 extern int errno;
