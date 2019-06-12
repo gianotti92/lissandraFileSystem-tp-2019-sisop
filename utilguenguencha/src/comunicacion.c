@@ -110,13 +110,15 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 	size_t buffer_size;
 	void* stream;
 	int bytes_recibidos;
+	if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
+		return false;
+	}
+	if (buffer_size > 0){
+		stream = malloc(buffer_size);
+	}
 	switch (instruccion->instruccion) {
 	case SELECT:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
-				return false;
-			}
-			stream = malloc(buffer_size);
 			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
@@ -127,14 +129,10 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 			free(stream);
 			return true;
 		}else{
-			return false;
+			break;
 		}
 	case INSERT:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
-				return false;
-			}
-			stream = malloc(buffer_size);
 			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
@@ -145,14 +143,10 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 			free(stream);
 			return true;
 		}else{
-			return false;
+			break;
 		}
 	case CREATE:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
-				return false;
-			}
-			stream = malloc(buffer_size);
 			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
@@ -163,13 +157,10 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 			free(stream);
 			return true;
 		}else{
-			return false;
+			break;
 		}
 	case DESCRIBE:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
-				return false;
-			}
 			if(buffer_size == 0){
 				instruccion->instruccion = DESCRIBE;
 				Describe *describe = malloc(sizeof(Describe));
@@ -177,7 +168,6 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 				instruccion->instruccion_a_realizar = describe;
 				return true;
 			}
-			stream = malloc(buffer_size);
 			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
@@ -188,14 +178,10 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 			free(stream);
 			return true;
 		}else{
-			return false;
+			break;
 		}
 	case DROP:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
-				return false;
-			}
-			stream = malloc(buffer_size);
 			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
@@ -206,14 +192,10 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 			free(stream);
 			return true;
 		}else{
-			return false;
+			break;
 		}
 	case JOURNAL:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
-				return false;
-			}
-			stream = malloc(buffer_size);
 			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))<= 0) {
 				break;
 			}
@@ -224,12 +206,16 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 			free(stream);
 			return true;
 		}else{
-			return false;
+			break;
 		}
 	case GOSSIP:
 		if(tipo_comu == T_GOSSIPING){
-			if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
-				return false;
+			if(buffer_size == 0){
+				instruccion->instruccion = GOSSIP;
+				Gossip *gossip = malloc(sizeof(GOSSIP));
+				gossip->lista_memorias = NULL;
+				instruccion->instruccion_a_realizar = gossip;
+				return true;
 			}
 			stream = malloc(buffer_size);
 			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
@@ -242,7 +228,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 			free(stream);
 			return true;
 		}else{
-			return false;
+			break;
 		}
 	case MAX_VALUE:
 		if(tipo_comu == T_VALUE){
@@ -302,56 +288,58 @@ int crear_conexion(char *ip, char* puerto) {
 }
 
 bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
-	int bytes = paquete->buffer->size + 4 * sizeof(int);
-	void* a_enviar = serializar_paquete(paquete, bytes);
-	if ((send(socket_cliente, a_enviar, bytes, 0)) < 0) {
-		free(a_enviar);
-		return false;
+	size_t desplazamiento = 0;
+	void *a_enviar = malloc(sizeof(paquete->comunicacion) + sizeof(paquete->source) + sizeof(paquete->header) + sizeof(paquete->buffer->size));
+	memcpy(a_enviar + desplazamiento, &paquete->comunicacion, sizeof(paquete->comunicacion));
+	desplazamiento += sizeof(paquete->comunicacion);
+	memcpy(a_enviar + desplazamiento, &paquete->source, sizeof(paquete->source));
+	desplazamiento += sizeof(paquete->source);
+	memcpy(a_enviar + desplazamiento, &paquete->header, sizeof(paquete->header));
+	desplazamiento += sizeof(paquete->header);
+	memcpy(a_enviar + desplazamiento, &paquete->buffer->size, sizeof(paquete->buffer->size));
+	desplazamiento += sizeof(paquete->buffer->size);
+	if(paquete->buffer->size == 0){
+		if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
+			free(a_enviar);
+			return false;
+		}else{
+			free(a_enviar);
+			return true;
+		}
+	}else{
+		a_enviar = realloc(a_enviar, desplazamiento + paquete->buffer->size);
+		memcpy(a_enviar + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
+		desplazamiento += paquete->buffer->size;
+		if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
+			free(a_enviar);
+			return false;
+		}else{
+			free(a_enviar);
+			return true;
+		}
 	}
-	free(a_enviar);
-	return true;
 }
 
 bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente) {
-	int bytes = paquete->buffer->size + 2 * sizeof(int);
-	void* a_enviar = serializar_paquete_retorno(paquete, bytes);
-	if ((send(socket_cliente, a_enviar, bytes, 0)) < 0) {
+	size_t desplazamiento = 0;
+	void*a_enviar = malloc(sizeof(paquete->header) + sizeof(paquete->buffer->size) + paquete->buffer->size);
+	memcpy(a_enviar + desplazamiento, &paquete->header, sizeof(paquete->header));
+	desplazamiento += sizeof(paquete->header);
+	memcpy(a_enviar + desplazamiento, &paquete->buffer->size, sizeof(paquete->buffer->size));
+	desplazamiento += sizeof(paquete->buffer->size);
+	memcpy(a_enviar + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
+	desplazamiento += paquete->buffer->size;
+	if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
+		free(a_enviar);
 		return false;
+	}else{
+		free(a_enviar);
+		return true;
 	}
-	free(a_enviar);
-	return true;
 }
 
 void liberar_conexion(int socket_cliente) {
 	close(socket_cliente);
-}
-
-void *serializar_paquete_retorno(t_paquete_retorno *paquete, int bytes){
-	void *magic = malloc(bytes);
-	int desplazamiento = 0;
-	memcpy(magic + desplazamiento, &paquete->header, sizeof(paquete->header));
-	desplazamiento += sizeof(paquete->header);
-	memcpy(magic + desplazamiento, &paquete->buffer->size, sizeof(paquete->buffer->size));
-	desplazamiento += sizeof(paquete->buffer->size);
-	memcpy(magic + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
-	desplazamiento += paquete->buffer->size;
-	return magic;
-}
-
-void *serializar_paquete(t_paquete* paquete, int bytes) {
-	void * magic = malloc(bytes);
-	int desplazamiento = 0;
-	memcpy(magic + desplazamiento, &(paquete->comunicacion), sizeof(paquete->comunicacion));
-	desplazamiento += sizeof(paquete->comunicacion);
-	memcpy(magic + desplazamiento, &(paquete->source), sizeof(paquete->source));
-	desplazamiento += sizeof(paquete->source);
-	memcpy(magic + desplazamiento, &(paquete->header), sizeof(paquete->header));
-	desplazamiento += sizeof(paquete->header);
-	memcpy(magic + desplazamiento, &(paquete->buffer->size), sizeof(paquete->buffer->size));
-	desplazamiento += sizeof(paquete->buffer->size);
-	memcpy(magic + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
-	desplazamiento += paquete->buffer->size;
-	return magic;
 }
 
 void crear_buffer(t_paquete* paquete) {
@@ -534,6 +522,9 @@ void empaquetar_journal(t_paquete * paquete, Journal * journal) {
 
 void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
 	int cantidad_memorias = list_size(gossip->lista_memorias);
+	if (cantidad_memorias == 0){
+		return;
+	}
 	paquete->buffer->stream = malloc(sizeof(int));
 	memcpy(paquete->buffer->stream, &cantidad_memorias, sizeof(int));
 	paquete->buffer->size += sizeof(int);

@@ -169,10 +169,9 @@ void empaquetar_gossip(t_paquete * paquete, Gossip * gossip);
 * @NAME: serializar_paquete
 * @DESC: Devuelve un puntero a un stream en el que se contiene todo
 * @ARGS: t_paquete *paquete -> paquete a serializar
-* 		 int bytes -> cantidad de bytes que tendra el tream de output
 * @RET:  void *
 */
-void* serializar_paquete(t_paquete* paquete, int bytes);
+//size_t serializar_paquete(t_paquete* paquete, void** a_enviar);
 /**
 * @NAME: recibir_buffer
 * @DESC: Abstraccion realizada para recibir lo correspondiente a un servidor
@@ -306,10 +305,9 @@ Instruccion *armar_retorno_gossip(void *chunk);
 * @NAME: serializar_paquete_retorno
 * @DESC: Devuelve un puntero a un stream en el que se contiene todo
 * @ARGS: t_paquete_retorno *paquete -> paquete a serializar
-* 		 int bytes -> cantidad de bytes que tendra el tream de output
 * @RET:  void*
 */
-void *serializar_paquete_retorno(t_paquete_retorno *paquete, int bytes);
+//size_t serializar_paquete_retorno(t_paquete_retorno *paquete, void** a_enviar);
 /**
 * @NAME: enviar_paquete_retorno
 * @DESC: Funcion que serializa el paquete y lo envia al fd indicado
