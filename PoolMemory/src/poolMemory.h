@@ -11,8 +11,8 @@ char* PUERTO_DE_ESCUCHA;
 int MAX_VAL;
 char* IP_FS;
 char* PUERTO_FS;
-char* IP_SEEDS;
-char* PUERTOS_SEEDS;
+char** IP_SEEDS;
+char** PUERTOS_SEEDS;
 uint32_t RETARDO_MEM;
 uint32_t RETARDO_FS;
 int SIZE_MEM;
@@ -24,6 +24,8 @@ t_list* l_maestro_paginas;
 t_list* l_segmentos;
 t_list* l_memorias;
 
+pthread_mutex_t mutexListaMemorias;
+t_list *l_memorias;
 
 //  estructuras
 typedef struct{
@@ -70,5 +72,8 @@ Segmento* crear_segmento(char*);
 bool pagina_en_uso(Pagina_general*);
 bool memoria_full();
 Instruccion* crear_error(Error_set);
-
+void lanzar_gossiping();
+void gossipear(Memoria *mem);
+void add_memory_if_not_exists(Memoria *mem);
+bool existe_memoria_en(Memoria *mem1, t_list * lista);
 #endif

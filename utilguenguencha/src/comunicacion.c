@@ -970,3 +970,15 @@ void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error){
 	memcpy(paquete->buffer->stream, &error->error, sizeof(error->error));
 	paquete->buffer->size += sizeof(error->error);
 }
+
+bool chequear_conexion_a(char* ip, char* puerto){
+	int fd;
+	fd = crear_conexion(ip, puerto);
+	if( fd > 0){
+		liberar_conexion(fd);
+		return true;
+	}else{
+		liberar_conexion(fd);
+		return false;
+	}
+}

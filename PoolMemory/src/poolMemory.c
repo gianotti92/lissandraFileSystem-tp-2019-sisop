@@ -6,7 +6,8 @@ int main(void) {
 	configuracion_inicial();
 	MAX_VAL = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
-
+	pthread_mutex_init(&mutexListaMemorias, NULL);
+	l_memorias = list_create();
 	pthread_t consolaPoolMemory, gossiping, servidorPM;
 	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);
 	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
@@ -37,8 +38,8 @@ void configuracion_inicial(void){
 	IP_FS = config_get_string_value(CONFIG,"IP_FS");
 	PUERTO_FS = config_get_string_value(CONFIG,"PUERTO_FS");
 	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
-	IP_SEEDS = config_get_string_value(CONFIG,"IP_SEEDS");
-	PUERTOS_SEEDS = config_get_string_value(CONFIG,"PUERTOS_SEEDS");
+	*IP_SEEDS = config_get_string_value(CONFIG,"IP_SEEDS");
+	*PUERTOS_SEEDS = config_get_string_value(CONFIG,"PUERTOS_SEEDS");
 
 
 }
@@ -492,39 +493,73 @@ void print_pagina(void* pagina){
 
 
 void lanzar_gossiping(){
-
-	l_memorias = list_create();
-	log_info(LOGGER, "Memoria: Se lanza el proceso de gossiping.");
-
-	IP_SEEDS = string_substring(IP_SEEDS, 1, string_length(IP_SEEDS)-2);
-	PUERTOS_SEEDS = string_substring(PUERTOS_SEEDS, 1, string_length(PUERTOS_SEEDS)-2);
-
-	char** ips = string_split(IP_SEEDS, ",");
-	char** puertos = string_split(PUERTOS_SEEDS, ",");
-
+	// ME FALTA EL CASO EN ATENDER CONSULTA EN EL QUE AGREGO MEMORIAS A l_memorias CUANDO LLEGAN
 	int posicion = 0;
-
-	while (ips[posicion] != NULL && puertos[posicion] != NULL){
-
-		char* puerto = puertos[posicion];
-		char* ip = ips[posicion];
-
+	while (IP_SEEDS[posicion] != NULL && PUERTOS_SEEDS[posicion] != NULL){
+		char* ip = IP_SEEDS[posicion];
+		char* puerto = PUERTOS_SEEDS[posicion];
 		Memoria* nueva_memoria = malloc(sizeof(Memoria));
+		nueva_memoria->ip = malloc(sizeof(ip));
 		nueva_memoria->ip = ip;
+		nueva_memoria->puerto = malloc(sizeof(puerto));
 		nueva_memoria->puerto = puerto;
 		nueva_memoria->idMemoria = posicion;
-
+		pthread_mutex_lock(&mutexListaMemorias);
 		list_add(l_memorias, nueva_memoria);
-
+		pthread_mutex_unlock(&mutexListaMemorias);
 		posicion++;
 	}
-	Instruccion *instruccion = malloc(sizeof(Instruccion));
-	Gossip * gossip = malloc(sizeof(Gossip));
-	gossip->lista_memorias = l_memorias;
-	instruccion->instruccion = GOSSIP;
-	instruccion->instruccion_a_realizar = gossip;
+	while(true){
+		sleep(10);
+		list_iterate(l_memorias, (void*)gossipear);
+	}
+}
 
-	// Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS,PUERTO_FS,instruccion, POOLMEMORY, T_GOSSIPING);
+void gossipear(Memoria *mem){
+	if(chequear_conexion_a(mem->ip, mem->puerto)){
+		Instruccion *inst  = malloc(sizeof(Instruccion));
+		Gossip * gossip = malloc(sizeof(Gossip));
+		gossip->lista_memorias = l_memorias;
+		inst ->instruccion = GOSSIP;
+		inst ->instruccion_a_realizar = gossip;
+		Instruccion *res = enviar_instruccion(mem->ip, mem->puerto, inst, POOLMEMORY, T_GOSSIPING);
+		free(gossip);
+		free(inst);
+		if(res->instruccion == RETORNO){
+			Retorno_Generico *ret = res->instruccion_a_realizar;
+			if(ret->tipo_retorno == RETORNO_GOSSIP){
+				Gossip *gossip = ret->retorno;
+				t_list *lista_retorno = gossip->lista_memorias;
+				list_iterate(lista_retorno, (void*)add_memory_if_not_exists);
+				list_destroy(lista_retorno);
+			}
+		}
+	}
+}
+
+void add_memory_if_not_exists(Memoria *mem){
+	if(!existe_memoria_en(mem, l_memorias)){
+		pthread_mutex_lock(&mutexListaMemorias);
+		int size = list_size(l_memorias);
+		list_add_in_index(l_memorias, size, mem);
+		pthread_mutex_unlock(&mutexListaMemorias);
+	}else{
+		free(mem->ip);
+		free(mem->puerto);
+		free(mem);
+	}
+}
+
+bool existe_memoria_en(Memoria *mem1, t_list * lista){
+	int cantidad = list_size(lista);
+	while(cantidad > 0){
+		Memoria * mem2 = list_get(lista, cantidad);
+		if(strcmp(mem1->ip, mem2->ip) == 0 && strcmp(mem1->puerto, mem2->puerto) == 0){
+			return true;
+		}
+		cantidad --;
+	}
+	return false;
 }
 
 int lanzar_journal(t_timestamp timestamp_journal){

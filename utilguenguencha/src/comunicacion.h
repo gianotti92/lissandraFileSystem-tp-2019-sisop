@@ -377,5 +377,12 @@ void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip *ret_gos);
 * @RET:  void
 */
 void empaquetar_retorno_success(t_paquete_retorno *paquete);
-
+/**
+* @NAME: chequear_conexion_a()
+* @DESC: Chequea la conexion a la ip y puerto dados
+* @ARGS: char* ip -> ip destino
+*		 char* puerto -> puerto destino
+* @RET:  bool
+*/
+bool chequear_conexion_a(char* ip, char* puerto);
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */
