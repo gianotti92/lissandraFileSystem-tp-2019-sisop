@@ -102,6 +102,12 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 		} else {
 
 			// es INSERT
+
+			if(string_starts_with(consulta_separada[3], "\"") && string_ends_with(consulta_separada[3], "\"") ){
+				consulta_separada[3] = string_substring(consulta_separada[3], 1, (string_length(consulta_separada[3])-2));
+				//saco las comillas del value
+			}
+
 			Insert* nuevoInsert = malloc(sizeof(Insert));
 
 			string_to_upper(consulta_separada[1]);
@@ -542,6 +548,10 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 				case MISSING_TABLE:;
 					printf("ERROR - LA TABLA NO EXISTE. \n");
 					break;
+
+				case LARGE_VALUE:;
+				printf("ERROR - EL VALOR ES DEMACIADO LARGO. \n");
+				break;
 
 				case NULL_REQUEST:;
 					break;
