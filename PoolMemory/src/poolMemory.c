@@ -205,7 +205,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 		switch	(instruccion_parseada->instruccion){
 		case SELECT:;
 
-
 			pthread_mutex_lock(&mutexSegmentos);
 
 			Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
@@ -262,6 +261,10 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 		case INSERT:;
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
+
+			if (string_length(instruccion_insert->value) > MAX_VAL) {
+				return respuesta_error(LARGE_VALUE);
+			}
 
 			int result_insert = insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
 
