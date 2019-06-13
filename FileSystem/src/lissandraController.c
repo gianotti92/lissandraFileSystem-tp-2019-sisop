@@ -179,6 +179,7 @@ Instruccion* controller(Instruccion* instruccion){
 		break;
 		case MAX_VALUE:
 			res=armarRetornoMaxValue();
+		break;
 		default:
 			res=respuesta_error(BAD_REQUEST);
 		break;

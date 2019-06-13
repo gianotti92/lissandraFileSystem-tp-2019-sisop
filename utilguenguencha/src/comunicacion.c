@@ -406,6 +406,8 @@ t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_e
 	case GOSSIP:
 		empaquetar_gossip(paquete, (Gossip*) instruccion->instruccion_a_realizar);
 		break;
+	case MAX_VALUE:
+		break;
 	default:
 		eliminar_paquete(paquete);
 		return (t_paquete*) NULL;
@@ -835,7 +837,7 @@ Instruccion *armar_retorno_max_value(void * chunk){
 	Instruccion *instruccion = malloc(sizeof(Instruccion));
 	instruccion->instruccion = RETORNO;
 	Retorno_Generico *retorno = malloc(sizeof(Retorno_Generico));
-	retorno->tipo_retorno = MAX_VALUE;
+	retorno->tipo_retorno = TAMANIO_VALOR_MAXIMO; //cambie el enum
 	retorno->retorno = ret_max_value;
 	instruccion->instruccion_a_realizar = retorno;
 	return instruccion;
@@ -931,7 +933,7 @@ void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *m
 	paquete->buffer->stream = malloc(sizeof(header) + sizeof(max_val->value_size));
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &header, sizeof(header));
 	paquete->buffer->size += sizeof(header);
-	paquete->buffer->stream = malloc(sizeof(max_val->value_size));
+	//paquete->buffer->stream = malloc(sizeof(max_val->value_size)); //no habria que hacer este malloc por lo que entiendo.
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &max_val->value_size, sizeof(max_val->value_size));
 	paquete->buffer->size += sizeof(max_val->value_size);
 }
