@@ -72,7 +72,7 @@ void configuracion_inicial(void){
 
 	//config_destroy(CONFIG);
 
-	Instruccion* instruccion_maxValue;
+	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
 	instruccion_maxValue->instruccion = MAX_VALUE;
 
 	Instruccion* respuesta = enviar_instruccion(IP_FS,PUERTO_FS, instruccion_maxValue, POOLMEMORY, T_VALUE);
@@ -84,7 +84,10 @@ void configuracion_inicial(void){
 			Retorno_Max_Value* retorno_maxValue = retorno_generico->retorno;
 			MAX_VAL = retorno_maxValue->value_size;
 
-			log_info(LOGGER, "MAX_VALUE obtenido del FileSystem: %i.", MAX_VAL);
+			log_info(LOGGER, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
+
+			// libero instruccion
+			free(instruccion_maxValue);
 
 		} else {
 			print_instruccion_parseada(respuesta);
@@ -95,7 +98,7 @@ void configuracion_inicial(void){
 	} else {
 
 		print_instruccion_parseada(respuesta);
-		log_error(LOGGER, "Memoria: No se obtuvo un RETORNO al pedir el MAX_VALUE al FileSystem.");
+		log_error(LOGGER, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
 		exit_gracefully(-1);
 	}
 
