@@ -11,7 +11,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 	uintmax_t echo_time = get_timestamp();
 
 	consulta = string_from_format("%s %ju", consulta, (uintmax_t) echo_time);
-	log_info(LOGGER, "Parser: Consulta - %s", consulta);
+	//log_info(LOGGER, "Parser: Consulta - %s", consulta);
 
 	char** consulta_separada = string_split(consulta, " ");
 
@@ -370,7 +370,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 		return respuesta_error(BAD_OPERATION);
 	}
 
-	log_info(LOGGER, "Parser: Consulta aceptada.");
+	//log_info(LOGGER, "Parser: Consulta aceptada.");
 
 	//print_instruccion_parseada(consultaParseada);
 
@@ -378,14 +378,12 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 }
 
 Instruccion* crear_instruccion(Instruction_set operacion,
-		void* operacion_a_realizar, int tamanio) {
+	void* operacion_a_realizar, int tamanio) {
 
-	void * p_instruccion_a_realizar = malloc(sizeof(tamanio));
-	p_instruccion_a_realizar = operacion_a_realizar;
 
 	Instruccion * p_instruccion = malloc(sizeof(Instruccion));
 	p_instruccion->instruccion = operacion;
-	p_instruccion->instruccion_a_realizar = p_instruccion_a_realizar;
+	p_instruccion->instruccion_a_realizar = operacion_a_realizar;
 
 	return p_instruccion;
 
@@ -607,18 +605,18 @@ void leer_por_consola(void (*f)(char*)) {
 		leido = readline("\n>>");
 		add_history(leido);
 	}
-
-	free(leido);
-	log_info(LOGGER, "Salida del sistema por consola");
+	//add_history ya hace el free
+	//free(leido);
+	//log_info(LOGGER, "Salida del sistema por consola");
 	exit_gracefully(EXIT_SUCCESS);
 }
-
+/*
 void free_consulta(Instruccion* consulta) {
 	free(consulta->instruccion_a_realizar);
 	free(consulta);
 }
+*/
 
-/* Problema con los free
 void free_consulta(Instruccion* consulta) {
 
 	switch (consulta->instruccion) {
@@ -705,7 +703,7 @@ void free_consulta(Instruccion* consulta) {
 	free(consulta->instruccion_a_realizar);
 	free(consulta);
 }
-*/
+
 
 uintmax_t get_timestamp() {
 

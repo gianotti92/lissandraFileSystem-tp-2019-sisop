@@ -1,6 +1,20 @@
 #include "poolMemory.h"
 
+
 int main(void) {
+
+	leer_por_consola(retorno_consola);
+
+
+}
+
+
+
+
+
+/*
+int main(void) {
+
 	configure_logger();
 	configuracion_inicial();
 	MAX_VAL = 10; // esto hay que reemplazarlo por el valor del FS
@@ -17,15 +31,16 @@ int main(void) {
 	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion_instrucciones);
 
 	pthread_join(servidorPM, NULL);
+
 	pthread_join(consolaPoolMemory, NULL);
-	pthread_join(gossiping, NULL);
+	//pthread_join(gossiping, NULL);
 
 	list_destroy(l_maestro_paginas); //entender el list_destroy_and_destroy_elements()
 	list_destroy(l_memorias);
 	free(memoria_principal);
 
 }
-
+*/
 void configuracion_inicial(void){
 	t_config* CONFIG;
 	CONFIG = config_create("config.cfg");
@@ -45,10 +60,10 @@ void configuracion_inicial(void){
 
 void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
-	Instruccion* respuesta = atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
-
-	print_instruccion_parseada(respuesta);
-
+	//Instruccion* respuesta = atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
+	//free_consulta(instruccion_parseada);
+	//print_instruccion_parseada(respuesta);
+	//free_consulta(instruccion_parseada);
 }
 
 void retornarControl(Instruccion *instruccion, int cliente){
