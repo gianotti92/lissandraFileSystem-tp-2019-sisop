@@ -14,12 +14,13 @@ Proceso * logicaRun(Run * run, Proceso * proceso){
 		switch(tipoInstruccionAProcesar){
 			case CREATE:;
 				Create * create = (Create *) proceso->instruccionAProcesar->instruccion_a_realizar;
-				proceso->file_descriptor = logicaCreate(create);
+				logicaCreate(create);
 				break;
 
 			case SELECT:;
 				Select * select = (Select *) proceso->instruccionAProcesar->instruccion_a_realizar;
-				proceso->file_descriptor = logicaSelect(select);
+				logicaSelect(select);
+
 				fin = get_timestamp();
 				diff = difftime(fin ,select->timestamp);
 				proceso->segundosQueTardo = diff;
@@ -27,7 +28,8 @@ Proceso * logicaRun(Run * run, Proceso * proceso){
 
 			case INSERT:;
 				Insert * insert = (Insert *) proceso->instruccionAProcesar->instruccion_a_realizar;
-				proceso->file_descriptor = logicaInsert(insert);
+				logicaInsert(insert);
+
 				fin = get_timestamp();
 				diff = difftime(fin, insert->timestamp);
 				proceso->segundosQueTardo = diff;
@@ -35,7 +37,7 @@ Proceso * logicaRun(Run * run, Proceso * proceso){
 
 			case DROP:;
 				Drop * drop = (Drop *) proceso->instruccionAProcesar->instruccion_a_realizar;
-				proceso->file_descriptor = logicaDrop(drop);
+				logicaDrop(drop);
 				break;
 
 			case ERROR:;
@@ -63,7 +65,7 @@ Proceso * logicaRun(Run * run, Proceso * proceso){
 	}
 }
 
-int logicaCreate(Create * create){
+void logicaCreate(Create * create){
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion = CREATE;
 	i->instruccion_a_realizar = (void*) create;
@@ -72,7 +74,6 @@ int logicaCreate(Create * create){
 	print_instruccion_parseada(instruccionRespuestaCreate);
 
 	free(instruccionRespuestaCreate);
-	return -100;
 }
 
 void logicaAdd(Add * add){
@@ -112,131 +113,134 @@ void logicaAdd(Add * add){
 
 }
 
-int logicaSelect(Select * select){
+void logicaSelect(Select * select){
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) select;
 	i->instruccion = SELECT;
 
 
 	char * consistencia = obtenerConsistencia(select->nombre_tabla);
+	if(consistencia != NULL){
+		Memoria * m = NULL;
+		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 
-	Memoria * m = NULL;
-	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+		switch(string2consistencia(consistencia)){
+			case SC || EC :;
+				if(memoriasAsoc == NULL) {
+					log_error(LOGGER, "No Existen Memorias asociadas\n");
+					break;
+				}
+				int max = list_size(memoriasAsoc);
+				int randomId = rand() % max + 1;
 
-	switch(string2consistencia(consistencia)){
-		case SC || EC :;
-			if(memoriasAsoc == NULL) {
-				log_error(LOGGER, "No Existen Memorias asociadas\n");
+				pthread_mutex_lock(&mutexRecursosCompartidos);
+				m = list_get(memoriasAsoc, randomId - 1);
+				pthread_mutex_unlock(&mutexRecursosCompartidos);
 				break;
-			}
-			int max = list_size(memoriasAsoc);
-			int randomId = rand() % max + 1;
 
-			pthread_mutex_lock(&mutexRecursosCompartidos);
-			m = list_get(memoriasAsoc, randomId - 1);
-			pthread_mutex_unlock(&mutexRecursosCompartidos);
-			break;
+			case SHC:;
+				int indexTabla = generarHash(select->nombre_tabla, list_size(memoriasAsoc), select->key);
+				pthread_mutex_lock(&mutexRecursosCompartidos);
+				m = list_get(memoriasAsoc, indexTabla);
+				pthread_mutex_unlock(&mutexRecursosCompartidos);
+				break;
 
-		case SHC:;
-			int indexTabla = generarHash(select->nombre_tabla, list_size(memoriasAsoc), select->key);
-			pthread_mutex_lock(&mutexRecursosCompartidos);
-			m = list_get(memoriasAsoc, indexTabla);
-			pthread_mutex_unlock(&mutexRecursosCompartidos);
-			break;
+			default:;
+				log_error(LOGGER, "Kernel.No deberia haber llegado aca chinguenguencha\n");
+				break;
+		}
 
-		default:;
-			log_error(LOGGER, "Kernel.No deberia haber llegado aca chinguenguencha\n");
-			break;
-	}
+		if(m != NULL){
+			Instruccion * instruccionRespuesta = malloc(sizeof(Instruccion));
+			instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, i, KERNEL, T_INSTRUCCION);
+			print_instruccion_parseada(instruccionRespuesta);
 
-	if(m != NULL){
-		Instruccion * instruccionRespuesta = malloc(sizeof(Instruccion));
-		instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, i, KERNEL, T_INSTRUCCION);
-		print_instruccion_parseada(instruccionRespuesta);
-
-		free(instruccionRespuesta->instruccion_a_realizar);
-		free(instruccionRespuesta);
-		free(i->instruccion_a_realizar);
-		free(i);
-		free(consistencia);
-		return 1;
+			free(instruccionRespuesta->instruccion_a_realizar);
+			free(instruccionRespuesta);
+			free(i->instruccion_a_realizar);
+			free(i);
+			free(consistencia);
+		}else{
+			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s \n", consistencia);
+			free(i->instruccion_a_realizar);
+			free(i);
+			free(consistencia);
+		}
 	}else{
-		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s \n", consistencia);
-		free(i->instruccion_a_realizar);
-		free(i);
-		free(consistencia);
-		return -100;
+		log_error(LOGGER, "Error al buscar la consistencia");
 	}
 }
 
-int logicaInsert(Insert * insert){
+void logicaInsert(Insert * insert){
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) insert;
 	i->instruccion = INSERT;
 
 	char * consistencia = obtenerConsistencia(insert->nombre_tabla);
+	if(consistencia != NULL){
+		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+		int max = list_size(memoriasAsoc);
+		int randomId = rand() % max + 1;
+		Memoria * mem = NULL;
+		pthread_mutex_lock(&mutexRecursosCompartidos);
+		mem = list_get(memoriasAsoc, randomId - 1);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
 
-	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
-	int max = list_size(memoriasAsoc);
-	int randomId = rand() % max + 1;
-	Memoria * mem = NULL;
-	pthread_mutex_lock(&mutexRecursosCompartidos);
-	mem = list_get(memoriasAsoc, randomId - 1);
-	pthread_mutex_unlock(&mutexRecursosCompartidos);
+		if(mem != NULL){
+			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
+			print_instruccion_parseada(instruccionRespuesta);
 
-	if(mem != NULL){
-		Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
-		print_instruccion_parseada(instruccionRespuesta);
-
-		free(i->instruccion_a_realizar);
-		free(i);
-		free(instruccionRespuesta->instruccion_a_realizar);
-		free(instruccionRespuesta);
-		free(consistencia);
-		return 1;
+			free(i->instruccion_a_realizar);
+			free(i);
+			free(instruccionRespuesta->instruccion_a_realizar);
+			free(instruccionRespuesta);
+			free(consistencia);
+		}else{
+			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
+			free(i->instruccion_a_realizar);
+			free(consistencia);
+			free(i);
+		}
 	}else{
-		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
-		free(i->instruccion_a_realizar);
-		free(consistencia);
-		free(i);
+		log_error(LOGGER, "Error al buscar la consistencia");
 	}
-
-	return -100;
 }
 
-int logicaDrop(Drop * drop){
+void logicaDrop(Drop * drop){
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) drop;
 	i->instruccion = DROP;
 
 	char * consistencia = obtenerConsistencia(drop->nombre_tabla);
 
-	t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
-	int max = list_size(memoriasAsoc);
-	int randomId = rand() % max + 1;
-	Memoria * mem = NULL;
-	pthread_mutex_lock(&mutexRecursosCompartidos);
-	mem = list_get(memoriasAsoc, randomId - 1);
-	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	if(consistencia != NULL){
+		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+		int max = list_size(memoriasAsoc);
+		int randomId = rand() % max + 1;
+		Memoria * mem = NULL;
+		pthread_mutex_lock(&mutexRecursosCompartidos);
+		mem = list_get(memoriasAsoc, randomId - 1);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
 
 
-	if(mem != NULL){
-		Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
-		free(i);
-		free(mem);
-		free(consistencia);
-		free(instruccionRespuesta);
-		return 19;
+		if(mem != NULL){
+			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
+			free(i);
+			free(mem);
+			free(consistencia);
+			free(instruccionRespuesta);
+		}else{
+			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
+			free(i);
+			free(mem);
+			free(consistencia);
+		}
 	}else{
-		log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
-		free(i);
-		free(mem);
-		free(consistencia);
+		log_error(LOGGER, "Error al buscar la consistencia");
 	}
-	return -100;
 }
 
-int logicaJournal(Journal * journal){
+void logicaJournal(Journal * journal){
 	Instruccion * inst = malloc(sizeof(Instruccion));
 	inst->instruccion_a_realizar = (void *) journal;
 	inst->instruccion = JOURNAL;
@@ -267,13 +271,13 @@ int logicaJournal(Journal * journal){
 		print_instruccion_parseada(respuestaJournal);
 		free(respuestaJournal);
 	}
+
 	free(inst->instruccion_a_realizar);
 	free(inst);
-	return 1;
 
 }
 
-int logicaDescribe(Describe * describe){
+void logicaDescribe(Describe * describe){
 	Instruccion * inst = malloc(sizeof(Instruccion));
 	inst->instruccion_a_realizar = (void *) describe;
 	inst->instruccion = DESCRIBE;
@@ -282,39 +286,36 @@ int logicaDescribe(Describe * describe){
 
 		char * consistencia = obtenerConsistencia(describe->nombre_tabla);
 
-		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
-		int max = list_size(memoriasAsoc);
-		int randomId = rand() % max + 1;
-		Memoria * mem = NULL;
-		pthread_mutex_lock(&mutexRecursosCompartidos);
-		mem = list_get(memoriasAsoc, randomId - 1);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
+		if(consistencia != NULL){
 
-		if(mem != NULL){
-			Instruccion * intstruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, inst, KERNEL, T_INSTRUCCION);
-			print_instruccion_parseada(intstruccionRespuesta);
-			free(intstruccionRespuesta);
-		}
-		free(consistencia);
-		free(inst->instruccion_a_realizar);
-		free(inst);
-		return 1;
+			t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
 
-	}else{
-		int i;
-		for(i = 0; i < dictionary_size(memoriasDisponibles); i++){
-			char * key = string_new();
-			sprintf(key, "%d", i);
-			Memoria * m = getMemoriaSafe(memoriasDisponibles, key);
-			if(m != NULL){
-				Instruccion * intstruccionRespuesta = enviar_instruccion(m->ip, m->puerto, inst, KERNEL, T_INSTRUCCION);
-				print_instruccion_parseada(intstruccionRespuesta);
-				free(intstruccionRespuesta);
+			if(memoriasAsoc != NULL){
+				int max = list_size(memoriasAsoc);
+				int randomId = rand() % max + 1;
+				Memoria * mem = NULL;
+				pthread_mutex_lock(&mutexRecursosCompartidos);
+				mem = list_get(memoriasAsoc, randomId - 1);
+				pthread_mutex_unlock(&mutexRecursosCompartidos);
+
+				if(mem != NULL){
+					Instruccion * intstruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, inst, KERNEL, T_INSTRUCCION);
+					print_instruccion_parseada(intstruccionRespuesta);
+					free(intstruccionRespuesta);
+				}
+				free(consistencia);
+			}else{
+				log_error(LOGGER, "No hay memorias asignadas a la consistencia correspondiente");
 			}
 		}
-		free(inst);
-		return 1;
+	}else{
+		Instruccion * intstruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, inst, KERNEL, T_INSTRUCCION);
+		print_instruccion_parseada(intstruccionRespuesta);
+		/*liberar con instruccion kevin*/
+		free(intstruccionRespuesta);
 	}
+	free(inst->instruccion_a_realizar);
+	free(inst);
 }
 
 char * obtenerConsistencia(char * nombreTabla){

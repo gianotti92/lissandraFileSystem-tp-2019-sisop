@@ -22,7 +22,6 @@
 typedef struct{
 	Instruccion* instruccion;
 	Instruccion* instruccionAProcesar;
-	int file_descriptor;
 	int quantumProcesado;
 	int numeroInstruccion;
 	int segundosQueTardo;
@@ -52,14 +51,14 @@ void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void preguntarPorMemoriasDisponibles();
 void newToReady();
-int logicaCreate(Create * create);
+void logicaCreate(Create * create);
 Proceso * logicaRun(Run * run, Proceso * proceso);
-int logicaDescribe(Describe * describe);
-int logicaJournal(Journal * journal);
-int logicaDrop(Drop * drop);
-int logicaSelect(Select * select);
+void logicaDescribe(Describe * describe);
+void logicaJournal(Journal * journal);
+void logicaDrop(Drop * drop);
+void logicaSelect(Select * select);
 void logicaAdd(Add * add);
-int logicaInsert(Insert * insert);
+void logicaInsert(Insert * insert);
 bool esFinLectura(Proceso * p, char * instruccionALeer);
 bool esFinQuantum(Proceso * p, char * instruccionALeer);
 void calculoMetrics();

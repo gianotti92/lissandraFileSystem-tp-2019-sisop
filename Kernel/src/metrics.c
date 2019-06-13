@@ -77,11 +77,11 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	char * rlChar = malloc(sizeof(char) * 21);
 	char * wlChar = malloc(sizeof(char) * 21);
 
-	sprintf(rChar, "\n%lf", r);
+	sprintf(rChar, "%lf", r);
 	sprintf(wChar, "%lf", w);
 	sprintf(mlChar, "%lf", ml);
 	sprintf(rlChar, "%lf",rl);
-	sprintf(wlChar, "%lf\n", wl);
+	sprintf(wlChar, "%lf", wl);
 
 	string_append(&reads, rChar);
 	string_append(&writes, wChar);

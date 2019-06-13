@@ -23,7 +23,6 @@ void configuracion_inicial(void) {
 }
 
 void iniciarEstados() {
-	log_info(LOGGER, "Kernel:Se inician estados");
 	estadoReady = list_create();
 	estadoNew = list_create();
 	estadoExit = list_create();

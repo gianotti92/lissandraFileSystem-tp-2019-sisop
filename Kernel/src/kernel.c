@@ -48,7 +48,6 @@ void retorno_consola(char* leido) {
 		proceso->instruccion = instruccion;
 		proceso->numeroInstruccion = 0;
 		proceso->quantumProcesado = 0;
-		proceso->file_descriptor = -1;
 		encolar(estadoNew, proceso);
 		sem_post(&semaforoNewToReady);
 	}
@@ -87,18 +86,19 @@ void ejecutar() {
 				char * campo5 = dictionary_get(metrics, key5);
 				pthread_mutex_unlock(&mutexRecursosCompartidos);
 
-				log_info(LOGGER, campo1, "\n");
-				log_info(LOGGER, campo2, "\n");
-				log_info(LOGGER, campo3, "\n");
-				log_info(LOGGER, campo4, "\n");
-				log_info(LOGGER, campo5, "\n");
+				log_info(LOGGER, campo1);
+				log_info(LOGGER, campo2);
+				log_info(LOGGER, campo3);
+				log_info(LOGGER, campo4);
+				log_info(LOGGER, campo5);
 
 				proceso->esProcesoRun=false;
 				break;
 			}
 			case SELECT:{
 				Select * select = (Select *) proceso->instruccion->instruccion_a_realizar;
-				proceso->file_descriptor = logicaSelect(select);
+				logicaSelect(select);
+
 				fin = get_timestamp();
 				diff = difftime(fin ,select->timestamp);
 				proceso->segundosQueTardo = diff;
@@ -107,7 +107,8 @@ void ejecutar() {
 			}
 			case INSERT:{
 				Insert * insert = (Insert *) proceso->instruccion->instruccion_a_realizar;
-				proceso->file_descriptor = logicaInsert(insert);
+				logicaInsert(insert);
+
 				fin = get_timestamp();
 				diff = difftime(fin, insert->timestamp);
 				proceso->segundosQueTardo = diff;
@@ -116,13 +117,13 @@ void ejecutar() {
 			}
 			case CREATE:{
 				Create * create = (Create *) proceso->instruccion->instruccion_a_realizar;
-				proceso->file_descriptor = logicaCreate(create);
+				logicaCreate(create);
 				proceso->esProcesoRun=false;
 				break;
 			}
 			case DROP:{
 				Drop * drop = (Drop *) proceso->instruccion->instruccion_a_realizar;
-				proceso->file_descriptor = logicaDrop(drop);
+				logicaDrop(drop);
 				proceso->esProcesoRun=false;
 				break;
 			}
