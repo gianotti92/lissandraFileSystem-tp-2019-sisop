@@ -245,32 +245,8 @@ void logicaJournal(Journal * journal){
 	inst->instruccion_a_realizar = (void *) journal;
 	inst->instruccion = JOURNAL;
 
-	t_list * memoriasSc = getMemoriasAsociadasSafe(memoriasAsociadas, "SC");
-	t_list * memoriasHc = getMemoriasAsociadasSafe(memoriasAsociadas, "HC");
-	t_list * memoriasEc = getMemoriasAsociadasSafe(memoriasAsociadas, "EC");
-
-	int i;
-	for(i = 0; i < list_size(memoriasEc); i++){
-		Memoria * m = desencolarMemoria(memoriasEc, i);
-		Instruccion * respuestaJournal = enviar_instruccion(m->ip, m->puerto, inst, KERNEL, T_INSTRUCCION);
-		print_instruccion_parseada(respuestaJournal);
-		free(respuestaJournal);
-	}
-
-	for(i = 0; i < list_size(memoriasSc); i++){
-		Memoria * m = desencolarMemoria(memoriasSc, i);
-		Instruccion * respuestaJournal = enviar_instruccion(m->ip, m->puerto, inst, KERNEL, T_INSTRUCCION);
-		print_instruccion_parseada(respuestaJournal);
-		free(respuestaJournal);
-
-	}
-
-	for(i = 0; i < list_size(memoriasHc); i++){
-		Memoria * m = desencolarMemoria(memoriasHc, i);
-		Instruccion * respuestaJournal = enviar_instruccion(m->ip, m->puerto, inst, KERNEL, T_INSTRUCCION);
-		print_instruccion_parseada(respuestaJournal);
-		free(respuestaJournal);
-	}
+	Instruccion * instruccionRespouesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, inst, KERNEL, T_INSTRUCCION);
+	print_instruccion_parseada(instruccionRespouesta);
 
 	free(inst->instruccion_a_realizar);
 	free(inst);
