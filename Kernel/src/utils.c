@@ -103,15 +103,15 @@ void preguntarPorMemoriasDisponibles(){
 		gossip->lista_memorias = list_create();
 		inst->instruccion_a_realizar = gossip;
 		Instruccion * resp = enviar_instruccion(IP_MEMORIA_PPAL,
-																PUERTO_MEMORIA_PPAL,
-																inst,
-																KERNEL,
-																T_GOSSIPING);
+												PUERTO_MEMORIA_PPAL,
+												inst,
+												KERNEL,
+												T_GOSSIPING);
 		list_destroy(gossip->lista_memorias);
 		free(gossip);
 		free(inst);
 		if(resp->instruccion == RETORNO){
-			Retorno_General *ret = resp->instruccion_a_realizar;
+			Retorno_Generico *ret = resp->instruccion_a_realizar;
 			free(resp);
 			if (ret->tipo_retorno == RETORNO_GOSSIP){
 				Gossip * gossip = ret->retorno;
@@ -135,6 +135,7 @@ void preguntarPorMemoriasDisponibles(){
 		}
 		// Aca caigo si fue un error
 		free(resp->instruccion_a_realizar);
-		free(resp)
+		free(resp);
 	}
+
 }

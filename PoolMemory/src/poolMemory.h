@@ -7,22 +7,33 @@
 
 
 // Variables globales del proceso
+
 char* PUERTO_DE_ESCUCHA;
-int MAX_VAL;
 char* IP_FS;
 char* PUERTO_FS;
 char** IP_SEEDS;
 char** PUERTOS_SEEDS;
 uint32_t RETARDO_MEM;
 uint32_t RETARDO_FS;
+
 int SIZE_MEM;
-uint32_t TIEMPO_JOURNAL;
-uint32_t TIEMPO_GOSSIPING;
+t_timestamp RETARDO_MEM;
+t_timestamp RETARDO_FS;
+t_timestamp RETARDO_JOURNAL;
+t_timestamp RETARDO_GOSSIPING;
 int NUMERO_MEMORIA;
-void* memoria_principal;
-t_list* l_maestro_paginas;
-t_list* l_segmentos;
-t_list* l_memorias;
+
+int MAX_VAL;
+
+void* MEMORIA_PRINCIPAL; //puntero a malloc gigante
+int PAGINAS_MODIFICADAS; //contador de paginas en uso, para simplificar el memory_full
+t_list* L_MARCOS;		 //lista de "marcos" de la memoria
+t_list* L_SEGMENTOS;	 //lista de segmentos, cada segmento tiene su lista de paginas
+t_list* L_MEMORIAS;		 //lista de IPs-PUERTO de las memorias disponibles
+
+
+pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias;
+sem_t semJournal;
 
 pthread_mutex_t mutexListaMemorias;
 t_list *l_memorias;
@@ -36,7 +47,7 @@ typedef struct{
 typedef struct{
 	void* pagina;
 	t_flag en_uso;
-}Pagina_general;
+}Marco;
 
 
 // Funciones del proceso
@@ -49,10 +60,10 @@ void agregar_pagina_en_segmento(Segmento*, void*);
 void* buscar_segmento(char*);
 int index_segmento(char*);
 void* buscar_pagina_en_segmento(Segmento*, t_key);
-Pagina_general* buscar_pagina_general(void*);
+Marco* buscar_marco(void*);
 bool coincide_segmento (char*, Segmento*);
 bool coincide_pagina (t_key, void*);
-void eliminar_de_memoria(char*);
+void eliminar_de_memoria(char*);  //elimina una tabla de memoria
 t_timestamp* get_timestamp_pagina( void*);
 t_key* get_key_pagina( void*);
 char* get_value_pagina( void*);
@@ -69,11 +80,13 @@ void print_memorias ();
 void* pedir_pagina();
 void* seleccionar_pagina ();
 Segmento* crear_segmento(char*);
-bool pagina_en_uso(Pagina_general*);
+bool pagina_en_uso(Marco*);
 bool memoria_full();
 Instruccion* crear_error(Error_set);
 void lanzar_gossiping();
 void gossipear(Memoria *mem);
 void add_memory_if_not_exists(Memoria *mem);
 bool existe_memoria_en(Memoria *mem1, t_list * lista);
+void *TH_confMonitor(void * p);
+
 #endif

@@ -64,6 +64,7 @@ bool esFinQuantum(Proceso * p, char * instruccionALeer);
 void calculoMetrics();
 void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
+void *TH_confMonitor(void * p);
 char * obtenerConsistencia(char * nombreTabla);
 int generarHash(char * nombreTabla, int tamLista, int key);
 

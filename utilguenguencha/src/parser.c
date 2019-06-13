@@ -539,6 +539,10 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					printf("ERROR - ERROR AL EJECUTAR JOURNAL. \n");
 					break;
 
+				case MISSING_TABLE:;
+					printf("ERROR - LA TABLA NO EXISTE. \n");
+					break;
+
 				case NULL_REQUEST:;
 					break;
 
