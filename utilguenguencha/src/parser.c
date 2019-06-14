@@ -376,9 +376,6 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 		return respuesta_error(BAD_OPERATION);
 	}
 
-	log_info(LOGGER, "Parser: Consulta aceptada.");
-
-	//print_instruccion_parseada(consultaParseada);
 
 	return consultaParseada;
 }
@@ -705,7 +702,7 @@ void free_consulta(Instruccion* consulta) {
 
 					break;
 				case SUCCESS:;
-					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
+					//free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
 					break;
 				case DATOS_DESCRIBE:;
 					free(((Retorno_Describe*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->nombre_tabla);

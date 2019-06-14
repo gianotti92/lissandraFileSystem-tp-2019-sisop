@@ -19,6 +19,7 @@
 #define EVENT_SIZE (sizeof (struct inotify_event))
 #define EVENT_BUF_LEN (1024*(EVENT_SIZE + 16))
 t_log * LOGGER;
+t_log * LOG_ERROR;
 t_log * LOGGER_METRICS;
 
 void configure_logger();

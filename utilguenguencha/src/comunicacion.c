@@ -828,7 +828,7 @@ Instruccion *armar_retorno_max_value(void * chunk){
 	Instruccion *instruccion = malloc(sizeof(Instruccion));
 	instruccion->instruccion = RETORNO;
 	Retorno_Generico *retorno = malloc(sizeof(Retorno_Generico));
-	retorno->tipo_retorno = TAMANIO_VALOR_MAXIMO; //cambie el enum
+	retorno->tipo_retorno = TAMANIO_VALOR_MAXIMO;
 	retorno->retorno = ret_max_value;
 	instruccion->instruccion_a_realizar = retorno;
 	return instruccion;

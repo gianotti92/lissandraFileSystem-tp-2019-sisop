@@ -112,9 +112,8 @@ void configuracion_inicial(void){
 void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	Instruccion* respuesta = atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
-
 	print_instruccion_parseada(respuesta);
-
+	free_consulta(respuesta);
 }
 
 void retornarControl(Instruccion *instruccion, int cliente){
@@ -126,9 +125,7 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
 
 	responder(cliente, respuesta);
-
-	//liberar_conexion(cliente); // Para liberar el fd del socket
-	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
+	free_consulta(respuesta);
 	free_consulta(instruccion);
 }
 
@@ -565,9 +562,8 @@ void set_timestamp_pagina( void* p_pagina, t_timestamp timestamp){
 }
 
 void set_value_pagina( void* p_pagina, char* value){
-	void* p_value =  p_pagina;
-	p_value += (sizeof(t_key) + sizeof(t_timestamp));
-	memcpy(p_value, value, MAX_VAL);
+	
+	memcpy(p_pagina + sizeof(t_key) + sizeof(t_timestamp), value, strlen(value+1));
 
 }
 
