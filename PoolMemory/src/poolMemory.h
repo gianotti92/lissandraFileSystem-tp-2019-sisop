@@ -36,7 +36,6 @@ pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias;
 sem_t semJournal;
 
 pthread_mutex_t mutexListaMemorias;
-t_list *l_memorias;
 
 //  estructuras
 typedef struct{
@@ -86,7 +85,7 @@ Instruccion* crear_error(Error_set);
 void lanzar_gossiping();
 void gossipear(Memoria *mem);
 void add_memory_if_not_exists(Memoria *mem);
-bool existe_memoria_en(Memoria *mem1, t_list * lista);
+bool existe_memoria(Memoria *mem1);
 void *TH_confMonitor(void * p);
 
 #endif

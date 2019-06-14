@@ -131,9 +131,8 @@ void preguntarPorMemoriasDisponibles(){
 						free(mem);
 					}
 				}
-			}		
+			}
 		}
-		// Aca caigo si fue un error
 		free(resp->instruccion_a_realizar);
 		free(resp);
 	}

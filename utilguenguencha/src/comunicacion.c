@@ -978,7 +978,6 @@ bool chequear_conexion_a(char* ip, char* puerto){
 		liberar_conexion(fd);
 		return true;
 	}else{
-		liberar_conexion(fd);
 		return false;
 	}
 }
