@@ -11,7 +11,6 @@ int main(void) {
 
 	configure_logger();
 	configuracion_inicial();
-	MAX_VAL = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
 	pthread_mutex_init(&mutexListaMemorias, NULL);
@@ -41,6 +40,13 @@ int main(void) {
 
 	list_destroy(L_MARCOS); //entender el list_destroy_and_destroy_elements()
 	list_destroy(L_MEMORIAS);
+
+	pthread_mutex_destroy(&mutexMarcos);
+	pthread_mutex_destroy(&mutexSegmentos);
+	pthread_mutex_destroy(&mutexMemorias);
+	sem_destroy(&semJournal);
+
+
 	free(MEMORIA_PRINCIPAL);
 
 }
@@ -69,6 +75,38 @@ void configuracion_inicial(void){
 	NUMERO_MEMORIA = config_get_int_value(CONFIG,"NUMERO_MEMORIA");
 
 	//config_destroy(CONFIG);
+
+	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
+	instruccion_maxValue->instruccion = MAX_VALUE;
+
+	Instruccion* respuesta = enviar_instruccion(IP_FS,PUERTO_FS, instruccion_maxValue, POOLMEMORY, T_VALUE);
+
+	if (respuesta->instruccion == RETORNO) {
+		Retorno_Generico* retorno_generico = respuesta->instruccion_a_realizar;
+
+		if (retorno_generico->tipo_retorno == TAMANIO_VALOR_MAXIMO) {
+			Retorno_Max_Value* retorno_maxValue = retorno_generico->retorno;
+			MAX_VAL = retorno_maxValue->value_size;
+
+			log_info(LOGGER, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
+
+			// libero instruccion
+			free(instruccion_maxValue);
+
+		} else {
+			print_instruccion_parseada(respuesta);
+			log_error(LOGGER, "Memoria: No se obtuvo un MAX_VALUE al pedir el MAX_VALUE al FileSystem.");
+			exit_gracefully(-1);
+		}
+
+	} else {
+
+		print_instruccion_parseada(respuesta);
+		log_error(LOGGER, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
+		exit_gracefully(-1);
+	}
+
+
 }
 
 void retorno_consola(char* leido){
@@ -171,7 +209,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 		switch	(instruccion_parseada->instruccion){
 		case SELECT:;
 
-
 			pthread_mutex_lock(&mutexSegmentos);
 
 			Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
@@ -228,6 +265,10 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 		case INSERT:;
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
+
+			if (string_length(instruccion_insert->value) > MAX_VAL) {
+				return respuesta_error(LARGE_VALUE);
+			}
 
 			int result_insert = insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
 

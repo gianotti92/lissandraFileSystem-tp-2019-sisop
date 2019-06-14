@@ -102,6 +102,12 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 		} else {
 
 			// es INSERT
+
+			if(string_starts_with(consulta_separada[3], "\"") && string_ends_with(consulta_separada[3], "\"") ){
+				consulta_separada[3] = string_substring(consulta_separada[3], 1, (string_length(consulta_separada[3])-2));
+				//saco las comillas del value
+			}
+
 			Insert* nuevoInsert = malloc(sizeof(Insert));
 
 			string_to_upper(consulta_separada[1]);
@@ -543,6 +549,10 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					printf("ERROR - LA TABLA NO EXISTE. \n");
 					break;
 
+				case LARGE_VALUE:;
+				printf("ERROR - EL VALOR ES DEMACIADO LARGO. \n");
+				break;
+
 				case NULL_REQUEST:;
 					break;
 
@@ -625,11 +635,99 @@ void leer_por_consola(void (*f)(char*)) {
 	log_info(LOGGER, "Salida del sistema por consola");
 	exit_gracefully(EXIT_SUCCESS);
 }
-
+/*
 void free_consulta(Instruccion* consulta) {
 	free(consulta->instruccion_a_realizar);
 	free(consulta);
 }
+*/
+void free_consulta(Instruccion* consulta) {
+
+	switch (consulta->instruccion) {
+			case SELECT:;
+				free(((Select*)consulta->instruccion_a_realizar)->nombre_tabla);
+
+				break;
+
+			case INSERT:;
+				free(((Insert*)consulta->instruccion_a_realizar)->nombre_tabla);
+				free(((Insert*)consulta->instruccion_a_realizar)->value);
+
+				break;
+			case CREATE:;
+				free(((Create*)consulta->instruccion_a_realizar)->nombre_tabla);
+
+				break;
+			case DESCRIBE:;
+				free(((Describe*)consulta->instruccion_a_realizar)->nombre_tabla);
+
+				break;
+			case ADD:;
+
+				break;
+			case RUN:;
+				free(((Run*)consulta->instruccion_a_realizar)->path);
+
+				break;
+			case DROP:;
+				free(((Drop*)consulta->instruccion_a_realizar)->nombre_tabla);
+
+				break;
+
+			case JOURNAL:;
+
+
+				break;
+
+			case METRICS:;
+
+
+				break;
+			case GOSSIP:;
+				list_destroy(((Gossip*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->lista_memorias);
+
+
+				break;
+			case ERROR:;
+
+
+				break;
+			case MAX_VALUE:;
+
+
+				break;
+			case RETORNO:;
+
+				switch(((Retorno_Generico*)consulta->instruccion_a_realizar)->tipo_retorno){
+				case VALOR:;
+					free(((Retorno_Value*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->value);
+					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
+
+					break;
+				case SUCCESS:;
+					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
+					break;
+				case DATOS_DESCRIBE:;
+					free(((Retorno_Describe*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->nombre_tabla);
+					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
+					break;
+				case RETORNO_GOSSIP:;
+					list_destroy(((Gossip*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->lista_memorias);
+					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
+					break;
+				case TAMANIO_VALOR_MAXIMO:;
+
+					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
+					break;
+				}
+
+			break;
+
+	}
+	free(consulta->instruccion_a_realizar);
+	free(consulta);
+}
+
 
 uintmax_t get_timestamp() {
 
