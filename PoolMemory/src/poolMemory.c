@@ -125,7 +125,7 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
 
 	responder(cliente, respuesta);
-	free_consulta(respuesta);
+	//free_consulta(respuesta);
 	free_consulta(instruccion);
 }
 
@@ -208,7 +208,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			pthread_mutex_lock(&mutexSegmentos);
 
-			Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
+			Select* instruccion_select = instruccion_parseada->instruccion_a_realizar;
 
 			Segmento* segmento = buscar_segmento(instruccion_select->nombre_tabla);
 			void* pagina = NULL;
@@ -323,7 +323,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 
 		sem_post(&semJournal);
-		free_consulta(instruccion_parseada);
 
 		return instruccion_respuesta;
 }
@@ -439,13 +438,13 @@ void* buscar_segmento(char* nombre_segmento){
 		if(coincide_segmento(nombre_segmento, segmento)){
 			encontrado = true;
 		}
+
 		posicion ++;
 	}
 
 	if (encontrado) {
 		return segmento;
 	}
-
 	return NULL;
 }
 
@@ -515,8 +514,8 @@ Marco* buscar_marco(void* pagina){
 }
 
 bool coincide_segmento (char* nombre_segmento, Segmento* segmento){
-	int resultado = strcmp(nombre_segmento, segmento->nombre);
-	return resultado == 0;
+
+	return strcmp(nombre_segmento, segmento->nombre) == 0;
 
 }
 
@@ -563,7 +562,7 @@ void set_timestamp_pagina( void* p_pagina, t_timestamp timestamp){
 
 void set_value_pagina( void* p_pagina, char* value){
 	
-	memcpy(p_pagina + sizeof(t_key) + sizeof(t_timestamp), value, strlen(value+1));
+	memcpy(p_pagina + sizeof(t_key) + sizeof(t_timestamp), value, strlen(value)+1);
 
 }
 
@@ -717,8 +716,7 @@ int lanzar_journal(t_timestamp timestamp_journal){
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
 
 					if(instruccion_respuesta->instruccion == ERROR){
-						free_consulta(instruccion);
-						return -1;
+						log_error(LOG_ERROR, "Memoria: Fallo insert de journal"); //loguear mejor los errores posibles, como mal key, mal value, mal table
 					}
 				}
 

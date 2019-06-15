@@ -56,7 +56,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		if (length >= 5) {
 
@@ -394,9 +394,6 @@ Instruccion* crear_instruccion(Instruction_set operacion,
 
 }
 
-Instruccion* instruccion_error() {
-	return crear_instruccion(ERROR, NULL, 1);
-}
 
 int cantidad_elementos(char ** array) {
 	int i = 0;
@@ -423,7 +420,7 @@ bool es_numero(char* palabra) {
 
 void show_describes(Retorno_Describe *describe){
 	char*consistencia=consistencia2string(describe->consistencia);
-	printf("Nombre tabla: %s\nConsistencia: %s\nParticiones: %d\nTiempo compactacion: %d\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
+	printf("Nombre tabla: %s\nConsistencia: %s\nParticiones: %d\nTiempo compactacion: %d\n\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
 	free(consistencia);
 }
 
@@ -535,7 +532,7 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					break;
 
 				case CONNECTION_ERROR:;
-					printf("ERROR - ERROR DE CONECCION. \n");
+					printf("ERROR - ERROR DE CONEXION. \n");
 					break;
 
 				case JOURNAL_FAILURE:;
@@ -547,7 +544,7 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					break;
 
 				case LARGE_VALUE:;
-				printf("ERROR - EL VALOR ES DEMACIADO LARGO. \n");
+				printf("ERROR - EL VALOR ES DEMASIADO LARGO. \n");
 				break;
 
 				case NULL_REQUEST:;
@@ -648,7 +645,7 @@ void free_consulta(Instruccion* consulta) {
 
 			case INSERT:;
 				free(((Insert*)consulta->instruccion_a_realizar)->nombre_tabla);
-				free(((Insert*)consulta->instruccion_a_realizar)->value);
+				//free(((Insert*)consulta->instruccion_a_realizar)->value);
 
 				break;
 			case CREATE:;
@@ -697,7 +694,7 @@ void free_consulta(Instruccion* consulta) {
 
 				switch(((Retorno_Generico*)consulta->instruccion_a_realizar)->tipo_retorno){
 				case VALOR:;
-					free(((Retorno_Value*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->value);
+					//free(((Retorno_Value*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->value);
 					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
 
 					break;

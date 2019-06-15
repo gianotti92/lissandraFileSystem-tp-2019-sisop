@@ -54,12 +54,6 @@ void print_instruccion_parseada(Instruccion*);
 Instruccion* crear_instruccion(Instruction_set, void*, int);
 
 /**
-* @NAME: instruccion_error
-* @DESC: Devuelve una instruccion ERROR.
-*/
-Instruccion* instruccion_error();
-
-/**
 * @NAME: es_select
 * @DESC: Devuelve true si el primer elemento del array es SELECT.
 */
