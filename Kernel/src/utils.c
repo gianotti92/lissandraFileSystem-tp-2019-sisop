@@ -34,11 +34,13 @@ void putTablaSafe(t_dictionary * dic, char* key, char * value){
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
 
-Memoria *getMemoria(t_list *lista_memorias, int idMemoria){
+Memoria *getMemoriaSafe(t_list *lista_memorias, int idMemoria){
 	int aux = 0;
 	Memoria *mem = NULL;
 	while(aux < lista_memorias->elements_count){
+		pthread_mutex_lock(&mutexRecursosCompartidos);
 		mem = list_get(lista_memorias, aux);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
 		if(mem->idMemoria == idMemoria)break;
 		mem = NULL;
 		aux++;
@@ -46,7 +48,7 @@ Memoria *getMemoria(t_list *lista_memorias, int idMemoria){
 	return mem;
 }
 
-t_list * getMemoriasAsociadasSafe(Consistencia consistencia){
+t_list * getMemoriasAsociadasSafe(Consistencias consistencia){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	t_list *listaMemorias = list_get(memoriasAsociadas, consistencia);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
@@ -97,7 +99,7 @@ void lanzar_gossiping(){
 				while(list_size(listaMemDisp) > 0){
 					Memoria * mem = list_remove(listaMemDisp, 0);
 					pthread_mutex_lock(&mutexRecursosCompartidos);
-					if(getMemoria(memoriasDisponibles, mem->idMemoria) == NULL){
+					if(getMemoriaSafe(memoriasDisponibles, mem->idMemoria) == NULL){
 						list_add(memoriasDisponibles, mem);
 						pthread_mutex_unlock(&mutexRecursosCompartidos);
 					}else{

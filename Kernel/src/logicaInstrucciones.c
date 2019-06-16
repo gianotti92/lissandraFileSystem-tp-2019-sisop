@@ -106,13 +106,12 @@ void logicaAdd(Add * add){
 }
 
 void logicaSelect(Select * select){
+
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) select;
 	i->instruccion = SELECT;
-
-
 	Consistencias consistencia = obtenerConsistencia(select->nombre_tabla);
-	if(consistencia != NULL){
+	if(consistencia >0){
 		Memoria * m = NULL;
 		t_list *memoriasAsoc = getMemoriasAsociadasSafe(consistencia);
 		switch(consistencia){
@@ -166,7 +165,7 @@ void logicaInsert(Insert * insert){
 	i->instruccion = INSERT;
 
 	Consistencias consistencia = obtenerConsistencia(insert->nombre_tabla);
-	if(consistencia != NULL){
+	if(consistencia > 0){
 		t_list *memoriasAsoc = getMemoriasAsociadasSafe(consistencia);
 		int max = list_size(memoriasAsoc);
 		int randomId = rand() % max + 1;
@@ -200,7 +199,7 @@ void logicaDrop(Drop * drop){
 
 	Consistencias consistencia = obtenerConsistencia(drop->nombre_tabla);
 
-	if(consistencia != NULL){
+	if(consistencia > 0){
 		t_list *memoriasAsoc = getMemoriasAsociadasSafe(consistencia);
 		int max = list_size(memoriasAsoc);
 		int randomId = rand() % max + 1;
@@ -247,7 +246,7 @@ void logicaDescribe(Describe * describe){
 
 		Consistencias consistencia = obtenerConsistencia(describe->nombre_tabla);
 
-		if(consistencia != NULL){
+		if(consistencia > 0){
 
 			t_list *memoriasAsoc = getMemoriasAsociadasSafe(consistencia);
 
@@ -295,8 +294,9 @@ Consistencias obtenerConsistencia(char * nombreTabla){
 		list_destroy(describes);
 		free(describeResponse->instruccion_a_realizar);
 		free(describeResponse);
+		return consistencia;
 		default:;
-		return NULL;
+		return -1;
 	}
 }
 

@@ -1,17 +1,19 @@
 #ifndef KERNEL_H_
 #define KERNEL_H_
 
-#include "../../utilguenguencha/src/tipos_guenguencha.h"
-#include "../../utilguenguencha/src/comunicacion.h"
-#include "../../utilguenguencha/src/kernel_utils.h"
-#include "../../utilguenguencha/src/parser.h"
-#include "../../utilguenguencha/src/utils.h"
+
 #include <commons/collections/dictionary.h>
 #include <commons/collections/list.h>
 #include <semaphore.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
+#include "../../utilguenguencha/src/tipos_guenguencha.h"
+#include "../../utilguenguencha/src/comunicacion.h"
+#include "../../utilguenguencha/src/kernel_utils.h"
+#include "../../utilguenguencha/src/parser.h"
+#include "../../utilguenguencha/src/utils.h"
+
 
 #define key1 "0"
 #define key2 "1"
@@ -39,9 +41,9 @@ void leerArchivo(char * path);
 void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
 Memoria * desencolarMemoria(t_list * lista, int posicion);
-t_list * getMemoriasAsociadasSafe(Consistencia consistencia);
+t_list * getMemoriasAsociadasSafe(Consistencias consistencia);
 void putTablaSafe(t_dictionary * dic, char* key, char * value);
-Memoria *getMemoria(t_list *lista_memorias, int idMemoria);
+Memoria *getMemoriaSafe(t_list *lista_memorias, int idMemoria);
 char* getTablasSafe(t_dictionary * dic, char*key);
 void ejecutar();
 void iniciarEstructurasAsociadas();

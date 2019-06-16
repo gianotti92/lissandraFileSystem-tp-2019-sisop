@@ -2,6 +2,8 @@
 #define tipos_guen
 
 #include <stdint.h>
+#include <stdio.h>
+#include <commons/collections/list.h>
 
 //nuestros tipos de datos
 #define t_key uint16_t

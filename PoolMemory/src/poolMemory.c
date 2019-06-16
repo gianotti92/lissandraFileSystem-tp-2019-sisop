@@ -306,8 +306,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case GOSSIP:;
-			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
-
+			instruccion_respuesta = respuesta_success();
 			break;
 
 		default:;
