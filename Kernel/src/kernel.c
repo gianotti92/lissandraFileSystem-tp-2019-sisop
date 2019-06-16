@@ -18,7 +18,7 @@ int main(void) {
 
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL);
 
-	pthread_create(&memoriasDisponibles, NULL, (void*) preguntarPorMemoriasDisponibles, NULL);
+	pthread_create(&memoriasDisponibles, NULL, (void*) lanzar_gossiping, NULL);
 	pthread_detach(memoriasDisponibles);
 
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,

@@ -32,11 +32,14 @@ void iniciarEstados() {
 }
 
 void iniciarEstructurasAsociadas(){
-	memoriasAsociadas = dictionary_create();
-	memoriasDisponibles = dictionary_create();
-	metrics = dictionary_create();
-
+	memoriasDisponibles = list_create();
+	memoriasAsociadas = list_create();
+	memoriasEv = list_create();
 	memoriasSc = list_create();
 	memoriasHc = list_create();
-	memoriasEv = list_create();
+	list_add_in_index(memoriasAsociadas, EC, memoriasEv);
+	list_add_in_index(memoriasAsociadas, SC, memoriasSc);
+	list_add_in_index(memoriasAsociadas, SHC, memoriasHc);
+	metrics = dictionary_create();
+
 }

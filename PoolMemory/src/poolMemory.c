@@ -306,7 +306,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case GOSSIP:;
-			instruccion_respuesta = respuesta_success();
+			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
+
 			break;
 
 		default:;
@@ -323,7 +324,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 
 		sem_post(&semJournal);
-		free_consulta(instruccion_parseada);
+		//free_consulta(instruccion_parseada); -> Revisar porque falla con gossip
 
 		return instruccion_respuesta;
 }
@@ -645,8 +646,8 @@ void gossipear(Memoria *mem){
 			free(res);
 			Retorno_Generico *ret = res->instruccion_a_realizar;
 			if(ret->tipo_retorno == RETORNO_GOSSIP){
-				free(ret);
 				Gossip *gossip = ret->retorno;
+				free(ret);
 				t_list *lista_retorno = gossip->lista_memorias;
 				free(gossip);
 				list_iterate(lista_retorno, (void*)add_memory_if_not_exists);

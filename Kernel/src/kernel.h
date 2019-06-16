@@ -1,7 +1,7 @@
 #ifndef KERNEL_H_
 #define KERNEL_H_
 
-
+#include "../../utilguenguencha/src/tipos_guenguencha.h"
 #include "../../utilguenguencha/src/comunicacion.h"
 #include "../../utilguenguencha/src/kernel_utils.h"
 #include "../../utilguenguencha/src/parser.h"
@@ -39,17 +39,15 @@ void leerArchivo(char * path);
 void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
 Memoria * desencolarMemoria(t_list * lista, int posicion);
-void putMemorySafe(t_dictionary * dic, char* key, Memoria * value);
-void putMemoryListSafe(t_dictionary * dic, char* key, t_list * value);
-t_list * getMemoriasAsociadasSafe(t_dictionary * dic, char*key);
+t_list * getMemoriasAsociadasSafe(Consistencia consistencia);
 void putTablaSafe(t_dictionary * dic, char* key, char * value);
-Memoria* getMemoriaSafe(t_dictionary * dic, char*key);
+Memoria *getMemoria(t_list *lista_memorias, int idMemoria);
 char* getTablasSafe(t_dictionary * dic, char*key);
 void ejecutar();
 void iniciarEstructurasAsociadas();
 void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
-void preguntarPorMemoriasDisponibles();
+void lanzar_gossiping();
 void newToReady();
 void logicaCreate(Create * create);
 Proceso * logicaRun(Run * run, Proceso * proceso);
@@ -65,8 +63,9 @@ void calculoMetrics();
 void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
 void *TH_confMonitor(void * p);
-char * obtenerConsistencia(char * nombreTabla);
+Consistencias obtenerConsistencia(char * nombreTabla);
 int generarHash(char * nombreTabla, int tamLista, int key);
+void mostrarId(Memoria * memoria);
 
 // Variables del proceso
 t_list *estadoReady;
@@ -74,8 +73,8 @@ t_list *estadoNew;
 t_list *estadoExit;
 
 // tablas del proceso
-t_dictionary * memoriasDisponibles;
-t_dictionary * memoriasAsociadas;
+t_list * memoriasDisponibles;
+t_list * memoriasAsociadas;
 
 t_list * memoriasSc;
 t_list * memoriasHc;
