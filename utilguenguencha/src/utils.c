@@ -2,7 +2,7 @@
 
 void configure_logger() {
 	LOGGER = log_create("logger.log","tp-lissandra",0,LOG_LEVEL_INFO);
-	LOG_ERROR = log_create("log_error.log","tp-lissandra",1,LOG_LEVEL_ERROR);
+	LOG_ERROR = log_create("log_error.log","tp-lissandra",0,LOG_LEVEL_ERROR);
 }
 
 void exit_gracefully(int exit_code){

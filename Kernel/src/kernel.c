@@ -73,8 +73,8 @@ void ejecutar() {
 		switch(proceso->instruccion->instruccion){
 			case RUN:{
 				Run * run = (Run *) proceso->instruccion->instruccion_a_realizar;
-				proceso = logicaRun(run, proceso);
 				proceso->esProcesoRun=true;
+				proceso = logicaRun(run, proceso);
 				proceso->quantumProcesado = 0;
 				break;
 			}
