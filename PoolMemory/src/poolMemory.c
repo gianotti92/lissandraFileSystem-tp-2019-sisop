@@ -264,7 +264,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
 
 			if (string_length(instruccion_insert->value) > MAX_VAL) {
-				return respuesta_error(LARGE_VALUE);
+				instruccion_respuesta = respuesta_error(LARGE_VALUE);
+				break;
 			}
 
 			int result_insert = insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);

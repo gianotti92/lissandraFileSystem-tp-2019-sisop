@@ -76,7 +76,11 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[4] = consulta_separada[4 + i];
 				}
 				consulta_separada[5] = consulta_separada[5 + i];
-				consulta_separada[6] = consulta_separada[6 + i];
+
+				while ((5 + i) < length){
+					i++;
+					consulta_separada[6] = consulta_separada[6 + i];
+				}
 
 				length = length - i;
 			}
