@@ -289,9 +289,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case JOURNAL:;
-
-			sem_wait(&semJournal);
-
 			Journal* instruccion_journal = (Journal*) instruccion_parseada->instruccion_a_realizar;
 
 			int result_journal = lanzar_journal(instruccion_journal->timestamp);
@@ -302,7 +299,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				instruccion_respuesta = respuesta_error(JOURNAL_FAILURE);
 			}
 
-			sem_post(&semJournal);
 			break;
 
 		case GOSSIP:;
@@ -415,9 +411,8 @@ void eliminar_de_memoria(char* nombre_tabla){
 		if (index >= 0){
 			list_remove(L_SEGMENTOS, index);
 		}
-
-	pthread_mutex_unlock(&mutexSegmentos);
 	}
+	pthread_mutex_unlock(&mutexSegmentos);
 }
 
 
@@ -683,6 +678,8 @@ bool existe_memoria(Memoria *mem1){
 
 int lanzar_journal(t_timestamp timestamp_journal){
 
+	sem_wait(&semJournal);
+
 	int posicion_segmento = (L_SEGMENTOS->elements_count -1);
 	int posicion_pagina;
 	Segmento* segmento;
@@ -732,6 +729,7 @@ int lanzar_journal(t_timestamp timestamp_journal){
 	}
 
 	free_consulta(instruccion);
+	sem_post(&semJournal);
 	return 1;
 }
 
