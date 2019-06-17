@@ -544,7 +544,47 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					break;
 
 				case LARGE_VALUE:;
-				printf("ERROR - EL VALOR ES DEMASIADO LARGO. \n");
+					printf("ERROR - EL VALOR ES DEMASIADO LARGO. \n");
+				break;
+
+				case TABLE_EXIST:;
+					printf("ERROR - LA TABLA YA EXISTE. \n");
+				break;
+
+				case UNKNOWN:;
+					printf("ERROR DESCONOCIDO. \n");
+				break;
+
+				case MISSING_FILE:;
+					printf("ERROR - FS: NO EXISTE EL ARCHIVO. \n");
+				break;
+
+				case FILE_DELETE_ERROR:;
+					printf("ERROR - FS: NO SE PUDO ELIMINAR EL ARCHIVO. \n");
+				break;
+
+				case FILE_OPEN_ERROR:;
+					printf("ERROR - FS: NO SE PUDO ABRIR EL ARCHIVO. \n");
+				break;
+
+				case DIR_OPEN_ERROR:;
+					printf("ERROR - FS: NO SE PUDO ABRIR EL DIRECTORIO. \n");
+				break;
+
+				case DIR_DELETE_ERROR:;
+					printf("ERROR - FS: NO SE PUDO ELIMINAR EL DIRECTORIO. \n");
+				break;
+
+				case DIR_CREATE_ERROR:;
+					printf("ERROR - FS: NO SE PUDO CREAR EL DIRECTORIO. \n");
+				break;
+
+				case BLOCK_ASSIGN_ERROR:;
+					printf("ERROR - FS: NO SE PUDIERON ASIGNAR LOS BLOQUES. \n");
+				break;
+
+				case BLOCK_MAX_REACHED:;
+					printf("ERROR - FS: NO SE PUDIERON ASIGNAR LOS BLOQUES - MAXIMO ALCANZADO. \n");
 				break;
 
 				case NULL_REQUEST:;
