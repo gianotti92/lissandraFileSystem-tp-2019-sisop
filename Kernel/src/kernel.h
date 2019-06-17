@@ -19,6 +19,8 @@
 #define key4 "3"
 #define key5 "4"
 
+t_log * LOGGER_METRICS;
+
 typedef struct{
 	Instruccion* instruccion;
 	Instruccion* instruccionAProcesar;

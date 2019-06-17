@@ -94,47 +94,69 @@ void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 
 }
 
+//void preguntarPorMemoriasDisponibles(){
+//	while(true){
+//		sleep(PREGUNTAR_POR_MEMORIAS);
+//		Instruccion *inst = malloc(sizeof(Instruccion));
+//		inst->instruccion = GOSSIP;
+//		Gossip *gossip = malloc(sizeof(Gossip));
+//		gossip->lista_memorias = list_create();
+//		inst->instruccion_a_realizar = gossip;
+//		Instruccion * resp = enviar_instruccion(IP_MEMORIA_PPAL,
+//												PUERTO_MEMORIA_PPAL,
+//												inst,
+//												KERNEL,
+//												T_GOSSIPING);
+//		list_destroy(gossip->lista_memorias);
+//		free(gossip);
+//		free(inst);
+//		if(resp->instruccion == RETORNO){
+//			Retorno_Generico *ret = resp->instruccion_a_realizar;
+//			free(resp);
+//			if (ret->tipo_retorno == RETORNO_GOSSIP){
+//				Gossip * gossip = ret->retorno;
+//				free(ret);
+//				t_list * listaMemDisp =  gossip->lista_memorias;
+//				while(list_size(listaMemDisp) > 0){
+//					Memoria * mem = list_remove(listaMemDisp, 0);
+//					char * key = string_new();
+//					sprintf(key, "%d", mem->idMemoria);
+//					pthread_mutex_lock(&mutexRecursosCompartidos);
+//					if(!dictionary_has_key(memoriasDisponibles, key)){
+//						dictionary_put(memoriasDisponibles, key, mem);
+//						pthread_mutex_unlock(&mutexRecursosCompartidos);
+//					}else{
+//						free(mem->ip);
+//						free(mem->puerto);
+//						free(mem);
+//					}
+//				}
+//			}
+//		}
+//		free(resp->instruccion_a_realizar);
+//		free(resp);
+//	}
+//
+//}
+
 void preguntarPorMemoriasDisponibles(){
 	while(true){
-		sleep(PREGUNTAR_POR_MEMORIAS);
-		Instruccion *inst = malloc(sizeof(Instruccion));
-		inst->instruccion = GOSSIP;
-		Gossip *gossip = malloc(sizeof(Gossip));
-		gossip->lista_memorias = list_create();
-		inst->instruccion_a_realizar = gossip;
-		Instruccion * resp = enviar_instruccion(IP_MEMORIA_PPAL,
-												PUERTO_MEMORIA_PPAL,
-												inst,
-												KERNEL,
-												T_GOSSIPING);
-		list_destroy(gossip->lista_memorias);
-		free(gossip);
-		free(inst);
-		if(resp->instruccion == RETORNO){
-			Retorno_Generico *ret = resp->instruccion_a_realizar;
-			free(resp);
-			if (ret->tipo_retorno == RETORNO_GOSSIP){
-				Gossip * gossip = ret->retorno;
-				free(ret);
-				t_list * listaMemDisp =  gossip->lista_memorias;
-				while(list_size(listaMemDisp) > 0){
-					Memoria * mem = list_remove(listaMemDisp, 0);
-					char * key = string_new();
-					sprintf(key, "%d", mem->idMemoria);
-					pthread_mutex_lock(&mutexRecursosCompartidos);
-					if(!dictionary_has_key(memoriasDisponibles, key)){
-						dictionary_put(memoriasDisponibles, key, mem);
-						pthread_mutex_unlock(&mutexRecursosCompartidos);
-					}else{
-						free(mem->ip);
-						free(mem->puerto);
-						free(mem);
-					}
-				}
-			}
-		}
-		free(resp->instruccion_a_realizar);
-		free(resp);
-	}
+		Memoria * m = malloc(sizeof(Memoria));
 
+		/* funcion de conexiones que me devuelve memoria disponible */
+		m->idMemoria = 1;
+		char * ip = string_new();
+		char * puerto = string_new();
+		string_append(&ip, "127.0.0.1");
+		string_append(&puerto, "8080");
+		m->puerto = puerto;
+		m->ip = ip;
+		/* funcion de conexiones que me devuelve memoria disponible */
+
+		char * key = string_new();
+		sprintf(key, "%d", m->idMemoria);
+		putMemorySafe(memoriasDisponibles, key , m);
+
+		sleep(5);
+	}
 }
