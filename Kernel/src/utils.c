@@ -147,8 +147,8 @@ void preguntarPorMemoriasDisponibles(){
 		m->idMemoria = 1;
 		char * ip = string_new();
 		char * puerto = string_new();
-		string_append(&ip, "127.0.0.1");
-		string_append(&puerto, "8080");
+		string_append(&ip, IP_MEMORIA_PPAL);
+		string_append(&puerto, PUERTO_MEMORIA_PPAL);
 		m->puerto = puerto;
 		m->ip = ip;
 		/* funcion de conexiones que me devuelve memoria disponible */
