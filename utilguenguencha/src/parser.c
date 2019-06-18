@@ -1,8 +1,8 @@
 #include "parser.h"
 
-Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
+Instruccion* parser_lql(char* consulta_original, Procesos procesoOrigen) {
 
-	if (string_is_empty(consulta)) {
+	if (string_is_empty(consulta_original)) {
 		return respuesta_error(NULL_REQUEST);
 	}
 
@@ -10,7 +10,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 	uintmax_t echo_time = get_timestamp();
 
-	consulta = string_from_format("%s %ju", consulta, (uintmax_t) echo_time);
+	char* consulta = string_from_format("%s %ju", consulta_original, (uintmax_t) echo_time);
 	log_info(LOGGER, "Parser: Consulta - %s", consulta);
 
 	char** consulta_separada = string_split(consulta, " ");

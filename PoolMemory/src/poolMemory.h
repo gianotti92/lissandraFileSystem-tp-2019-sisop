@@ -26,7 +26,8 @@ int NUMERO_MEMORIA;
 int MAX_VAL;
 
 void* MEMORIA_PRINCIPAL; //puntero a malloc gigante
-int PAGINAS_MODIFICADAS; //contador de paginas en uso, para simplificar el memory_full
+int PAGINAS_MODIFICADAS; //contador de paginas modificadas, para simplificar el memory_full
+int PAGINAS_USADAS;		 //contador de paginas en uso
 t_list* L_MARCOS;		 //lista de "marcos" de la memoria
 t_list* L_SEGMENTOS;	 //lista de segmentos, cada segmento tiene su lista de paginas
 t_list* L_MEMORIAS;		 //lista de IPs-PUERTO de las memorias disponibles
@@ -45,6 +46,7 @@ typedef struct{
 
 typedef struct{
 	void* pagina;
+	t_timestamp ultimo_uso;
 	t_flag en_uso;
 }Marco;
 
@@ -77,7 +79,7 @@ void lanzar_gossiping();
 int lanzar_journal(t_timestamp);
 void print_memorias ();
 void* pedir_pagina();
-void* seleccionar_pagina ();
+void* seleccionar_marco();
 Segmento* crear_segmento(char*);
 bool pagina_en_uso(Marco*);
 bool memoria_full();
@@ -87,5 +89,8 @@ void gossipear(Memoria *mem);
 void add_memory_if_not_exists(Memoria *mem);
 bool existe_memoria(Memoria *mem1);
 void *TH_confMonitor(void * p);
+void marcar_ultimo_uso(void* pagina);
+Marco* marco_por_LRU();
+void eliminar_referencia(void* pagina);
 
 #endif

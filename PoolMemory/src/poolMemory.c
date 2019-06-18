@@ -86,7 +86,8 @@ void configuracion_inicial(void){
 
 		if (retorno_generico->tipo_retorno == TAMANIO_VALOR_MAXIMO) {
 			Retorno_Max_Value* retorno_maxValue = retorno_generico->retorno;
-			MAX_VAL = retorno_maxValue->value_size;
+			//MAX_VAL = retorno_maxValue->value_size;
+			MAX_VAL = 300;
 
 			log_info(LOGGER, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
 
@@ -256,6 +257,9 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				p_retorno_generico->retorno = p_retorno_valor;
 
 				instruccion_respuesta->instruccion_a_realizar = p_retorno_generico;
+
+				marcar_ultimo_uso(pagina);
+
 			}
 
 			break;
@@ -343,16 +347,19 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 
 	}
 
+	pthread_mutex_unlock(&mutexSegmentos);
+
 	void* pagina = buscar_pagina_en_segmento(segmento, key);
 
 	if(pagina == NULL){
 		//no tenemos la pagina
-		pagina = seleccionar_pagina();
+		pagina = seleccionar_marco();
 
 		if(pagina == NULL){
 			return -2; // no hay paginas, la memoria esta FULL
 		}
 		pagina_nueva = true;
+
 		agregar_pagina_en_segmento(segmento, pagina);
 	}
 
@@ -361,11 +368,11 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 	set_timestamp_pagina(pagina, timestamp_insert);
 	set_modificado_pagina(pagina, modificado);
 
-	if (pagina_nueva && modificado){
+	marcar_ultimo_uso(pagina);
+
+	if (pagina_nueva && modificado && (PAGINAS_MODIFICADAS < L_MARCOS->elements_count)){
 		PAGINAS_MODIFICADAS++;
 	}
-
-	pthread_mutex_unlock(&mutexSegmentos);
 
 	return 1;
 }
@@ -382,10 +389,7 @@ void eliminar_de_memoria(char* nombre_tabla){
 		Marco* marco_liberar;
 		void* pagina_liberar;
 
-
-
 		while (posicion >= 0){
-
 
 			pagina_liberar = list_get(paginas, posicion);
 
@@ -394,7 +398,7 @@ void eliminar_de_memoria(char* nombre_tabla){
 
 			if(marco_liberar != NULL){
 				marco_liberar->en_uso = false;
-				PAGINAS_MODIFICADAS--;
+				PAGINAS_USADAS--;
 			}
 
 			pthread_mutex_unlock(&mutexMarcos);
@@ -402,8 +406,6 @@ void eliminar_de_memoria(char* nombre_tabla){
 			posicion --;
 
 		}
-
-
 
 		list_destroy(paginas);
 
@@ -418,7 +420,9 @@ void eliminar_de_memoria(char* nombre_tabla){
 
 
 void agregar_pagina_en_segmento(Segmento* segmento, void* pagina){
+	pthread_mutex_lock(&mutexSegmentos);
 	list_add(segmento->paginas, pagina);
+	pthread_mutex_unlock(&mutexSegmentos);
 }
 
 void* buscar_segmento(char* nombre_segmento){
@@ -718,18 +722,16 @@ int lanzar_journal(t_timestamp timestamp_journal){
 					}
 				}
 
-				marco = buscar_marco(pagina);
-				marco->en_uso = false;
 				PAGINAS_MODIFICADAS--;
-
 			}
+
 			posicion_pagina--;
 		}
 		eliminar_de_memoria(segmento->nombre);
 		posicion_segmento--;
 	}
 
-	free_consulta(instruccion);
+	//free_consulta(instruccion);
 	sem_post(&semJournal);
 	return 1;
 }
@@ -749,10 +751,15 @@ void print_memorias (){
 
 }
 
-void* seleccionar_pagina (){
+void* seleccionar_marco(){
 	 //aca iria el algoritmo para reemplazar paginas
 
-	if(L_MARCOS->elements_count > PAGINAS_MODIFICADAS){
+	if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
+		t_timestamp timestamp = get_timestamp();
+		lanzar_journal(timestamp);
+	}
+
+	if(L_MARCOS->elements_count > PAGINAS_USADAS){
 
 		int posicion = 0;
 		Marco* marco = list_get(L_MARCOS, posicion);
@@ -763,10 +770,18 @@ void* seleccionar_pagina (){
 		}
 
 		marco->en_uso = true;
+		PAGINAS_USADAS++;
 
 		return marco->pagina;
 	}
 	else {
+
+		void* pagina = marco_por_LRU();
+		if (pagina != NULL){
+			eliminar_referencia(pagina);
+			return pagina;
+		}
+
 		printf("No hay mas memoria chinguenguencha!");
 		log_info(LOGGER,"Memoria - La memoria esta FULL.");
 		return (void*) NULL;
@@ -823,3 +838,79 @@ void *TH_confMonitor(void * p){
 	return (void*)0;
 }
 
+void marcar_ultimo_uso(void* pagina){
+
+	int posicion = L_MARCOS->elements_count -1;
+	bool encontrado = false;
+	Marco* marco;
+
+	while(posicion > 0 && !encontrado ){
+		marco = list_get(L_MARCOS, posicion);
+
+		if(marco->pagina == pagina){
+			marco->ultimo_uso = get_timestamp();
+			encontrado = true;
+		}
+
+		posicion --;
+	}
+
+}
+
+Marco* marco_por_LRU(){
+
+	Marco *marco, *marco_seleccionado;
+	int posicion = L_MARCOS->elements_count -1;
+
+	marco_seleccionado = list_get(L_MARCOS, posicion);
+	posicion--;
+
+		while (posicion >= 0){
+
+			marco = list_get(L_MARCOS, posicion);
+
+			if(marco->ultimo_uso < marco_seleccionado->ultimo_uso){
+				marco_seleccionado = marco;
+			}
+
+			posicion--;
+		}
+
+	return marco_seleccionado->pagina;
+}
+
+void eliminar_referencia(void* pagina_a_eliminar){
+
+	Segmento* segmento;
+	int pos_segmento = L_SEGMENTOS->elements_count -1;
+
+	t_list* paginas_de_segmento;
+	int pos_paginas;
+
+	void* pagina;
+
+	bool marco_eliminado = false;
+
+	while (pos_segmento >= 0 && !marco_eliminado) {
+		segmento = list_get(L_SEGMENTOS, pos_segmento);
+		paginas_de_segmento = segmento->paginas;
+
+		pos_paginas = paginas_de_segmento->elements_count -1;
+
+		while (pos_paginas >= 0 && !marco_eliminado){
+
+			pagina = list_get(paginas_de_segmento, pos_paginas);
+
+			if (pagina == pagina_a_eliminar){
+				list_remove(paginas_de_segmento, pos_paginas);
+				marco_eliminado = true;
+			}
+
+			pos_paginas--;
+		}
+
+		pos_segmento--;
+
+	}
+
+}
