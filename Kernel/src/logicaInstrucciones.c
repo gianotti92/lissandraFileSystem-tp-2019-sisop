@@ -273,8 +273,6 @@ void logicaDescribe(Describe * describe){
 		/*liberar con instruccion kevin*/
 		free(intstruccionRespuesta);
 	}
-	free(inst->instruccion_a_realizar);
-	free(inst);
 }
 
 Consistencias obtenerConsistencia(char * nombreTabla){

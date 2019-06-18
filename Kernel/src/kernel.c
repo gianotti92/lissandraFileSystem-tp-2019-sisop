@@ -88,11 +88,11 @@ void ejecutar() {
 				char * campo5 = dictionary_get(metrics, key5);
 				pthread_mutex_unlock(&mutexRecursosCompartidos);
 
-				log_info(LOGGER, campo1);
-				log_info(LOGGER, campo2);
-				log_info(LOGGER, campo3);
-				log_info(LOGGER, campo4);
-				log_info(LOGGER, campo5);
+				printf("%s\n", campo1);
+				printf("%s\n", campo2);
+				printf("%s\n", campo3);
+				printf("%s\n", campo4);
+				printf("%s\n", campo5);
 
 				proceso->esProcesoRun=false;
 				break;

@@ -104,14 +104,15 @@ int deleteTable(char* tabla){
 						closedir(d);
 						free(path);
 						free(filename);
-						return 1;
+						return FILE_DELETE_ERROR;
 					}
 				} else {
-					if(fs_delete(filename)!=0){
+					int retval = fs_delete(filename);
+					if(retval != 0){
 						closedir(d);
 						free(path);
 						free(filename);
-						return 1;
+						return retval;
 					}
 				}
 				free(filename);
@@ -121,12 +122,12 @@ int deleteTable(char* tabla){
 	} else {
 		log_error(LOGGER,"Error al abrir el directorio %s, %s",path, strerror(errno));
 		free(path);
-		return 1;
+		return DIR_OPEN_ERROR;
 	}
 	if(remove(path)){
 		log_error(LOGGER,"Error al eliminar el directorio '%s', %s",path,strerror(errno));
 		free(path);
-		return 1;
+		return DIR_DELETE_ERROR;
 	}
 	free(path);
 	return 0;
@@ -148,11 +149,12 @@ int read_temp_files(char* tabla,t_list* listaRegistros){
 				if(strstr(dir->d_name,".tmp") == dir->d_name+(strlen(dir->d_name)-strlen(".tmp")) || strstr(dir->d_name,".tmpc") == dir->d_name+(strlen(dir->d_name)-strlen(".tmpc"))){
 					char*filename=malloc(strlen(path)+strlen(dir->d_name)+2);
 					sprintf(filename,"%s/%s",path,dir->d_name);
-					if(fs_read(filename,listaRegistros)!=0){
+					int retval = fs_read(filename,listaRegistros);
+					if(retval != 0){
 						closedir(d);
 						free(path);
 						free(filename);
-						return 1;
+						return retval;
 					}
 					free(filename);
 				}
@@ -162,7 +164,7 @@ int read_temp_files(char* tabla,t_list* listaRegistros){
 	} else {
 		log_error(LOGGER,"Error al abrir el directorio %s, %s",path,strerror(errno));
 		free(path);
-		return 1;
+		return DIR_OPEN_ERROR;
 	}
 	free(path);
 	return 0;

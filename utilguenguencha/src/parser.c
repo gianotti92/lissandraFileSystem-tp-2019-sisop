@@ -56,7 +56,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
-			return instruccion_error();
+			return respuesta_error(BAD_REQUEST);
 		}
 		if (length >= 5) {
 
@@ -76,7 +76,11 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[4] = consulta_separada[4 + i];
 				}
 				consulta_separada[5] = consulta_separada[5 + i];
-				consulta_separada[6] = consulta_separada[6 + i];
+
+				while ((5 + i) < length){
+					i++;
+					consulta_separada[6] = consulta_separada[6 + i];
+				}
 
 				length = length - i;
 			}
@@ -394,9 +398,6 @@ Instruccion* crear_instruccion(Instruction_set operacion,
 
 }
 
-Instruccion* instruccion_error() {
-	return crear_instruccion(ERROR, NULL, 1);
-}
 
 int cantidad_elementos(char ** array) {
 	int i = 0;
@@ -423,7 +424,7 @@ bool es_numero(char* palabra) {
 
 void show_describes(Retorno_Describe *describe){
 	char*consistencia=consistencia2string(describe->consistencia);
-	printf("Nombre tabla: %s\nConsistencia: %s\nParticiones: %d\nTiempo compactacion: %d\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
+	printf("Nombre tabla: %s\nConsistencia: %s\nParticiones: %d\nTiempo compactacion: %d\n\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
 	free(consistencia);
 }
 
@@ -535,7 +536,7 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					break;
 
 				case CONNECTION_ERROR:;
-					printf("ERROR - ERROR DE CONECCION. \n");
+					printf("ERROR - ERROR DE CONEXION. \n");
 					break;
 
 				case JOURNAL_FAILURE:;
@@ -547,7 +548,47 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					break;
 
 				case LARGE_VALUE:;
-				printf("ERROR - EL VALOR ES DEMACIADO LARGO. \n");
+					printf("ERROR - EL VALOR ES DEMASIADO LARGO. \n");
+				break;
+
+				case TABLE_EXIST:;
+					printf("ERROR - LA TABLA YA EXISTE. \n");
+				break;
+
+				case UNKNOWN:;
+					printf("ERROR DESCONOCIDO. \n");
+				break;
+
+				case MISSING_FILE:;
+					printf("ERROR - FS: NO EXISTE EL ARCHIVO. \n");
+				break;
+
+				case FILE_DELETE_ERROR:;
+					printf("ERROR - FS: NO SE PUDO ELIMINAR EL ARCHIVO. \n");
+				break;
+
+				case FILE_OPEN_ERROR:;
+					printf("ERROR - FS: NO SE PUDO ABRIR EL ARCHIVO. \n");
+				break;
+
+				case DIR_OPEN_ERROR:;
+					printf("ERROR - FS: NO SE PUDO ABRIR EL DIRECTORIO. \n");
+				break;
+
+				case DIR_DELETE_ERROR:;
+					printf("ERROR - FS: NO SE PUDO ELIMINAR EL DIRECTORIO. \n");
+				break;
+
+				case DIR_CREATE_ERROR:;
+					printf("ERROR - FS: NO SE PUDO CREAR EL DIRECTORIO. \n");
+				break;
+
+				case BLOCK_ASSIGN_ERROR:;
+					printf("ERROR - FS: NO SE PUDIERON ASIGNAR LOS BLOQUES. \n");
+				break;
+
+				case BLOCK_MAX_REACHED:;
+					printf("ERROR - FS: NO SE PUDIERON ASIGNAR LOS BLOQUES - MAXIMO ALCANZADO. \n");
 				break;
 
 				case NULL_REQUEST:;
@@ -632,12 +673,12 @@ void leer_por_consola(void (*f)(char*)) {
 	log_info(LOGGER, "Salida del sistema por consola");
 	exit_gracefully(EXIT_SUCCESS);
 }
-/*
-void free_consulta(Instruccion* consulta) {
-	free(consulta->instruccion_a_realizar);
-	free(consulta);
-}
-*/
+
+//void free_consulta(Instruccion* consulta) {
+//	free(consulta->instruccion_a_realizar);
+//	free(consulta);
+//}
+
 void free_consulta(Instruccion* consulta) {
 
 	switch (consulta->instruccion) {
@@ -648,7 +689,7 @@ void free_consulta(Instruccion* consulta) {
 
 			case INSERT:;
 				free(((Insert*)consulta->instruccion_a_realizar)->nombre_tabla);
-				free(((Insert*)consulta->instruccion_a_realizar)->value);
+				//free(((Insert*)consulta->instruccion_a_realizar)->value);
 
 				break;
 			case CREATE:;
@@ -697,7 +738,7 @@ void free_consulta(Instruccion* consulta) {
 
 				switch(((Retorno_Generico*)consulta->instruccion_a_realizar)->tipo_retorno){
 				case VALOR:;
-					free(((Retorno_Value*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->value);
+					//free(((Retorno_Value*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->value);
 					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
 
 					break;

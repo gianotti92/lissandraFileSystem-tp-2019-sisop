@@ -114,7 +114,6 @@ void lanzar_gossiping(){
 		free(resp->instruccion_a_realizar);
 		free(resp);
 	}
-
 }
 
 void mostrarId(Memoria * memoria){
