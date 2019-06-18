@@ -201,7 +201,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 		sem_wait(&semJournal);
 
-		Instruccion* instruccion_respuesta = malloc(sizeof(Instruccion));
+		Instruccion* instruccion_respuesta;
 
 		switch	(instruccion_parseada->instruccion){
 		case SELECT:;
@@ -235,16 +235,13 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 							} else if (result_insert < 0){
 								instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 							}
-						} else {
-							instruccion_respuesta = respuesta_error(BAD_RESPONSE);
-						}
+						} 
 					} 
-
-
 				}
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
 			} else {
 			// tenemos la tabla-key en memoria
+				instruccion_respuesta = malloc(sizeof(Instruccion));
 				instruccion_respuesta->instruccion = RETORNO;
 				Retorno_Generico* p_retorno_generico = malloc(sizeof(Retorno_Generico));
 				Retorno_Value* p_retorno_valor = malloc(sizeof(Retorno_Value));
@@ -261,6 +258,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case INSERT:;
+			instruccion_respuesta = malloc(sizeof(Instruccion));
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
 
 			if (string_length(instruccion_insert->value) > MAX_VAL) {
@@ -306,7 +304,21 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case GOSSIP:;
-			instruccion_respuesta = respuesta_success();
+			instruccion_respuesta = malloc(sizeof(Instruccion));
+			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
+			t_list *lista_gossip = gossip->lista_memorias;
+			int aux = 0;
+			while(aux < lista_gossip->elements_count){
+				Memoria * mem = list_get(lista_gossip, aux);
+				add_memory_if_not_exists(mem);
+			}
+			instruccion_respuesta->instruccion = RETORNO;
+			Retorno_Generico * retorno = malloc(sizeof(Retorno_Generico));
+			retorno->tipo_retorno = RETORNO_GOSSIP;
+			Gossip * gossip_ret = malloc(sizeof(Gossip));
+			gossip_ret->lista_memorias = L_MEMORIAS;
+			retorno->retorno = gossip_ret;
+			instruccion_respuesta->instruccion_a_realizar = retorno; 
 			break;
 
 		default:;
@@ -607,9 +619,6 @@ void print_pagina(void* pagina){
 
 
 void lanzar_gossiping(){
-
-	// ME FALTA EL CASO EN ATENDER CONSULTA EN EL QUE AGREGO MEMORIAS A L_MEMORIAS CUANDO LLEGAN
-
 	int posicion = 0;
 	while (IP_SEEDS[posicion] != NULL && PUERTOS_SEEDS[posicion] != NULL){
 		char* ip = IP_SEEDS[posicion];
@@ -620,14 +629,21 @@ void lanzar_gossiping(){
 		nueva_memoria->puerto = malloc(sizeof(puerto));
 		nueva_memoria->puerto = puerto;
 		nueva_memoria->idMemoria = posicion;
-		pthread_mutex_lock(&mutexListaMemorias);
-		list_add(L_MEMORIAS, nueva_memoria);
-		pthread_mutex_unlock(&mutexListaMemorias);
+		list_add(L_SEEDS, nueva_memoria);
 		posicion++;
 	}
+	Memoria * memoria = malloc(sizeof(Memoria));
+	memoria->ip = malloc(strlen(get_local_ip())+1);
+	strcpy(memoria->ip, get_local_ip());
+	memoria->puerto = malloc(strlen(PUERTO_DE_ESCUCHA)+1);
+	strcpy(memoria->puerto, PUERTO_DE_ESCUCHA);
+	memoria->idMemoria = NUMERO_MEMORIA;
+	pthread_mutex_lock(&mutexListaMemorias);
+	list_add(L_MEMORIAS, memoria);
+	pthread_mutex_unlock(&mutexListaMemorias);
 	while(true){
 		sleep(10);
-		list_iterate(L_MEMORIAS, (void*)gossipear);
+		list_iterate(L_SEEDS, (void*)gossipear);
 	}
 }
 
@@ -635,7 +651,7 @@ void gossipear(Memoria *mem){
 	if(chequear_conexion_a(mem->ip, mem->puerto)){
 		Instruccion *inst  = malloc(sizeof(Instruccion));
 		Gossip * gossip = malloc(sizeof(Gossip));
-		gossip->lista_memorias = list_filter(L_MEMORIAS, (void*)chequear_conexion_a);
+		gossip->lista_memorias = L_MEMORIAS;
 		inst ->instruccion = GOSSIP;
 		inst ->instruccion_a_realizar = gossip;
 		Instruccion *res = enviar_instruccion(mem->ip, mem->puerto, inst, POOLMEMORY, T_GOSSIPING);
@@ -659,7 +675,7 @@ void gossipear(Memoria *mem){
 void add_memory_if_not_exists(Memoria *mem){
 	if(!existe_memoria(mem)){
 		pthread_mutex_lock(&mutexListaMemorias);
-		list_add_in_index(L_MEMORIAS, L_MEMORIAS->elements_count, mem);
+		list_add(L_MEMORIAS, mem);
 		pthread_mutex_unlock(&mutexListaMemorias);
 	}else{
 		free(mem->ip);

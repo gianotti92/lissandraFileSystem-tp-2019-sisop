@@ -29,7 +29,8 @@ void* MEMORIA_PRINCIPAL; //puntero a malloc gigante
 int PAGINAS_MODIFICADAS; //contador de paginas en uso, para simplificar el memory_full
 t_list* L_MARCOS;		 //lista de "marcos" de la memoria
 t_list* L_SEGMENTOS;	 //lista de segmentos, cada segmento tiene su lista de paginas
-t_list* L_MEMORIAS;		 //lista de IPs-PUERTO de las memorias disponibles
+t_list* L_MEMORIAS;
+t_list* L_SEEDS;
 
 
 pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias;
