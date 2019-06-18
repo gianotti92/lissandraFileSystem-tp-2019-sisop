@@ -126,7 +126,7 @@ void retornarControl(Instruccion *instruccion, int cliente){
 
 	responder(cliente, respuesta);
 	//free_consulta(respuesta);
-	free_consulta(instruccion);
+	//free_consulta(instruccion);
 }
 
 void inicializar_memoria(){

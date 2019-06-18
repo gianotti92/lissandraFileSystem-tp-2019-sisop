@@ -91,6 +91,9 @@ void lanzar_gossiping(){
 				Gossip * gossip = ret->retorno;
 				free(ret);
 				t_list * lista_memorias_retorno_gossip =  gossip->lista_memorias;
+				if(lista_memorias_retorno_gossip->elements_count == 0) {
+					break;
+				}
 				int aux = 0;
 				while(aux < lista_memorias_retorno_gossip->elements_count){
 					Memoria *mem = getMemoria(lista_memorias_retorno_gossip, aux);

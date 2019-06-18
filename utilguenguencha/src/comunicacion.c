@@ -212,7 +212,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 			if(buffer_size == 0){
 				instruccion->instruccion = GOSSIP;
 				Gossip *gossip = malloc(sizeof(GOSSIP));
-				gossip->lista_memorias = NULL;
+				gossip->lista_memorias = list_create();
 				instruccion->instruccion_a_realizar = gossip;
 				return true;
 			}
@@ -660,9 +660,9 @@ Gossip *desempaquetar_gossip(void* stream){
 		memcpy(&memoria->idMemoria, stream + desplazamiento, sizeof(int));
 		desplazamiento += sizeof(int);
 		list_add(gossip->lista_memorias, memoria);
-		free(memoria->ip);
-		free(memoria->puerto);
-		free(memoria);
+		//free(memoria->ip);
+		//free(memoria->puerto);
+		//free(memoria);
 		cantidad_memorias--;
 	}
 	return gossip;
@@ -962,7 +962,7 @@ void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip* gossip){
 		memcpy(paquete->buffer->stream + paquete->buffer->size, &memoria->idMemoria, sizeof(memoria->idMemoria));
 		paquete->buffer->size += sizeof(memoria->idMemoria);
 		cantidad_memorias--;
-		free(memoria);
+		//free(memoria);
 	}
 }
 
