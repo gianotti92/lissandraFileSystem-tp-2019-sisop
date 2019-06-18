@@ -25,7 +25,7 @@ t_log * LOGGER;
 t_log * LOG_ERROR;
 
 void configure_logger(void);
-void exit_gracefully(int);
+void exit_gracefully(int error);
 char *consistencia2string(Consistencias consistencia);
 int string2consistencia(char* consistencia);
 int monitorNode(char * node,int mode,int(*callback)(void));

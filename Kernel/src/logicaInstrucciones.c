@@ -77,32 +77,31 @@ void logicaCreate(Create * create){
 }
 
 void logicaAdd(Add * add){
-	Memoria *memoria = getMemoriaSafe(memoriasDisponibles, add->memoria);
+	Memoria *memoria = getMemoria(list_get(memorias, DISP), add->memoria);
 	if(memoria == NULL){
 		printf("Las memorias disponibles son: ");
-		list_iterate(memoriasDisponibles, (void*)mostrarId);
+		list_iterate(list_get(memorias, DISP), (void*)mostrarId);
 		printf("\n");
 		return;
 	}
 	if(add->consistencia == SHC){
-		int i;
-		for(i =0; i < list_size(memoriasHc); i++){
-
-			Memoria * m = desencolarMemoria(memoriasHc, i);
-			Instruccion * instruccionJournal = malloc(sizeof(Instruccion));
-			instruccionJournal->instruccion = JOURNAL;
-			Journal * j = malloc(sizeof(Journal));
-			j->timestamp = get_timestamp();
-			instruccionJournal->instruccion_a_realizar = (void *) j;
-			Instruccion * instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, instruccionJournal, KERNEL, T_INSTRUCCION);
-			print_instruccion_parseada(instruccionRespuesta);
-			free(instruccionJournal->instruccion_a_realizar);
-			free(instruccionJournal);
-			free(j);
-		}
+		list_iterate(list_get(memorias, SHC), (void*)enviar_journal);
 	}
 	asignarConsistenciaAMemoria(memoria, add->consistencia);
 
+}
+
+void enviar_journal(Memoria *memoria){
+	Instruccion * instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion = JOURNAL;
+	Journal * journal = malloc(sizeof(Journal));
+	journal->timestamp = get_timestamp();
+	instruccion->instruccion_a_realizar = journal;
+	Instruccion * instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
+	free(instruccion->instruccion_a_realizar);
+	free(instruccion);
+	free(instruccionRespuesta->instruccion_a_realizar);
+	free(instruccionRespuesta);
 }
 
 void logicaSelect(Select * select){
@@ -113,7 +112,7 @@ void logicaSelect(Select * select){
 	Consistencias consistencia = obtenerConsistencia(select->nombre_tabla);
 	if(consistencia >0){
 		Memoria * m = NULL;
-		t_list *memoriasAsoc = getMemoriasAsociadasSafe(consistencia);
+		t_list *memoriasAsoc = list_get(memorias, consistencia);
 		switch(consistencia){
 			case SC || EC :;
 				if(memoriasAsoc == NULL) {
@@ -166,7 +165,7 @@ void logicaInsert(Insert * insert){
 
 	Consistencias consistencia = obtenerConsistencia(insert->nombre_tabla);
 	if(consistencia > 0){
-		t_list *memoriasAsoc = getMemoriasAsociadasSafe(consistencia);
+		t_list *memoriasAsoc = list_get(memorias, consistencia);
 		int max = list_size(memoriasAsoc);
 		int randomId = rand() % max + 1;
 		Memoria * mem = NULL;
@@ -200,7 +199,7 @@ void logicaDrop(Drop * drop){
 	Consistencias consistencia = obtenerConsistencia(drop->nombre_tabla);
 
 	if(consistencia > 0){
-		t_list *memoriasAsoc = getMemoriasAsociadasSafe(consistencia);
+		t_list *memoriasAsoc = list_get(memorias, consistencia);
 		int max = list_size(memoriasAsoc);
 		int randomId = rand() % max + 1;
 		Memoria * mem = NULL;
@@ -225,15 +224,10 @@ void logicaDrop(Drop * drop){
 }
 
 void logicaJournal(Journal * journal){
-	Instruccion * inst = malloc(sizeof(Instruccion));
-	inst->instruccion_a_realizar = (void *) journal;
-	inst->instruccion = JOURNAL;
-
-	Instruccion * instruccionRespouesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, inst, KERNEL, T_INSTRUCCION);
-	print_instruccion_parseada(instruccionRespouesta);
-
-	free(inst->instruccion_a_realizar);
-	free(inst);
+	Consistencias consistencia;
+	for(consistencia = EC; consistencia < DISP; consistencia++){
+		list_iterate(list_get(memorias, consistencia), (void*)enviar_journal);
+	}
 
 }
 
@@ -248,7 +242,7 @@ void logicaDescribe(Describe * describe){
 
 		if(consistencia > 0){
 
-			t_list *memoriasAsoc = getMemoriasAsociadasSafe(consistencia);
+			t_list *memoriasAsoc = list_get(memorias, consistencia);
 
 			if(memoriasAsoc != NULL){
 				int max = list_size(memoriasAsoc);

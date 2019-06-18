@@ -43,9 +43,8 @@ void leerArchivo(char * path);
 void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
 Memoria * desencolarMemoria(t_list * lista, int posicion);
-t_list * getMemoriasAsociadasSafe(Consistencias consistencia);
 void putTablaSafe(t_dictionary * dic, char* key, char * value);
-Memoria *getMemoriaSafe(t_list *lista_memorias, int idMemoria);
+Memoria *getMemoria(t_list *lista_memorias, int idMemoria);
 char* getTablasSafe(t_dictionary * dic, char*key);
 void ejecutar();
 void iniciarEstructurasAsociadas();
@@ -70,6 +69,9 @@ void *TH_confMonitor(void * p);
 Consistencias obtenerConsistencia(char * nombreTabla);
 int generarHash(char * nombreTabla, int tamLista, int key);
 void mostrarId(Memoria * memoria);
+void enviar_journal(Memoria *memoria);
+void eliminar_memoria(Memoria * memoria);
+int existe_memoria_en(Memoria *mem1, t_list* lista);
 
 // Variables del proceso
 t_list *estadoReady;
@@ -77,12 +79,7 @@ t_list *estadoNew;
 t_list *estadoExit;
 
 // tablas del proceso
-t_list * memoriasDisponibles;
-t_list * memoriasAsociadas;
-
-t_list * memoriasSc;
-t_list * memoriasHc;
-t_list * memoriasEv;
+t_list * memorias;
 
 t_dictionary * metrics;
 
