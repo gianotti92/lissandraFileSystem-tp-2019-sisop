@@ -291,7 +291,33 @@ void logicaDescribe(Describe * describe){
 		free(intstruccionRespuesta);
 	}
 }
+Consistencias obtenerConsistencia(char * nombreTabla){
+	void criterioNombre(Table_Metadata* tabla){
+		return !strcmp(tabla->tablename,nombreTabla);
+	}
+	pthread_mutex_lock(&lista_de_tablas_mx);
+	Table_Metadata * found = list_find(lista_de_tablas,(void*)criterioNombre);
+	pthread_mutex_unlock(&lista_de_tablas_mx);
+	if(found == NULL) {
+		return -1;
+	} else {
+		return found->consistencia;
+	}
+}
 
+int generarHash(char * nombreTabla, int tamLista, int key){
+	int hash = 0;
+	int i;
+	for(i = 0; i < strlen(nombreTabla); i++){
+		hash += nombreTabla[i];
+	}
+
+	hash += key;
+
+	return hash % tamLista;
+}
+
+/*
 char * obtenerConsistencia(char * nombreTabla){
 	Instruccion * instruccionDescribe = malloc(sizeof(Instruccion));
 	Describe * describe = malloc(sizeof(Describe));
@@ -337,15 +363,4 @@ char * obtenerConsistencia(char * nombreTabla){
 	free(instruccionDescribe);
 	return consistencia;
 }
-
-int generarHash(char * nombreTabla, int tamLista, int key){
-	int hash = 0;
-	int i;
-	for(i = 0; i < strlen(nombreTabla); i++){
-		hash += nombreTabla[i];
-	}
-
-	hash += key;
-
-	return hash % tamLista;
-}
+*/

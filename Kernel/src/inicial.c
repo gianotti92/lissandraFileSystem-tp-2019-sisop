@@ -1,8 +1,7 @@
 #include "kernel.h"
 
 void configuracion_inicial(void) {
-	t_config* CONFIG;
-	CONFIG = config_create("config.cfg");
+	t_config* CONFIG = config_create("config.cfg");
 	if (!CONFIG) {
 		log_error(LOGGER, "No encuentro el archivo config");
 		exit_gracefully(EXIT_FAILURE);
@@ -22,6 +21,14 @@ void configuracion_inicial(void) {
 
 	SEGUNDOS_METRICS = config_get_int_value(CONFIG, "TIEMPO_METRICS");
 	PREGUNTAR_POR_MEMORIAS = config_get_int_value(CONFIG, "TIEMPO_PREGUNTAR_MEMORIA");
+	TIEMPO_DESCRIBE = config_get_int_value(CONFIG, "TIEMPO_DESCRIBE");
+	config_destroy(CONFIG);
+}
+
+void actualizar_configuracion(t_config* conf) {
+	SEGUNDOS_METRICS = config_get_int_value(conf, "TIEMPO_METRICS");
+	PREGUNTAR_POR_MEMORIAS = config_get_int_value(conf, "TIEMPO_PREGUNTAR_MEMORIA");
+	TIEMPO_DESCRIBE = config_get_int_value(conf, "TIEMPO_DESCRIBE");
 }
 
 void iniciarEstados() {

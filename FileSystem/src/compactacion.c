@@ -81,7 +81,7 @@ void compac_match_registers(t_list*registrosParticiones,t_list*registrosTemporal
 			list_add(partRegisters,(void*)newReg);
 		} else { // me fijo cual es mas reciente (timestamp) y me quedo con ese
 			if(found->timestamp<tempReg->timestamp) {
-				struct tableRegister* removed = list_remove_by_condition(partRegisters,(void*)sameKey);
+				struct tableRegister* removed = list_remove_by_condition(partRegisters,(void*)sameKey); // LEAK - liberar estructura antes de eliminar
 				free(removed);
 				struct tableRegister* newReg = malloc(sizeof(struct tableRegister));
 				*newReg=createTableRegister(tempReg->key,tempReg->value,tempReg->timestamp);

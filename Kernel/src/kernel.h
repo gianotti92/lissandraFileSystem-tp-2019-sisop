@@ -35,6 +35,7 @@ sem_t semaforoSePuedePlanificar, semaforoNewToReady;
 
 // Funciones del proceso
 void configuracion_inicial(void);
+void actualizar_configuracion(t_config* conf);
 void retorno_consola(char* leido);
 void iniciarEstados();
 void leerArchivo(char * path);
@@ -67,7 +68,7 @@ void calculoMetrics();
 void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
 void *TH_confMonitor(void * p);
-char * obtenerConsistencia(char * nombreTabla);
+Consistencias obtenerConsistencia(char * nombreTabla);
 int generarHash(char * nombreTabla, int tamLista, int key);
 
 // Variables del proceso
@@ -97,5 +98,18 @@ int TAMANO_MAXIMO_LECTURA_ARCHIVO;
 int HILOS_KERNEL;
 int SEGUNDOS_METRICS;
 int PREGUNTAR_POR_MEMORIAS;
+int TIEMPO_DESCRIBE;
+
+/*
+	Describes
+*/
+typedef struct {
+	char * tablename;
+	Consistencias consistencia;
+}Table_Metadata;
+
+t_list * lista_de_tablas;
+pthread_mutex_t lista_de_tablas_mx;
+void realizarDescribeGeneral(void);
 
 #endif /* KERNEL_H_ */
