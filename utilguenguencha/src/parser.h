@@ -1,3 +1,6 @@
+#ifndef UTILGUENGUENCHA_PARSER_H_
+#define UTILGUENGUENCHA_PARSER_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -136,3 +139,5 @@ void free_consulta(Instruccion*);
 * @DESC: Devuelve el timestamp del sistema.
 */
 uintmax_t get_timestamp();
+
+#endif /* UTILGUENGUENCHA_PARSER_H_ */
