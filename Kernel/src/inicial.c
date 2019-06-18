@@ -22,7 +22,6 @@ void configuracion_inicial(void) {
 	SEGUNDOS_METRICS = config_get_int_value(CONFIG, "TIEMPO_METRICS");
 	PREGUNTAR_POR_MEMORIAS = config_get_int_value(CONFIG, "TIEMPO_PREGUNTAR_MEMORIA");
 	TIEMPO_DESCRIBE = config_get_int_value(CONFIG, "TIEMPO_DESCRIBE");
-	config_destroy(CONFIG);
 }
 
 void actualizar_configuracion(t_config* conf) {
@@ -41,11 +40,15 @@ void iniciarEstados() {
 }
 
 void iniciarEstructurasAsociadas(){
-	memoriasAsociadas = dictionary_create();
-	memoriasDisponibles = dictionary_create();
+	memorias = list_create();
+	t_list * listaEC = list_create();
+	t_list * listaSC = list_create();
+	t_list * listaSHC = list_create();
+	t_list * listaDISP = list_create();
+	list_add_in_index(memorias, EC, listaEC);
+	list_add_in_index(memorias, SC, listaSC);
+	list_add_in_index(memorias, SHC, listaSHC);
+	list_add_in_index(memorias, DISP, listaDISP);
 	metrics = dictionary_create();
 
-	memoriasSc = list_create();
-	memoriasHc = list_create();
-	memoriasEv = list_create();
 }

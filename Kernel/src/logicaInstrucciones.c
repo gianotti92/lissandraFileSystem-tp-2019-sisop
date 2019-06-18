@@ -77,54 +77,43 @@ void logicaCreate(Create * create){
 }
 
 void logicaAdd(Add * add){
-	Memoria * memoria = NULL;
-	int tamTabla = dictionary_size(memoriasDisponibles);
-	int i;
-
-	for(i = 0; i <= tamTabla; i++){
-		char * key = malloc(sizeof(char) * 4);
-		sprintf(key, "%d", i);
-		memoria = (Memoria*)getMemoriaSafe(memoriasDisponibles, key);
-		free(key);
-		if(memoria != NULL && memoria->idMemoria == add->memoria){
-			break;
-		}
+	Memoria *memoria = getMemoria(list_get(memorias, DISP), add->memoria);
+	if(memoria == NULL){
+		printf("Las memorias disponibles son: ");
+		list_iterate(list_get(memorias, DISP), (void*)mostrarId);
+		printf("\n");
+		return;
 	}
-
 	if(add->consistencia == SHC){
-		int i;
-		for(i =0; i < list_size(memoriasHc); i++){
-
-			Memoria * m = desencolarMemoria(memoriasHc, i);
-			Instruccion * instruccionJournal = malloc(sizeof(Instruccion));
-			instruccionJournal->instruccion = JOURNAL;
-			Journal * j = malloc(sizeof(Journal));
-			j->timestamp = get_timestamp();
-			instruccionJournal->instruccion_a_realizar = (void *) j;
-
-			Instruccion * instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, instruccionJournal, KERNEL, T_INSTRUCCION);
-			print_instruccion_parseada(instruccionRespuesta);
-			free(instruccionJournal->instruccion_a_realizar);
-			free(instruccionJournal);
-			free(j);
-		}
+		list_iterate(list_get(memorias, SHC), (void*)enviar_journal);
 	}
 	asignarConsistenciaAMemoria(memoria, add->consistencia);
 
 }
 
+void enviar_journal(Memoria *memoria){
+	Instruccion * instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion = JOURNAL;
+	Journal * journal = malloc(sizeof(Journal));
+	journal->timestamp = get_timestamp();
+	instruccion->instruccion_a_realizar = journal;
+	Instruccion * instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
+	free(instruccion->instruccion_a_realizar);
+	free(instruccion);
+	free(instruccionRespuesta->instruccion_a_realizar);
+	free(instruccionRespuesta);
+}
+
 void logicaSelect(Select * select){
+
 	Instruccion * i = malloc(sizeof(Instruccion));
 	i->instruccion_a_realizar = (void *) select;
 	i->instruccion = SELECT;
-
-
-	char * consistencia = obtenerConsistencia(select->nombre_tabla);
-	if(consistencia != NULL){
+	Consistencias consistencia = obtenerConsistencia(select->nombre_tabla);
+	if(consistencia >0){
 		Memoria * m = NULL;
-		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
-
-		switch(string2consistencia(consistencia)){
+		t_list *memoriasAsoc = list_get(memorias, consistencia);
+		switch(consistencia){
 			case SC || EC :;
 				if(memoriasAsoc == NULL) {
 					log_error(LOGGER, "No Existen Memorias asociadas\n");
@@ -159,12 +148,10 @@ void logicaSelect(Select * select){
 			free(instruccionRespuesta);
 			free(i->instruccion_a_realizar);
 			free(i);
-			free(consistencia);
 		}else{
 			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s \n", consistencia);
 			free(i->instruccion_a_realizar);
 			free(i);
-			free(consistencia);
 		}
 	}else{
 		log_error(LOGGER, "Error al buscar la consistencia");
@@ -176,9 +163,9 @@ void logicaInsert(Insert * insert){
 	i->instruccion_a_realizar = (void *) insert;
 	i->instruccion = INSERT;
 
-	char * consistencia = obtenerConsistencia(insert->nombre_tabla);
-	if(consistencia != NULL){
-		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+	Consistencias consistencia = obtenerConsistencia(insert->nombre_tabla);
+	if(consistencia > 0){
+		t_list *memoriasAsoc = list_get(memorias, consistencia);
 		int max = list_size(memoriasAsoc);
 		int randomId = rand() % max + 1;
 		Memoria * mem = NULL;
@@ -194,11 +181,9 @@ void logicaInsert(Insert * insert){
 			free(i);
 			free(instruccionRespuesta->instruccion_a_realizar);
 			free(instruccionRespuesta);
-			free(consistencia);
 		}else{
 			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
 			free(i->instruccion_a_realizar);
-			free(consistencia);
 			free(i);
 		}
 	}else{
@@ -211,10 +196,10 @@ void logicaDrop(Drop * drop){
 	i->instruccion_a_realizar = (void *) drop;
 	i->instruccion = DROP;
 
-	char * consistencia = obtenerConsistencia(drop->nombre_tabla);
+	Consistencias consistencia = obtenerConsistencia(drop->nombre_tabla);
 
-	if(consistencia != NULL){
-		t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+	if(consistencia > 0){
+		t_list *memoriasAsoc = list_get(memorias, consistencia);
 		int max = list_size(memoriasAsoc);
 		int randomId = rand() % max + 1;
 		Memoria * mem = NULL;
@@ -227,13 +212,11 @@ void logicaDrop(Drop * drop){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
 			free(i);
 			free(mem);
-			free(consistencia);
 			free(instruccionRespuesta);
 		}else{
 			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
 			free(i);
 			free(mem);
-			free(consistencia);
 		}
 	}else{
 		log_error(LOGGER, "Error al buscar la consistencia");
@@ -241,15 +224,10 @@ void logicaDrop(Drop * drop){
 }
 
 void logicaJournal(Journal * journal){
-	Instruccion * inst = malloc(sizeof(Instruccion));
-	inst->instruccion_a_realizar = (void *) journal;
-	inst->instruccion = JOURNAL;
-
-	Instruccion * instruccionRespouesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, inst, KERNEL, T_INSTRUCCION);
-	print_instruccion_parseada(instruccionRespouesta);
-
-	free(inst->instruccion_a_realizar);
-	free(inst);
+	Consistencias consistencia;
+	for(consistencia = EC; consistencia < DISP; consistencia++){
+		list_iterate(list_get(memorias, consistencia), (void*)enviar_journal);
+	}
 
 }
 
@@ -260,11 +238,11 @@ void logicaDescribe(Describe * describe){
 
 	if(describe->nombre_tabla != NULL){
 
-		char * consistencia = obtenerConsistencia(describe->nombre_tabla);
+		Consistencias consistencia = obtenerConsistencia(describe->nombre_tabla);
 
-		if(consistencia != NULL){
+		if(consistencia > 0){
 
-			t_list *memoriasAsoc = getMemoriasAsociadasSafe(memoriasAsociadas, consistencia);
+			t_list *memoriasAsoc = list_get(memorias, consistencia);
 
 			if(memoriasAsoc != NULL){
 				int max = list_size(memoriasAsoc);
@@ -279,7 +257,6 @@ void logicaDescribe(Describe * describe){
 					print_instruccion_parseada(intstruccionRespuesta);
 					free(intstruccionRespuesta);
 				}
-				free(consistencia);
 			}else{
 				log_error(LOGGER, "No hay memorias asignadas a la consistencia correspondiente");
 			}
@@ -292,7 +269,7 @@ void logicaDescribe(Describe * describe){
 	}
 }
 Consistencias obtenerConsistencia(char * nombreTabla){
-	void criterioNombre(Table_Metadata* tabla){
+	bool criterioNombre(Table_Metadata* tabla){
 		return !strcmp(tabla->tablename,nombreTabla);
 	}
 	pthread_mutex_lock(&lista_de_tablas_mx);
@@ -317,50 +294,3 @@ int generarHash(char * nombreTabla, int tamLista, int key){
 	return hash % tamLista;
 }
 
-/*
-char * obtenerConsistencia(char * nombreTabla){
-	Instruccion * instruccionDescribe = malloc(sizeof(Instruccion));
-	Describe * describe = malloc(sizeof(Describe));
-
-	describe->nombre_tabla = nombreTabla;
-
-	instruccionDescribe->instruccion = DESCRIBE;
-	instruccionDescribe->instruccion_a_realizar = (void *) describe;
-	//fixme: siempre se debe preguntar el describe a la memoria principal? que pasa si tengo varios procesos en exec y todos hacen describe?
-	Instruccion * describeResponse = enviar_instruccion(IP_MEMORIA_PPAL,PUERTO_MEMORIA_PPAL,instruccionDescribe, KERNEL, T_INSTRUCCION);
-
-	char * consistencia = NULL;
-
-	switch(describeResponse->instruccion){
-		case RETORNO:
-			switch(((Retorno_Generico*)describeResponse->instruccion_a_realizar)->tipo_retorno){
-				case SUCCESS:
-
-				break;
-				case DATOS_DESCRIBE:;
-					t_list * describes = ((Describes*)((Retorno_Generico*)describeResponse->instruccion_a_realizar)->retorno)->lista_describes;
-					pthread_mutex_lock(&mutexRecursosCompartidos);
-					Retorno_Describe *describe = (Retorno_Describe *)list_get(describes, 0);
-					pthread_mutex_unlock(&mutexRecursosCompartidos);
-
-					consistencia = consistencia2string(describe->consistencia);
-				break;
-				case VALOR:;
-				break;
-				default:
-					log_error(LOGGER, "Error procesar la consulta desde consola\n");
-				break;
-			}
-		break;
-		default:
-			// vemos
-		break;
-	}
-
-
-	//TODO: kevin esta haciendo una funcion para liberar, reemplazar aqui.
-	free(describe);
-	free(instruccionDescribe);
-	return consistencia;
-}
-*/

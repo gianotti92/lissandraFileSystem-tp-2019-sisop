@@ -1,7 +1,9 @@
-#ifndef tipos_guen
-#define tipos_guen
+#ifndef UTILGUENGUENCHA_TIPOS_GUENGUENCHA_H_
+#define UTILGUENGUENCHA_TIPOS_GUENGUENCHA_H_
 
 #include <stdint.h>
+#include <stdio.h>
+#include <commons/collections/list.h>
 
 //nuestros tipos de datos
 #define t_key uint16_t
@@ -9,7 +11,7 @@
 #define t_flag bool
 
 typedef enum {
-	EC, SC, SHC
+	EC, SC, SHC, DISP
 } Consistencias;
 
 typedef enum {
@@ -152,4 +154,4 @@ typedef struct{
 } Retorno_Generico;
 
 
-#endif /* UTILGUENGUENCHA_COMUNICACION_H_ */
+#endif /* UTILGUENGUENCHA_TIPOS_GUENGUENCHA_H_ */

@@ -4,7 +4,6 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
 	int aux1, bytes_recibidos, fd_max, server_socket;
 	server_socket = iniciar_servidor(comunicacion->puerto_servidor);
-	free(comunicacion->puerto_servidor);
 	FD_ZERO(&fd_set_master);
 	FD_ZERO(&fd_set_temporal);
 	FD_SET(server_socket, &fd_set_master);
