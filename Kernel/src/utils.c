@@ -44,11 +44,12 @@ Memoria *getMemoria(t_list *lista_memorias, int idMemoria){
 	Memoria *mem = NULL;
 	while(aux < lista_memorias->elements_count){
 		mem = list_get(lista_memorias, aux);
-		if(mem->idMemoria == idMemoria)break;
-		mem = NULL;
+		if(mem->idMemoria == idMemoria){
+			return mem;
+		}
 		aux++;
 	}
-	return mem;
+	return NULL;
 }
 
 char* getTablasSafe(t_dictionary * dic, char*key){
@@ -70,6 +71,11 @@ void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 
 void lanzar_gossiping(){
 	while(true){
+		Memoria * memoriaPrincipal = malloc(sizeof(Memoria));
+		agregarMemoria(memoriaPrincipal);
+		free(memoriaPrincipal);
+
+
 		sleep(PREGUNTAR_POR_MEMORIAS);
 		Instruccion *inst = malloc(sizeof(Instruccion));
 		inst->instruccion = GOSSIP;
@@ -96,27 +102,24 @@ void lanzar_gossiping(){
 				}
 				int aux = 0;
 				while(aux < lista_memorias_retorno_gossip->elements_count){
-					Memoria *mem = getMemoria(lista_memorias_retorno_gossip, aux);
-					if(getMemoria(list_get(memorias, DISP), mem->idMemoria) == NULL){
-						pthread_mutex_lock(&mutexRecursosCompartidos);
-						list_add(list_get(memorias, DISP), mem);
-						pthread_mutex_unlock(&mutexRecursosCompartidos);
-					}
+					Memoria *mem = list_get(lista_memorias_retorno_gossip, aux);
+					agregarSiNoExiste(list_get(memorias, DISP), mem);
 					aux++;
 				}
 				aux = 0;
 				while(aux < ((t_list*)list_get(memorias, DISP))->elements_count){
-					Memoria *mem = getMemoria(list_get(memorias, DISP), aux);
+					Memoria *mem = list_get(list_get(memorias, DISP), aux);
 					if(existe_memoria_en(mem, lista_memorias_retorno_gossip) < 0){
-						list_remove_and_destroy_element(list_get(memorias, DISP), aux, (void*)eliminar_memoria);
+						sacarMemoriaDeTodasLasListas(mem);
+						//list_remove_and_destroy_element(list_get(memorias, DISP), aux, (void*)eliminar_memoria);
 					}
 					aux++;
 				}
 				list_destroy_and_destroy_elements(lista_memorias_retorno_gossip, (void*)eliminar_memoria);
 			}
 		}
-		free(resp->instruccion_a_realizar);
-		free(resp);
+//		free(resp->instruccion_a_realizar);
+//		free(resp);
 	}
 }
 
@@ -142,4 +145,30 @@ int existe_memoria_en(Memoria *mem1, t_list* lista){
 
 void mostrarId(Memoria * memoria){
 	printf("%d ", memoria->idMemoria);
+}
+
+void agregarMemoria(Memoria * m){
+	m = malloc(sizeof(Memoria));
+	m->ip = malloc(strlen(get_local_ip()) + 1);
+	m->idMemoria = 1;
+	m->puerto = malloc(strlen(PUERTO_MEMORIA_PPAL) + 1);
+	strcpy(m->ip, get_local_ip());
+	strcpy(m->puerto, PUERTO_MEMORIA_PPAL);
+	pthread_mutex_lock(&mutexRecursosCompartidos);
+	list_add(list_get(memorias, DISP), m);
+	pthread_mutex_unlock(&mutexRecursosCompartidos);
+}
+
+void agregarSiNoExiste(t_list * list, Memoria *m){
+	if(existe_memoria_en(m, list) < 0){
+		Memoria * meme = malloc(sizeof(Memoria));
+		meme->idMemoria = m->idMemoria;
+		meme->ip = malloc(strlen(m->ip) +1);
+		meme->puerto = malloc(strlen(m->puerto) + 1);
+		strcpy(meme->ip, m->ip);
+		strcpy(meme->puerto, m->puerto);
+		pthread_mutex_lock(&mutexRecursosCompartidos);
+		list_add(list, meme);
+		pthread_mutex_unlock(&mutexRecursosCompartidos);
+	}
 }

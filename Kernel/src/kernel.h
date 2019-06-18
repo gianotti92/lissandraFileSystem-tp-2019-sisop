@@ -73,6 +73,8 @@ void mostrarId(Memoria * memoria);
 void enviar_journal(Memoria *memoria);
 void eliminar_memoria(Memoria * memoria);
 int existe_memoria_en(Memoria *mem1, t_list* lista);
+void agregarMemoria(Memoria * m);
+void agregarSiNoExiste(t_list * list, Memoria *m);
 
 // Variables del proceso
 t_list *estadoReady;

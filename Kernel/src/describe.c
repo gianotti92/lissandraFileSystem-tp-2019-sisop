@@ -10,7 +10,6 @@ void realizarDescribeGeneral(void){
 
 	instruccionDescribe->instruccion = DESCRIBE;
 	instruccionDescribe->instruccion_a_realizar = (void *) describe;
-	//fixme: siempre se debe preguntar el describe a la memoria principal? que pasa si tengo varios procesos en exec y todos hacen describe?
 	Instruccion * describeResponse = enviar_instruccion(IP_MEMORIA_PPAL,PUERTO_MEMORIA_PPAL,instruccionDescribe, KERNEL, T_INSTRUCCION);
 
 	switch(describeResponse->instruccion){
