@@ -202,7 +202,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 		sem_wait(&semJournal);
 
-		Instruccion* instruccion_respuesta = malloc(sizeof(Instruccion));
+		Instruccion* instruccion_respuesta; //instruccion_respuesta = malloc(sizeof(Instruccion));
 
 		switch	(instruccion_parseada->instruccion){
 		case SELECT:;
@@ -246,6 +246,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
 			} else {
 			// tenemos la tabla-key en memoria
+				instruccion_respuesta = malloc(sizeof(Instruccion));
 				instruccion_respuesta->instruccion = RETORNO;
 				Retorno_Generico* p_retorno_generico = malloc(sizeof(Retorno_Generico));
 				Retorno_Value* p_retorno_valor = malloc(sizeof(Retorno_Value));
@@ -374,6 +375,8 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 		PAGINAS_MODIFICADAS++;
 	}
 
+	free(segmento);
+
 	return 1;
 }
 
@@ -412,7 +415,7 @@ void eliminar_de_memoria(char* nombre_tabla){
 		int index = index_segmento(nombre_tabla);
 
 		if (index >= 0){
-			list_remove(L_SEGMENTOS, index);
+			list_remove_and_destroy_element(L_SEGMENTOS, index, free);
 		}
 	}
 	pthread_mutex_unlock(&mutexSegmentos);
@@ -421,7 +424,8 @@ void eliminar_de_memoria(char* nombre_tabla){
 
 void agregar_pagina_en_segmento(Segmento* segmento, void* pagina){
 	pthread_mutex_lock(&mutexSegmentos);
-	list_add(segmento->paginas, pagina);
+	t_list *paginas = segmento->paginas;
+	list_add(paginas, pagina);
 	pthread_mutex_unlock(&mutexSegmentos);
 }
 
@@ -690,7 +694,6 @@ int lanzar_journal(t_timestamp timestamp_journal){
 	Segmento* segmento;
 	t_list* paginas;
 	void* pagina;
-	Marco* marco;
 
 	Insert* instruccion_insert = malloc(sizeof(Insert));
 	Instruccion* instruccion = malloc(sizeof(Instruccion));
@@ -720,9 +723,10 @@ int lanzar_journal(t_timestamp timestamp_journal){
 					if(instruccion_respuesta->instruccion == ERROR){
 						log_error(LOG_ERROR, "Memoria: Fallo insert de journal"); //loguear mejor los errores posibles, como mal key, mal value, mal table
 					}
-				}
 
+				free(instruccion_respuesta);
 				PAGINAS_MODIFICADAS--;
+				}
 			}
 
 			posicion_pagina--;
@@ -731,7 +735,7 @@ int lanzar_journal(t_timestamp timestamp_journal){
 		posicion_segmento--;
 	}
 
-	//free_consulta(instruccion);
+	free_consulta(instruccion);
 	sem_post(&semJournal);
 	return 1;
 }
@@ -844,7 +848,7 @@ void marcar_ultimo_uso(void* pagina){
 	bool encontrado = false;
 	Marco* marco;
 
-	while(posicion > 0 && !encontrado ){
+	while(posicion >= 0 && !encontrado ){
 		marco = list_get(L_MARCOS, posicion);
 
 		if(marco->pagina == pagina){

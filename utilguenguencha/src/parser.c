@@ -688,7 +688,7 @@ void free_consulta(Instruccion* consulta) {
 				break;
 
 			case INSERT:;
-				free(((Insert*)consulta->instruccion_a_realizar)->nombre_tabla);
+				//free(((Insert*)consulta->instruccion_a_realizar)->nombre_tabla);
 				//free(((Insert*)consulta->instruccion_a_realizar)->value);
 
 				break;
