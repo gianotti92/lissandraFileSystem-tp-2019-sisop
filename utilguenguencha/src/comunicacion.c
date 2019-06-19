@@ -67,42 +67,27 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 
 
 int iniciar_servidor(char* puerto_servidor) {
+	struct addrinfo hints, *res;
 	int socket_servidor;
-	struct addrinfo hints, *servinfo, *p;
-
-	memset(&hints, 0, sizeof(hints));
+	int activado = 1;
+	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-
-	int activado = 1;
-
-	getaddrinfo("127.0.0.1", puerto_servidor, &hints, &servinfo);
-
-	for (p = servinfo; p != NULL; p = p->ai_next) {
-		if ((socket_servidor = socket(p->ai_family, p->ai_socktype,
-				p->ai_protocol)) == -1)
-			continue;
-		if (setsockopt(socket_servidor, SOL_SOCKET, SO_REUSEADDR, &activado,
-				sizeof(activado)) < 0) {
-			close(socket_servidor);
-			continue;
-		}
-		if (bind(socket_servidor, p->ai_addr, p->ai_addrlen) == -1) {
-			close(socket_servidor);
-			continue;
-		}
-		break;
+	getaddrinfo(NULL, puerto_servidor, &hints, &res);
+	if((socket_servidor = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) != -1){
+		if(setsockopt(socket_servidor, SOL_SOCKET, SO_REUSEADDR, &activado, sizeof(activado)) != -1){
+			if(bind(socket_servidor, res->ai_addr, res->ai_addrlen) != -1){
+				if(listen(socket_servidor, BACKLOG) != -1){
+					freeaddrinfo(res);
+					return socket_servidor;
+				}
+			}
+		}	
 	}
-
-	if (listen(socket_servidor, BACKLOG) < 0) {
-		log_error(LOGGER, "No pude poner el servidor a escuchar");
-		exit_gracefully(EXIT_FAILURE);
-	}
-
-	freeaddrinfo(servinfo);
-
-	return socket_servidor;
+	log_error(LOG_ERROR, "Fallo al levantar servidor");
+	exit_gracefully(EXIT_FAILURE);
+	return EXIT_FAILURE;
 }
 
 bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_comu) {

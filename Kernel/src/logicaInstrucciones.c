@@ -105,56 +105,46 @@ void enviar_journal(Memoria *memoria){
 }
 
 void logicaSelect(Select * select){
-
-	Instruccion * i = malloc(sizeof(Instruccion));
-	i->instruccion_a_realizar = (void *) select;
-	i->instruccion = SELECT;
 	Consistencias consistencia = obtenerConsistencia(select->nombre_tabla);
-	if(consistencia >0){
-		Memoria * m = NULL;
-		t_list *memoriasAsoc = list_get(memorias, consistencia);
-		switch(consistencia){
-			case SC || EC :;
-				if(memoriasAsoc == NULL) {
-					log_error(LOGGER, "No Existen Memorias asociadas\n");
+	t_list *memoriasAsoc = list_get(memorias, consistencia);
+	if(consistencia == SC || consistencia == EC || consistencia == SHC){
+		if(memoriasAsoc->elements_count != 0){
+			Memoria * m = NULL;
+			switch(consistencia){
+				case SC || EC :;
+					int max = list_size(memoriasAsoc);
+					int randomId = rand() % max + 1;
+
+					pthread_mutex_lock(&mutexRecursosCompartidos);
+					m = list_get(memoriasAsoc, randomId - 1);
+					pthread_mutex_unlock(&mutexRecursosCompartidos);
 					break;
-				}
-				int max = list_size(memoriasAsoc);
-				int randomId = rand() % max + 1;
 
-				pthread_mutex_lock(&mutexRecursosCompartidos);
-				m = list_get(memoriasAsoc, randomId - 1);
-				pthread_mutex_unlock(&mutexRecursosCompartidos);
-				break;
-
-			case SHC:;
-				int indexTabla = generarHash(select->nombre_tabla, list_size(memoriasAsoc), select->key);
-				pthread_mutex_lock(&mutexRecursosCompartidos);
-				m = list_get(memoriasAsoc, indexTabla);
-				pthread_mutex_unlock(&mutexRecursosCompartidos);
-				break;
-
-			default:;
-				log_error(LOGGER, "Kernel.No deberia haber llegado aca chinguenguencha\n");
-				break;
-		}
-
-		if(m != NULL){
-			Instruccion * instruccionRespuesta = malloc(sizeof(Instruccion));
-			instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, i, KERNEL, T_INSTRUCCION);
-			print_instruccion_parseada(instruccionRespuesta);
-
-			free(instruccionRespuesta->instruccion_a_realizar);
-			free(instruccionRespuesta);
-			free(i->instruccion_a_realizar);
-			free(i);
+				default:;
+					int indexTabla = generarHash(select->nombre_tabla, list_size(memoriasAsoc), select->key);
+					pthread_mutex_lock(&mutexRecursosCompartidos);
+					m = list_get(memoriasAsoc, indexTabla);
+					pthread_mutex_unlock(&mutexRecursosCompartidos);
+					break;
+			}
+			if(m != NULL){
+				Instruccion * i = malloc(sizeof(Instruccion));
+				i->instruccion_a_realizar = (void *) select;
+				i->instruccion = SELECT;
+				Instruccion * instruccionRespuesta = malloc(sizeof(Instruccion));
+				instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, i, KERNEL, T_INSTRUCCION);
+				print_instruccion_parseada(instruccionRespuesta);
+				free(instruccionRespuesta->instruccion_a_realizar);
+				free(instruccionRespuesta);
+				free(i->instruccion_a_realizar);
+				free(i);
+			}
 		}else{
-			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s \n", consistencia);
-			free(i->instruccion_a_realizar);
-			free(i);
+			log_error(LOG_ERROR, "No hay memorias asignadas para ese criterio");
+
 		}
 	}else{
-		log_error(LOGGER, "Error al buscar la consistencia");
+		log_error(LOG_ERROR, "Esa tabla no existe");
 	}
 }
 

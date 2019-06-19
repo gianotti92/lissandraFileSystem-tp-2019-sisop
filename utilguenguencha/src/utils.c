@@ -7,12 +7,13 @@ void configure_logger() {
 
 void exit_gracefully(int exit_code){
 	if(exit_code == EXIT_FAILURE){
-		log_error(LOGGER,strerror(errno));
+		log_error(LOG_ERROR,strerror(errno));
 	}
 	else{
 		log_info(LOGGER,"Proceso termino correctamente");
 	}
 	log_destroy(LOGGER);
+	log_destroy(LOG_ERROR);
 	exit(exit_code);
 }
 

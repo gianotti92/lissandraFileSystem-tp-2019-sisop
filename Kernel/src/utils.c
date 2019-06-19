@@ -70,12 +70,10 @@ void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 }
 
 void lanzar_gossiping(){
+	Memoria * memoriaPrincipal = malloc(sizeof(Memoria));
+	agregarMemoria(memoriaPrincipal);
+	free(memoriaPrincipal);
 	while(true){
-		Memoria * memoriaPrincipal = malloc(sizeof(Memoria));
-		agregarMemoria(memoriaPrincipal);
-		free(memoriaPrincipal);
-
-
 		sleep(PREGUNTAR_POR_MEMORIAS);
 		Instruccion *inst = malloc(sizeof(Instruccion));
 		inst->instruccion = GOSSIP;
