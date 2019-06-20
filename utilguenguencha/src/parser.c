@@ -62,14 +62,14 @@ Instruccion* parser_lql(char* consulta_original, Procesos procesoOrigen) {
 
 			int largo_primer_palabra = string_length(consulta_separada[3]);
 
-			if (length >= 5 && string_starts_with(consulta_separada[3], "\"")
-					&& (!string_ends_with(consulta_separada[3], "\"")
+			if ((length >= 5) & string_starts_with(consulta_separada[3], "\"")
+					& (!string_ends_with(consulta_separada[3], "\"")
 							|| largo_primer_palabra == 1)) {
 
 				int i = 0;
 
 				while ((!string_ends_with(consulta_separada[3], "\"") || i == 0)
-						&& (i + 4 < length)) {
+						& (i + 4 < length)) {
 					consulta_separada[3] = string_from_format("%s %s",
 							consulta_separada[3], consulta_separada[4]);
 					i++;
@@ -92,7 +92,7 @@ Instruccion* parser_lql(char* consulta_original, Procesos procesoOrigen) {
 			}
 		}
 
-		if ((length == 5) && !es_numero(consulta_separada[4])) {
+		if ((length == 5) & !es_numero(consulta_separada[4])) {
 			puts("ERROR: La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP]");
 			log_error(LOGGER, "Parser: Sintaxis incorrecta, chinguengencha!");
 
@@ -107,7 +107,7 @@ Instruccion* parser_lql(char* consulta_original, Procesos procesoOrigen) {
 
 			// es INSERT
 
-			if(string_starts_with(consulta_separada[3], "\"") && string_ends_with(consulta_separada[3], "\"") ){
+			if(string_starts_with(consulta_separada[3], "\"") & string_ends_with(consulta_separada[3], "\"") ){
 				consulta_separada[3] = string_substring(consulta_separada[3], 1, (string_length(consulta_separada[3])-2));
 				//saco las comillas del value
 			}

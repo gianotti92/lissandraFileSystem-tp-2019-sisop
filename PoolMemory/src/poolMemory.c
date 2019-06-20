@@ -86,8 +86,7 @@ void configuracion_inicial(void){
 
 		if (retorno_generico->tipo_retorno == TAMANIO_VALOR_MAXIMO) {
 			Retorno_Max_Value* retorno_maxValue = retorno_generico->retorno;
-			//MAX_VAL = retorno_maxValue->value_size;
-			MAX_VAL = 300;
+			MAX_VAL = retorno_maxValue->value_size;
 
 			log_info(LOGGER, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
 
@@ -114,6 +113,8 @@ void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	Instruccion* respuesta = atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
 	print_instruccion_parseada(respuesta);
+
+	free_consulta(instruccion_parseada);
 	free_consulta(respuesta);
 }
 
@@ -126,7 +127,8 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
 
 	responder(cliente, respuesta);
-	//free_consulta(respuesta);
+
+	free_consulta(respuesta);
 	free_consulta(instruccion);
 }
 
@@ -136,6 +138,7 @@ void inicializar_memoria(){
 	pthread_mutex_lock(&mutexSegmentos);
 
 	MEMORIA_PRINCIPAL = malloc(SIZE_MEM); //resevo memoria para paginar
+	PAGINAS_USADAS = 0; //contador de paginas en uso
 	PAGINAS_MODIFICADAS = 0; //contador de paginas para saber si estoy full
 
 	if (MEMORIA_PRINCIPAL == NULL){
@@ -212,16 +215,21 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			Select* instruccion_select = instruccion_parseada->instruccion_a_realizar;
 
 			Segmento* segmento = buscar_segmento(instruccion_select->nombre_tabla);
-			void* pagina = NULL;
+			int id_pagina = -1;
 
 			if (segmento != NULL){
-				pagina = buscar_pagina_en_segmento(segmento, instruccion_select->key);
+				id_pagina = buscar_pagina_en_segmento(segmento, instruccion_select->key);
 			}
 
 			pthread_mutex_unlock(&mutexSegmentos);
 
-			if(pagina == NULL){
+			if(id_pagina < 0){
 			// no tenemos la tabla-key en memoria
+				char* o_nombre_tabla = malloc(sizeof(instruccion_select->nombre_tabla)+1);
+				strcpy(o_nombre_tabla, instruccion_select->nombre_tabla);
+
+				t_key o_key = instruccion_select->key;
+
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
 
 					if (instruccion_respuesta->instruccion == RETORNO){
@@ -229,7 +237,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 						if (resp_retorno_generico->tipo_retorno == VALOR){
 							Retorno_Value* resp_retorno_value = resp_retorno_generico->retorno;
-							int result_insert = insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
+							int result_insert = insertar_en_memoria(o_nombre_tabla, o_key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
 
 							if(result_insert == -2){
 								instruccion_respuesta = respuesta_error(MEMORY_FULL);
@@ -249,17 +257,17 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				instruccion_respuesta = malloc(sizeof(Instruccion));
 				instruccion_respuesta->instruccion = RETORNO;
 				Retorno_Generico* p_retorno_generico = malloc(sizeof(Retorno_Generico));
+				p_retorno_generico->tipo_retorno = VALOR;
 				Retorno_Value* p_retorno_valor = malloc(sizeof(Retorno_Value));
+				p_retorno_generico->retorno = p_retorno_valor;
 
+				void* pagina = get_pagina(id_pagina);
 				p_retorno_valor->timestamp = *get_timestamp_pagina(pagina);
 				p_retorno_valor->value = get_value_pagina(pagina);
 
-				p_retorno_generico->tipo_retorno = VALOR;
-				p_retorno_generico->retorno = p_retorno_valor;
-
 				instruccion_respuesta->instruccion_a_realizar = p_retorno_generico;
 
-				marcar_ultimo_uso(pagina);
+				marcar_ultimo_uso(id_pagina);
 
 			}
 
@@ -350,34 +358,44 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 
 	pthread_mutex_unlock(&mutexSegmentos);
 
-	void* pagina = buscar_pagina_en_segmento(segmento, key);
+	int id_pagina = buscar_pagina_en_segmento(segmento, key);
 
-	if(pagina == NULL){
+	if(id_pagina < 0){
 		//no tenemos la pagina
-		pagina = seleccionar_marco();
+		id_pagina = seleccionar_marco();
 
-		if(pagina == NULL){
+		if(id_pagina < 0){
 			return -2; // no hay paginas, la memoria esta FULL
 		}
 		pagina_nueva = true;
 
-		agregar_pagina_en_segmento(segmento, pagina);
+		agregar_pagina_en_segmento(segmento, id_pagina);
 	}
+
+	void* pagina = get_pagina(id_pagina);
 
 	set_key_pagina(pagina, key);
 	set_value_pagina(pagina, value);
 	set_timestamp_pagina(pagina, timestamp_insert);
 	set_modificado_pagina(pagina, modificado);
 
-	marcar_ultimo_uso(pagina);
+	marcar_ultimo_uso(id_pagina);
 
 	if (pagina_nueva && modificado && (PAGINAS_MODIFICADAS < L_MARCOS->elements_count)){
 		PAGINAS_MODIFICADAS++;
 	}
 
-	free(segmento);
-
 	return 1;
+}
+
+void* get_pagina(int id_pagina){
+
+	if(id_pagina <= (L_MARCOS->elements_count -1)){
+		Marco* marco = list_get(L_MARCOS, id_pagina);
+		return marco->pagina;
+	} else {
+		return (void*) NULL;
+	}
 }
 
 void eliminar_de_memoria(char* nombre_tabla){
@@ -390,14 +408,14 @@ void eliminar_de_memoria(char* nombre_tabla){
 		t_list* paginas = segmento->paginas;
 		int posicion = (paginas->elements_count -1);
 		Marco* marco_liberar;
-		void* pagina_liberar;
+		int id_pagina_liberar;
 
 		while (posicion >= 0){
 
-			pagina_liberar = list_get(paginas, posicion);
+			id_pagina_liberar = (int) list_get(paginas, posicion);
 
 			pthread_mutex_lock(&mutexMarcos);
-			marco_liberar = buscar_marco(pagina_liberar);
+			marco_liberar = list_get(L_MARCOS, id_pagina_liberar);
 
 			if(marco_liberar != NULL){
 				marco_liberar->en_uso = false;
@@ -415,17 +433,16 @@ void eliminar_de_memoria(char* nombre_tabla){
 		int index = index_segmento(nombre_tabla);
 
 		if (index >= 0){
-			list_remove_and_destroy_element(L_SEGMENTOS, index, free);
+			list_remove_and_destroy_element(L_SEGMENTOS, index, (void*) free);
 		}
 	}
 	pthread_mutex_unlock(&mutexSegmentos);
 }
 
 
-void agregar_pagina_en_segmento(Segmento* segmento, void* pagina){
+void agregar_pagina_en_segmento(Segmento* segmento, int id_pagina){
 	pthread_mutex_lock(&mutexSegmentos);
-	t_list *paginas = segmento->paginas;
-	list_add(paginas, pagina);
+	list_add(segmento->paginas, (void*) id_pagina);
 	pthread_mutex_unlock(&mutexSegmentos);
 }
 
@@ -475,47 +492,26 @@ int index_segmento(char* nombre_segmento){
 	return -1;
 }
 
-void* buscar_pagina_en_segmento(Segmento* segmento, t_key key){
+int buscar_pagina_en_segmento(Segmento* segmento, t_key key){
 
 	t_list* l_paginas = segmento->paginas;
 
-	int posicion = 0;
-	void* pagina = list_get(l_paginas, posicion);
-
-	if (pagina != NULL){
-
-		while (!coincide_pagina(key, pagina) && ((posicion + 1) < l_paginas->elements_count)){
-			posicion ++;
-			pagina = list_get(l_paginas, posicion);
-		}
-
-		if (coincide_pagina(key, pagina)) {
-			return pagina;
-		}
-	}
-
-	return NULL;
-
-}
-
-Marco* buscar_marco(void* pagina){
-
-	int posicion = (L_MARCOS->elements_count -1);
-	Marco* marco = list_get(L_MARCOS, posicion);
-	Marco* marco_encontrado = NULL;
+	int posicion = (l_paginas->elements_count -1);
+	int id_pagina;
 
 	while (posicion >= 0){
-		marco = list_get(L_MARCOS, posicion);
+		id_pagina = (int) list_get(l_paginas, posicion);
 
-		if(marco->pagina == pagina){
-			marco_encontrado = marco;
+		if (coincide_pagina(key, id_pagina)) {
+			return id_pagina;
 		}
 
-		posicion --;
+		posicion--;
 	}
 
-	return marco_encontrado;
+	return -1;
 }
+
 
 bool coincide_segmento (char* nombre_segmento, Segmento* segmento){
 
@@ -523,9 +519,17 @@ bool coincide_segmento (char* nombre_segmento, Segmento* segmento){
 
 }
 
-bool coincide_pagina (t_key key, void* pagina){
-	t_key key_en_pagina = *get_key_pagina(pagina);
-	return key == key_en_pagina;
+bool coincide_pagina (t_key key, int id_pagina){
+
+	void* pagina = get_pagina(id_pagina);
+
+	if(pagina != NULL) {
+
+		t_key key_en_pagina = *get_key_pagina(pagina);
+		return key == key_en_pagina;
+	} else {
+		return false;
+	}
 }
 
 
@@ -693,12 +697,15 @@ int lanzar_journal(t_timestamp timestamp_journal){
 	int posicion_pagina;
 	Segmento* segmento;
 	t_list* paginas;
+	int id_pagina;
 	void* pagina;
 
 	Insert* instruccion_insert = malloc(sizeof(Insert));
 	Instruccion* instruccion = malloc(sizeof(Instruccion));
 	instruccion->instruccion = INSERT;
 	instruccion->instruccion_a_realizar = instruccion_insert;
+
+	Instruccion* instruccion_respuesta;
 
 
 	while(posicion_segmento >= 0){
@@ -708,34 +715,43 @@ int lanzar_journal(t_timestamp timestamp_journal){
 		posicion_pagina = (paginas->elements_count -1);
 
 		while (posicion_pagina >= 0){
-			pagina = list_get(paginas, posicion_pagina);
+			id_pagina = (int) list_get(paginas, posicion_pagina);
+			pagina = get_pagina(id_pagina);
 
 			if (*get_modificado_pagina(pagina)){
 				instruccion_insert->key = *get_key_pagina(pagina);
-				instruccion_insert->nombre_tabla = segmento->nombre;
+
+				instruccion_insert->nombre_tabla = malloc(strlen(segmento->nombre)+1);
+				strcpy(instruccion_insert->nombre_tabla, segmento->nombre);
+
 				instruccion_insert->timestamp_insert = *get_timestamp_pagina(pagina);
-				instruccion_insert->value = get_value_pagina(pagina);
+
+				instruccion_insert->value = malloc(strlen(get_value_pagina(pagina))+1);
+				strcpy( instruccion_insert->value, get_value_pagina(pagina));
+
 				instruccion_insert->timestamp = timestamp_journal;
 
-				Instruccion* instruccion_respuesta;
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
 
 					if(instruccion_respuesta->instruccion == ERROR){
 						log_error(LOG_ERROR, "Memoria: Fallo insert de journal"); //loguear mejor los errores posibles, como mal key, mal value, mal table
 					}
 
-				free(instruccion_respuesta);
+				//free_consulta(instruccion_respuesta);
+				free(instruccion_insert->nombre_tabla);
+				free(instruccion_insert->value);
+
 				PAGINAS_MODIFICADAS--;
 				}
 			}
 
 			posicion_pagina--;
+			free_consulta(instruccion);
 		}
 		eliminar_de_memoria(segmento->nombre);
 		posicion_segmento--;
 	}
 
-	free_consulta(instruccion);
 	sem_post(&semJournal);
 	return 1;
 }
@@ -755,40 +771,46 @@ void print_memorias (){
 
 }
 
-void* seleccionar_marco(){
-	 //aca iria el algoritmo para reemplazar paginas
-
+int seleccionar_marco(){
 	if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
+		//la memoria esta full, lanzo journal
 		t_timestamp timestamp = get_timestamp();
 		lanzar_journal(timestamp);
 	}
 
 	if(L_MARCOS->elements_count > PAGINAS_USADAS){
-
+		// hay paginas vacias
 		int posicion = 0;
 		Marco* marco = list_get(L_MARCOS, posicion);
+
+		if(marco < 0){
+			return -1;
+		}
 
 		while(pagina_en_uso(marco)){
 			posicion++;
 			marco = list_get(L_MARCOS, posicion);
+
+			if(marco < 0){
+				return -1;
+			}
 		}
 
 		marco->en_uso = true;
 		PAGINAS_USADAS++;
 
-		return marco->pagina;
-	}
-	else {
+		return posicion;
+	} else {
 
-		void* pagina = marco_por_LRU();
-		if (pagina != NULL){
-			eliminar_referencia(pagina);
-			return pagina;
+		int id_pagina = marco_por_LRU(); //algoritmo para reemplazar paginas
+		if (id_pagina < 0){
+			eliminar_referencia(id_pagina);
+			return id_pagina;
 		}
 
 		printf("No hay mas memoria chinguenguencha!");
-		log_info(LOGGER,"Memoria - La memoria esta FULL.");
-		return (void*) NULL;
+		log_info(LOGGER,"Memoria - LRU no selecciono una memoria.");
+		return -1;
 	}
 }
 
@@ -842,31 +864,23 @@ void *TH_confMonitor(void * p){
 	return (void*)0;
 }
 
-void marcar_ultimo_uso(void* pagina){
+void marcar_ultimo_uso(int id_pagina){
 
-	int posicion = L_MARCOS->elements_count -1;
-	bool encontrado = false;
-	Marco* marco;
+	Marco* marco = list_get(L_MARCOS, id_pagina);
 
-	while(posicion >= 0 && !encontrado ){
-		marco = list_get(L_MARCOS, posicion);
-
-		if(marco->pagina == pagina){
-			marco->ultimo_uso = get_timestamp();
-			encontrado = true;
-		}
-
-		posicion --;
+	if(marco != NULL){
+		marco->ultimo_uso = get_timestamp();
 	}
-
 }
 
-Marco* marco_por_LRU(){
+int marco_por_LRU(){
 
 	Marco *marco, *marco_seleccionado;
 	int posicion = L_MARCOS->elements_count -1;
+	int id_seleccionado;
 
 	marco_seleccionado = list_get(L_MARCOS, posicion);
+	id_seleccionado = posicion;
 	posicion--;
 
 		while (posicion >= 0){
@@ -875,15 +889,16 @@ Marco* marco_por_LRU(){
 
 			if(marco->ultimo_uso < marco_seleccionado->ultimo_uso){
 				marco_seleccionado = marco;
+				id_seleccionado = posicion;
 			}
 
 			posicion--;
 		}
 
-	return marco_seleccionado->pagina;
+	return id_seleccionado;
 }
 
-void eliminar_referencia(void* pagina_a_eliminar){
+void eliminar_referencia(int id_pagina_eliminar){
 
 	Segmento* segmento;
 	int pos_segmento = L_SEGMENTOS->elements_count -1;
@@ -891,7 +906,7 @@ void eliminar_referencia(void* pagina_a_eliminar){
 	t_list* paginas_de_segmento;
 	int pos_paginas;
 
-	void* pagina;
+	int id_pagina;
 
 	bool marco_eliminado = false;
 
@@ -903,9 +918,9 @@ void eliminar_referencia(void* pagina_a_eliminar){
 
 		while (pos_paginas >= 0 && !marco_eliminado){
 
-			pagina = list_get(paginas_de_segmento, pos_paginas);
+			id_pagina = (int) list_get(paginas_de_segmento, pos_paginas);
 
-			if (pagina == pagina_a_eliminar){
+			if (id_pagina == id_pagina_eliminar){
 				list_remove(paginas_de_segmento, pos_paginas);
 				marco_eliminado = true;
 			}

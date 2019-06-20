@@ -57,13 +57,13 @@ void retorno_consola(char* leido);
 void inicializar_memoria();
 Instruccion* atender_consulta (Instruccion*);
 int insertar_en_memoria(char*, t_key, char*, t_timestamp, t_flag);
-void agregar_pagina_en_segmento(Segmento*, void*);
+void* get_pagina(int id_pagina);
+void agregar_pagina_en_segmento(Segmento*, int);
 void* buscar_segmento(char*);
 int index_segmento(char*);
-void* buscar_pagina_en_segmento(Segmento*, t_key);
-Marco* buscar_marco(void*);
+int buscar_pagina_en_segmento(Segmento*, t_key);
 bool coincide_segmento (char*, Segmento*);
-bool coincide_pagina (t_key, void*);
+bool coincide_pagina (t_key, int);
 void eliminar_de_memoria(char*);  //elimina una tabla de memoria
 t_timestamp* get_timestamp_pagina( void*);
 t_key* get_key_pagina( void*);
@@ -79,7 +79,7 @@ void lanzar_gossiping();
 int lanzar_journal(t_timestamp);
 void print_memorias ();
 void* pedir_pagina();
-void* seleccionar_marco();
+int seleccionar_marco();
 Segmento* crear_segmento(char*);
 bool pagina_en_uso(Marco*);
 bool memoria_full();
@@ -89,8 +89,8 @@ void gossipear(Memoria *mem);
 void add_memory_if_not_exists(Memoria *mem);
 bool existe_memoria(Memoria *mem1);
 void *TH_confMonitor(void * p);
-void marcar_ultimo_uso(void* pagina);
-Marco* marco_por_LRU();
-void eliminar_referencia(void* pagina);
+void marcar_ultimo_uso(int id_pagina);
+int marco_por_LRU();
+void eliminar_referencia(int id_pagina);
 
 #endif
