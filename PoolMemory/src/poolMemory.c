@@ -90,9 +90,6 @@ void configuracion_inicial(void){
 
 			log_info(LOGGER, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
 
-			// libero instruccion
-			free(instruccion_maxValue);
-
 		} else {
 			print_instruccion_parseada(respuesta);
 			log_error(LOGGER, "Memoria: No se obtuvo un MAX_VALUE al pedir el MAX_VALUE al FileSystem.");
@@ -114,7 +111,6 @@ void retorno_consola(char* leido){
 	Instruccion* respuesta = atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
 	print_instruccion_parseada(respuesta);
 
-	free_consulta(instruccion_parseada);
 	free_consulta(respuesta);
 }
 
@@ -129,7 +125,6 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	responder(cliente, respuesta);
 
 	free_consulta(respuesta);
-	free_consulta(instruccion);
 }
 
 void inicializar_memoria(){
@@ -269,6 +264,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 				marcar_ultimo_uso(id_pagina);
 
+				free_consulta(instruccion_parseada);
+
 			}
 
 			break;
@@ -290,6 +287,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			}
 
 			instruccion_respuesta = respuesta_success();
+			free_consulta(instruccion_parseada);
 
 			break;
 
@@ -313,10 +311,14 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				instruccion_respuesta = respuesta_error(JOURNAL_FAILURE);
 			}
 
+			free_consulta(instruccion_parseada);
+
 			break;
 
 		case GOSSIP:;
 			instruccion_respuesta = respuesta_success();
+			free_consulta(instruccion_parseada);
+
 			break;
 
 		default:;
@@ -700,11 +702,6 @@ int lanzar_journal(t_timestamp timestamp_journal){
 	int id_pagina;
 	void* pagina;
 
-	Insert* instruccion_insert = malloc(sizeof(Insert));
-	Instruccion* instruccion = malloc(sizeof(Instruccion));
-	instruccion->instruccion = INSERT;
-	instruccion->instruccion_a_realizar = instruccion_insert;
-
 	Instruccion* instruccion_respuesta;
 
 
@@ -719,6 +716,12 @@ int lanzar_journal(t_timestamp timestamp_journal){
 			pagina = get_pagina(id_pagina);
 
 			if (*get_modificado_pagina(pagina)){
+
+				Instruccion* instruccion = malloc(sizeof(Instruccion));
+				instruccion->instruccion = INSERT;
+				Insert* instruccion_insert = malloc(sizeof(Insert));
+				instruccion->instruccion_a_realizar = instruccion_insert;
+
 				instruccion_insert->key = *get_key_pagina(pagina);
 
 				instruccion_insert->nombre_tabla = malloc(strlen(segmento->nombre)+1);
@@ -737,16 +740,13 @@ int lanzar_journal(t_timestamp timestamp_journal){
 						log_error(LOG_ERROR, "Memoria: Fallo insert de journal"); //loguear mejor los errores posibles, como mal key, mal value, mal table
 					}
 
-				//free_consulta(instruccion_respuesta);
-				free(instruccion_insert->nombre_tabla);
-				free(instruccion_insert->value);
+				free_consulta(instruccion_respuesta);
 
 				PAGINAS_MODIFICADAS--;
 				}
 			}
 
 			posicion_pagina--;
-			free_consulta(instruccion);
 		}
 		eliminar_de_memoria(segmento->nombre);
 		posicion_segmento--;
