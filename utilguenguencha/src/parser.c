@@ -479,62 +479,7 @@ void show_describes(Retorno_Describe *describe){
 }
 
 void print_instruccion_parseada(Instruccion * instruccion_parseada) {
-
 	switch (instruccion_parseada->instruccion) {
-		case SELECT:;
-			Select * select = instruccion_parseada->instruccion_a_realizar;
-			printf("Tabla: %s Key: %i TS: %zu \n", select->nombre_tabla,
-					select->key, select->timestamp);
-			break;
-
-		case INSERT:;
-			Insert * insert = instruccion_parseada->instruccion_a_realizar;
-			printf("Tabla: %s Key: %i Valor: %s TSins: %zu TS: %zu \n",
-					insert->nombre_tabla, insert->key, insert->value,
-					insert->timestamp_insert, insert->timestamp);
-			break;
-
-		case CREATE:;
-			Create * create = instruccion_parseada->instruccion_a_realizar;
-			printf(
-					"Tabla: %s Particiones: %i Compactacion: %zu Consistencia: %i TS: %zu \n",
-					create->nombre_tabla, create->particiones,
-					create->compactation_time, create->consistencia,
-					create->timestamp);
-			break;
-
-		case DESCRIBE:;
-			Describe * describe = instruccion_parseada->instruccion_a_realizar;
-			printf("Tabla: %s TS: %zu\n", describe->nombre_tabla,
-			describe->timestamp);
-			break;
-
-		case ADD:;
-			Add * add = instruccion_parseada->instruccion_a_realizar;
-			printf("Memoria: %i Consistencia: %i TS: %zu\n", add->memoria,
-					add->consistencia, add->timestamp);
-			break;
-
-		case RUN:;
-			Run * run = instruccion_parseada->instruccion_a_realizar;
-			printf("Path: %s TS: %zu\n", run->path, run->timestamp);
-			break;
-
-		case DROP:;
-			Drop * drop = instruccion_parseada->instruccion_a_realizar;
-			printf("Tabla: %s TS: %zu\n", drop->nombre_tabla, drop->timestamp);
-			break;
-
-		case JOURNAL:;
-			Journal * journal = instruccion_parseada->instruccion_a_realizar;
-			printf("TS: %zu \n", journal->timestamp);
-			break;
-
-		case METRICS:;
-			Metrics * metrics = instruccion_parseada->instruccion_a_realizar;
-			printf("TS: %zu \n", metrics->timestamp);
-			break;
-
 		case RETORNO:;
 		Retorno_Generico * retorno_generico = instruccion_parseada->instruccion_a_realizar;
 			switch(retorno_generico->tipo_retorno){
@@ -553,7 +498,6 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 				break;
 			}
 		break;
-
 		case ERROR:;
 			Error* error = instruccion_parseada->instruccion_a_realizar;
 			switch (error->error) {
