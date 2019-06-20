@@ -205,6 +205,12 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 		switch	(instruccion_parseada->instruccion){
 		case SELECT:;
 
+			if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
+				//la memoria esta full, lanzo journal
+				t_timestamp timestamp = get_timestamp();
+				lanzar_journal(timestamp);
+			}
+
 			pthread_mutex_lock(&mutexSegmentos);
 
 			Select* instruccion_select = instruccion_parseada->instruccion_a_realizar;
@@ -271,6 +277,13 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case INSERT:;
+
+			if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
+				//la memoria esta full, lanzo journal
+				t_timestamp timestamp = get_timestamp();
+				lanzar_journal(timestamp);
+			}
+
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
 
 			if (string_length(instruccion_insert->value) > MAX_VAL) {
@@ -430,12 +443,16 @@ void eliminar_de_memoria(char* nombre_tabla){
 
 		}
 
-		list_destroy(paginas);
-
 		int index = index_segmento(nombre_tabla);
 
 		if (index >= 0){
-			list_remove_and_destroy_element(L_SEGMENTOS, index, (void*) free);
+			Segmento* segmento_liberar = list_get(L_SEGMENTOS, index);
+			list_remove(L_SEGMENTOS, index);
+
+			list_destroy(segmento_liberar->paginas);
+			free(segmento_liberar->nombre);
+			//free(segmento_liberar);
+
 		}
 	}
 	pthread_mutex_unlock(&mutexSegmentos);
@@ -772,11 +789,6 @@ void print_memorias (){
 }
 
 int seleccionar_marco(){
-	if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
-		//la memoria esta full, lanzo journal
-		t_timestamp timestamp = get_timestamp();
-		lanzar_journal(timestamp);
-	}
 
 	if(L_MARCOS->elements_count > PAGINAS_USADAS){
 		// hay paginas vacias
