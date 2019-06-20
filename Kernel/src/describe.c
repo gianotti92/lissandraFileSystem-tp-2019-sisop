@@ -32,9 +32,6 @@ void realizarDescribeGeneral(void){
 			log_error(LOGGER, "Hilo Describe: Respuesta inesperada\n");
 		break;
 	}
-	//TODO: kevin esta haciendo una funcion para liberar, reemplazar aqui.
-	free(describe);
-	free(instruccionDescribe);
 }
 
 void describe_agregar_tablas_nuevas(t_list * describes){

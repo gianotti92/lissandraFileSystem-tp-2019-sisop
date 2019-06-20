@@ -595,7 +595,6 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 
 		default:
 			break;
-
 		}
 }
 

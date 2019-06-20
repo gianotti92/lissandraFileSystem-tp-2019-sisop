@@ -133,8 +133,6 @@ void logicaSelect(Select * select){
 				i->instruccion = SELECT;
 				Instruccion *instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, i, KERNEL, T_INSTRUCCION);
 				print_instruccion_parseada(instruccionRespuesta);
-				free(instruccionRespuesta->instruccion_a_realizar);
-				free(instruccionRespuesta);
 			}
 		}else{
 			log_error(LOG_ERROR, "No hay memorias asignadas para ese criterio");
