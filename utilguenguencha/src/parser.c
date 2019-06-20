@@ -15,6 +15,8 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 	char** consulta_separada = string_split(consulta, " ");
 
+	free(consulta);
+
 	int length = cantidad_elementos(consulta_separada) - 1;
 
 	if (es_select(consulta_separada)){
@@ -28,26 +30,23 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 				|| string_to_ulint(consulta_separada[2]) > 65535) {
 			puts("ERROR: La Key debe ser un numero menor a 65.535.");
 			log_error(LOGGER, "Parser: La Key es incorrecta.");
-
 			return respuesta_error(BAD_KEY);
 		}else{
-			// es SELECT
-
 			Select * nuevoSelect = malloc(sizeof(Select));
 
 			string_to_upper(consulta_separada[1]);
-			nuevoSelect->nombre_tabla = consulta_separada[1]; 	// cargo tabla
+			nuevoSelect->nombre_tabla = malloc(strlen(consulta_separada[1]) + 1);
+			strcpy(nuevoSelect->nombre_tabla, consulta_separada[1]);
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
 			nuevoSelect->key = key;	 								// cargo key
 			uint32_t timestamp = (uint32_t) string_to_ulint(
 					consulta_separada[3]);
 			nuevoSelect->timestamp = timestamp;				// cargo timestamp
 
-			//Select * p_select = malloc(sizeof(nuevoSelect));
-			//p_select = &nuevoSelect;
-
-			//consultaParseada->instruccion = SELECT;
-			//consultaParseada->instruccion_a_realizar = p_select;
+			free(consulta_separada[0]);
+			free(consulta_separada[1]);
+			free(consulta_separada[2]);
+			free(consulta_separada);
 			consultaParseada = crear_instruccion(SELECT, nuevoSelect, sizeof(nuevoSelect));
 
 		}
@@ -105,7 +104,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			return respuesta_error(BAD_KEY);
 		} else {
 
-			// es INSERT
+			/* INSERT */
 
 			if(string_starts_with(consulta_separada[3], "\"") && string_ends_with(consulta_separada[3], "\"") ){
 				consulta_separada[3] = string_substring(consulta_separada[3], 1, (string_length(consulta_separada[3])-2));
@@ -115,7 +114,8 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			Insert* nuevoInsert = malloc(sizeof(Insert));
 
 			string_to_upper(consulta_separada[1]);
-			nuevoInsert->nombre_tabla = consulta_separada[1];	 // cargo tabla
+			nuevoInsert->nombre_tabla = malloc(strlen(consulta_separada[1]) + 1);
+			strcpy(nuevoInsert->nombre_tabla, consulta_separada[1]);// cargo tabla
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
 			nuevoInsert->key = key;					 				// cargo key
 
@@ -126,6 +126,11 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 						consulta_separada[4]);
 				nuevoInsert->timestamp_insert = timestamp;// cargo timestamp_insert
 				nuevoInsert->timestamp = timestamp;			// cargo timestamp
+				free(consulta_separada[0]);
+				free(consulta_separada[1]);
+				free(consulta_separada[2]);
+				free(consulta_separada[3]);
+				free(consulta_separada);
 			} else {						// vino con timestamp en la consulta
 				uint32_t timestamp_insert = (uint32_t) string_to_ulint(
 						consulta_separada[4]);
@@ -133,6 +138,12 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 				uint32_t timestamp = (uint32_t) string_to_ulint(
 						consulta_separada[5]);
 				nuevoInsert->timestamp = timestamp;			// cargo timestamp
+				free(consulta_separada[0]);
+				free(consulta_separada[1]);
+				free(consulta_separada[2]);
+				free(consulta_separada[3]);
+				free(consulta_separada[4]);
+				free(consulta_separada);
 			}
 
 			consultaParseada = crear_instruccion(INSERT, nuevoInsert,
@@ -162,7 +173,8 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			Create * nuevoCreate = malloc(sizeof(Create));
 
 			string_to_upper(consulta_separada[1]);
-			nuevoCreate->nombre_tabla = consulta_separada[1]; 	// cargo tabla
+			nuevoCreate->nombre_tabla = malloc(strlen(consulta_separada[1]) + 1);
+			strcpy(nuevoCreate->nombre_tabla, consulta_separada[1]); // cargo tabla
 
 			Consistencias consistencia;
 
@@ -194,6 +206,14 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			consultaParseada = crear_instruccion(CREATE, nuevoCreate,
 					sizeof(nuevoCreate));
 
+			free(consulta_separada[0]);
+			free(consulta_separada[1]);
+			free(consulta_separada[2]);
+			free(consulta_separada[3]);
+			free(consulta_separada[4]);
+			free(consulta_separada[5]);
+			free(consulta_separada);
+
 		}
 	} else if (es_describe(consulta_separada)) {
 
@@ -210,7 +230,8 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			if (length == 2) {
 
 				string_to_upper(consulta_separada[1]);
-				nuevoDescribe->nombre_tabla = consulta_separada[1]; // cargo tabla
+				nuevoDescribe->nombre_tabla = malloc(strlen(consulta_separada[1]) + 1);
+				strcpy(nuevoDescribe->nombre_tabla, consulta_separada[1]);// cargo tabla
 				uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[2]);
 				nuevoDescribe->timestamp = timestamp;		// cargo timestamp
 
@@ -221,8 +242,14 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			}
 
+			free(consulta_separada[0]);
+			free(consulta_separada[1]);
+			free(consulta_separada[2]);
+			free(consulta_separada);
+
 			consultaParseada = crear_instruccion(DESCRIBE, nuevoDescribe,
 					sizeof(nuevoDescribe));
+
 		}
 	} else if (es_drop(consulta_separada)) {
 
@@ -236,13 +263,19 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			// es DROP
 			Drop* nuevoDrop = malloc(sizeof(Drop));
 			string_to_upper(consulta_separada[1]);
-			nuevoDrop->nombre_tabla = consulta_separada[1]; 	// cargo tabla
+			nuevoDrop->nombre_tabla = malloc(strlen(consulta_separada[1]) + 1);
+			strcpy(nuevoDrop->nombre_tabla, consulta_separada[1]); // cargo tabla
 			uint32_t timestamp = (uint32_t) string_to_ulint(
 					consulta_separada[2]);
 			nuevoDrop->timestamp = timestamp;				// cargo timestamp
 
 			consultaParseada = crear_instruccion(DROP, nuevoDrop,
 					sizeof(nuevoDrop));
+
+			free(consulta_separada[0]);
+			free(consulta_separada[1]);
+			free(consulta_separada[2]);
+			free(consulta_separada);
 
 		}
 	} else if (es_add(consulta_separada) & (procesoOrigen == KERNEL)) {
@@ -296,6 +329,14 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			consultaParseada = crear_instruccion(ADD, nuevoAddMemory,
 					sizeof(nuevoAddMemory));
 
+			free(consulta_separada[0]);
+			free(consulta_separada[1]);
+			free(consulta_separada[2]);
+			free(consulta_separada[3]);
+			free(consulta_separada[4]);
+			free(consulta_separada[5]);
+			free(consulta_separada);
+
 		}
 	} else if (es_run(consulta_separada) & (procesoOrigen == KERNEL)) {
 
@@ -308,9 +349,8 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			// es RUN
 			Run * nuevoRun = malloc(sizeof(Run));
-			;
-
-			nuevoRun->path = consulta_separada[1]; 				// cargo path
+			nuevoRun->path = malloc(strlen(consulta_separada[1]) + 1);
+			strcpy(nuevoRun->path, consulta_separada[1]); // cargo path
 			uint32_t timestamp = (uint32_t) string_to_ulint(
 					consulta_separada[2]);
 			nuevoRun->timestamp = timestamp;				 // cargo timestamp
@@ -318,6 +358,10 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			consultaParseada = crear_instruccion(RUN, nuevoRun,
 					sizeof(nuevoRun));
 
+			free(consulta_separada[0]);
+			free(consulta_separada[1]);
+			free(consulta_separada[2]);
+			free(consulta_separada);
 		}
 	} else if (es_metrics(consulta_separada) & (procesoOrigen == KERNEL)) {
 
@@ -338,6 +382,10 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			consultaParseada = crear_instruccion(METRICS, nuevoMetrics,
 					sizeof(nuevoMetrics));
 
+			free(consulta_separada[0]);
+			free(consulta_separada[1]);
+			free(consulta_separada);
+
 		}
 	} else if (es_journal(consulta_separada)
 			& (procesoOrigen == POOLMEMORY || procesoOrigen == KERNEL)) {
@@ -356,6 +404,9 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			nuevoJournal->timestamp = timestamp;			// cargo timestamp
 
 			consultaParseada = crear_instruccion(JOURNAL, nuevoJournal, sizeof(nuevoJournal));
+			free(consulta_separada[0]);
+			free(consulta_separada[1]);
+			free(consulta_separada);
 		}
 	} else {
 		puts("ERROR: Las operaciones disponibles son:");
@@ -379,7 +430,6 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 		return respuesta_error(BAD_OPERATION);
 	}
-
 
 	return consultaParseada;
 }
