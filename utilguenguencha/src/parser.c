@@ -486,13 +486,23 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 			case VALOR:;
 				Retorno_Value* retorno_value = retorno_generico->retorno;
 				printf("Value: %s TS: %zu \n", retorno_value->value, retorno_value->timestamp);
+				free(retorno_value->value);
+				free(retorno_value);
+				free(retorno_generico);
+				free(instruccion_parseada);
 				break;
 
 			case SUCCESS:;
 				printf("Operacion completada correctamente. \n");
+				free(retorno_generico);
+				free(instruccion_parseada);
 				break;
 			case DATOS_DESCRIBE:
 				list_iterate(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes, (void*)show_describes);
+				free(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes);
+				free(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno));
+				free((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar));
+				free(instruccion_parseada);
 				break;
 			default:
 				break;
@@ -580,7 +590,6 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 				case BLOCK_ASSIGN_ERROR:;
 					printf("ERROR - FS: NO SE PUDIERON ASIGNAR LOS BLOQUES. \n");
 				break;
-
 				case BLOCK_MAX_REACHED:;
 					printf("ERROR - FS: NO SE PUDIERON ASIGNAR LOS BLOQUES - MAXIMO ALCANZADO. \n");
 				break;
@@ -591,6 +600,8 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 				default:
 					break;
 			}
+			free(error);
+			free(instruccion_parseada);
 			break;
 
 		default:
