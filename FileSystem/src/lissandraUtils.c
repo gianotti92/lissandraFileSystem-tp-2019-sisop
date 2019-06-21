@@ -1,6 +1,6 @@
 #include "lissandra.h"
 
-struct tableRegister createTableRegister(uint16_t key,char* value,long timestamp) {
+struct tableRegister createTableRegister(t_key key,char* value,t_timestamp timestamp) {
 	struct tableRegister reg;
 	reg.key=key;
 	reg.value=malloc(global_conf.max_value_size);
@@ -43,7 +43,7 @@ void global_conf_destroy(void){
 	free(global_conf.puerto);
 }
 
-long getTimestamp(void) {
+t_timestamp getTimestamp(void) {
 	struct timeval t;
 	gettimeofday(&t,NULL);
 	return t.tv_sec*1000+t.tv_usec/1000;

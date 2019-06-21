@@ -352,7 +352,7 @@ void* TH_compactacion(void* p){
 		// Comparar uno por uno, modificando la estructura en memoria de cada particion
 		compac_match_registers(registrosParticiones,registrosTemporales);
 		
-		long startBlocking = getTimestamp();
+		t_timestamp startBlocking = getTimestamp();
 		pthread_rwlock_wrlock(&fnd->lock);
 
 		// borrar archivos tmpc
@@ -363,8 +363,8 @@ void* TH_compactacion(void* p){
 			list_destroy(registrosTemporales);
 			list_destroy(tmpc_files);
 			pthread_rwlock_unlock(&fnd->lock);
-			long endBlocking = getTimestamp();
-			log_info(LOGGER,"Compactacion: Error al borrar los archivos de la tabla %s, se bloqueo por %lu milisegundos",item->tableName,endBlocking-startBlocking);
+			t_timestamp endBlocking = getTimestamp();
+			log_info(LOGGER,"Compactacion: Error al borrar los archivos de la tabla %s, se bloqueo por %d milisegundos",item->tableName,endBlocking-startBlocking);
 			continue;
 		}
 
@@ -376,14 +376,14 @@ void* TH_compactacion(void* p){
 			list_destroy(registrosTemporales);
 			list_destroy(tmpc_files);
 			pthread_rwlock_unlock(&fnd->lock);
-			long endBlocking = getTimestamp();
-			log_info(LOGGER,"Compactacion: Error al crear las nuevas particiones de la tabla %s, se bloqueo por %lu milisegundos",item->tableName,endBlocking-startBlocking);
+			t_timestamp endBlocking = getTimestamp();
+			log_info(LOGGER,"Compactacion: Error al crear las nuevas particiones de la tabla %s, se bloqueo por %d milisegundos",item->tableName,endBlocking-startBlocking);
 			continue;
 		}
 
 		pthread_rwlock_unlock(&fnd->lock);
-		long endBlocking = getTimestamp();
-		log_info(LOGGER,"Se ha compactado la tabla %s, se bloqueo por %lu milisegundos",item->tableName,endBlocking-startBlocking);
+		t_timestamp endBlocking = getTimestamp();
+		log_info(LOGGER,"Se ha compactado la tabla %s, se bloqueo por %d milisegundos",item->tableName,endBlocking-startBlocking);
 
 		compac_clean_partition_registers(registrosParticiones);
 		list_destroy(registrosParticiones);
