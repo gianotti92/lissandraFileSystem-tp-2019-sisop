@@ -89,12 +89,9 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 		if ((length == 5) && !es_numero(consulta_separada[4])) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP], chinguengencha!");
-<<<<<<< HEAD
 
-
-=======
 			free_consulta_separada(length,consulta_separada);
->>>>>>> dev
+
 			return respuesta_error(BAD_REQUEST);
 		} else if (!es_numero(consulta_separada[2])
 				|| string_to_ulint(consulta_separada[2]) > 65535) {
