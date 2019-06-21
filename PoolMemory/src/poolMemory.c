@@ -110,7 +110,6 @@ void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	Instruccion* respuesta = atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
 	print_instruccion_parseada(respuesta);
-	free_consulta(respuesta);
 }
 
 void retornarControl(Instruccion *instruccion, int cliente){
@@ -743,7 +742,10 @@ int lanzar_journal(t_timestamp timestamp_journal){
 		posicion_segmento--;
 	}
 
-	free_consulta(instruccion);
+	free(instruccion_insert->nombre_tabla);
+	free(instruccion_insert->value);
+	free(instruccion_insert);
+	free(instruccion);
 	sem_post(&semJournal);
 	return 1;
 }
