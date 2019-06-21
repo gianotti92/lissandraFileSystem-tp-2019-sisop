@@ -132,7 +132,7 @@ int fs_delete(char* filename){
 	}
 	if(mdata.size==0) {
 		if(remove(filename)){
-			log_error(LOGGER,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
+			log_error(LOG_ERROR,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
 			return FILE_DELETE_ERROR;
 		}
 		return 0;
@@ -144,7 +144,7 @@ int fs_delete(char* filename){
 	}
 	
 	if(remove(filename)){
-		log_error(LOGGER,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
 		list_destroy(mdata.blocks);
 		return FILE_DELETE_ERROR;
 	}
@@ -180,7 +180,7 @@ char* fs_write_registers_to_buffer(t_list *registros,int* buffer_size){
 }
 int fs_write_get_free_blocks(t_list* blocks,int cant_blocks){
 	if(cant_blocks>global_fs_conf.BLOCKS){
-		log_error(LOGGER,"Error al asignar %d bloques, pasa el maximo de %d",cant_blocks,global_fs_conf.BLOCKS);
+		log_error(LOG_ERROR,"Error al asignar %d bloques, pasa el maximo de %d",cant_blocks,global_fs_conf.BLOCKS);
 		return BLOCK_MAX_REACHED;
 	}
 	t_bitarray* bitarray = bitarray_get();
@@ -199,7 +199,7 @@ int fs_write_get_free_blocks(t_list* blocks,int cant_blocks){
 	}
 	if(cant_blocks != cantAsign){
 		bitarray_destroy(bitarray);
-		log_error(LOGGER,"Error al asignar %i bloques, se asignaron %d",cant_blocks,cantAsign);
+		log_error(LOG_ERROR,"Error al asignar %i bloques, se asignaron %d",cant_blocks,cantAsign);
 		return BLOCK_ASSIGN_ERROR;
 	}
 	bitarray_to_file(bitarray->bitarray);
@@ -216,7 +216,7 @@ int fs_write_buffer_to_blocks(char* buffer,struct file_mdata* mdata) {
 
 		FILE * FileBlock = fopen(path, "wb");
 		if(FileBlock==NULL){
-			log_error(LOGGER,"Error al abrir el archivo '%s', %s",path,strerror(errno));
+			log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",path,strerror(errno));
 			error=FILE_OPEN_ERROR;
 			free(path);
 			return;
@@ -243,7 +243,7 @@ int fs_write_buffer_to_blocks(char* buffer,struct file_mdata* mdata) {
 int fs_write_set_mdata(char* filename,struct file_mdata* mdata){
 	FILE* f=fopen(filename,"w");
 	if(f==NULL){
-		log_error(LOGGER,"Error al crear el archivo '%s', %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al crear el archivo '%s', %s",filename,strerror(errno));
 		return FILE_OPEN_ERROR;
 	}
 	int lengthBlocks=0;
@@ -279,7 +279,7 @@ int fs_write_set_mdata(char* filename,struct file_mdata* mdata){
 int fs_create_set_mdata(char* filename){
 	FILE* f=fopen(filename,"w");
 	if(f==NULL){
-		log_error(LOGGER,"Error al crear el archivo '%s', %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al crear el archivo '%s', %s",filename,strerror(errno));
 		return FILE_OPEN_ERROR;
 	}
 	char buff[17];
@@ -302,7 +302,7 @@ int fs_delete_set_free_blocks(t_list* blocks){
 		char*filename=malloc(strlen(global_conf.directorio_bloques)+digitos(*block)+5);
 		sprintf(filename,"%s%d.bin",global_conf.directorio_bloques,*block);		
 		if(remove(filename)) {
-			log_error(LOGGER,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
+			log_error(LOG_ERROR,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
 			error=FILE_DELETE_ERROR;
 		}
 		free(filename);
@@ -327,7 +327,7 @@ int fs_read_blocks_to_buffer(char*buffer,struct file_mdata* mdata){
 
 		FILE * FileBlock = fopen(path, "rb");
 		if(FileBlock==NULL){
-			log_error(LOGGER,"Error al abrir el archivo '%s', %s",path,strerror(errno));
+			log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",path,strerror(errno));
 			error=FILE_OPEN_ERROR;
 			free(path);
 			return;
@@ -375,7 +375,7 @@ void fs_read_buffer_to_registers(char* buffParam,long bufferSize,t_list* registr
 int fs_read_get_mdata(char* filename,struct file_mdata* mdata){
 	t_config* conf=config_create(filename);
 	if(conf==NULL){
-		log_error(LOGGER,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
 		return FILE_OPEN_ERROR;
 	}
 	mdata->size = config_get_long_value(conf,"SIZE");
@@ -430,7 +430,7 @@ int fs_get_conf(void){
 	sprintf(filename,"%sMetadata.bin",global_conf.directorio_metadata);
 	t_config* conf = config_create(filename);
 	if(conf==NULL){
-		log_error(LOGGER,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
 		free(filename);
 		return FILE_OPEN_ERROR;
 	}
@@ -462,7 +462,7 @@ void bitarray_to_file(char *bitarray){
 	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
 	FILE * fd = fopen(filename, "wb");
 	if(fd==NULL){
-		log_error(LOGGER,"Error al abrir el archivo %s, %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el archivo %s, %s",filename,strerror(errno));
 		free(filename);
 		return;
 	}
@@ -482,7 +482,7 @@ t_bitarray* bitarray_get(void){
 	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
 	FILE * fd = fopen(filename, "rb");
 	if(fd==NULL){
-		log_error(LOGGER,"Error al abrir el archivo %s, %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el archivo %s, %s",filename,strerror(errno));
 		free(filename);
 		return NULL;
 	}

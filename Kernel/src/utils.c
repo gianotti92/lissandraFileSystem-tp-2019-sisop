@@ -71,6 +71,11 @@ void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 
 void lanzar_gossiping(){
 	Memoria * memoriaPrincipal = malloc(sizeof(Memoria));
+	memoriaPrincipal->idMemoria = 1;
+	memoriaPrincipal->puerto = PUERTO_MEMORIA_PPAL;
+	memoriaPrincipal->ip = IP_MEMORIA_PPAL;
+
+	list_add((t_list*)list_get(memorias, DISP), memoriaPrincipal);
 	agregarMemoria(memoriaPrincipal);
 	free(memoriaPrincipal);
 	while(true){
@@ -85,9 +90,6 @@ void lanzar_gossiping(){
 												inst,
 												KERNEL,
 												T_GOSSIPING);
-		list_destroy(gossip->lista_memorias);
-		free(gossip);
-		free(inst);
 		if(resp->instruccion == RETORNO){
 			Retorno_Generico *ret = resp->instruccion_a_realizar;
 			free(resp);
@@ -109,15 +111,13 @@ void lanzar_gossiping(){
 					Memoria *mem = list_get(list_get(memorias, DISP), aux);
 					if(existe_memoria_en(mem, lista_memorias_retorno_gossip) < 0){
 						sacarMemoriaDeTodasLasListas(mem);
-						//list_remove_and_destroy_element(list_get(memorias, DISP), aux, (void*)eliminar_memoria);
 					}
 					aux++;
 				}
 				list_destroy_and_destroy_elements(lista_memorias_retorno_gossip, (void*)eliminar_memoria);
 			}
 		}
-//		free(resp->instruccion_a_realizar);
-//		free(resp);
+
 	}
 }
 

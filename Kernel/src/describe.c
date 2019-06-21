@@ -21,7 +21,7 @@ void realizarDescribeGeneral(void){
 					describe_eliminar_tablas_viejas(describes);
 				break;
 				default:
-					log_error(LOGGER, "Hilo Describe: Respuesta retorno inesperada\n");
+					log_error(LOG_ERROR, "Hilo Describe: Respuesta retorno inesperada\n");
 				break;
 			}
 		break;
@@ -29,12 +29,9 @@ void realizarDescribeGeneral(void){
 			print_instruccion_parseada(describeResponse);
 		break;
 		default:
-			log_error(LOGGER, "Hilo Describe: Respuesta inesperada\n");
+			log_error(LOG_ERROR, "Hilo Describe: Respuesta inesperada\n");
 		break;
 	}
-	//TODO: kevin esta haciendo una funcion para liberar, reemplazar aqui.
-	free(describe);
-	free(instruccionDescribe);
 }
 
 void describe_agregar_tablas_nuevas(t_list * describes){

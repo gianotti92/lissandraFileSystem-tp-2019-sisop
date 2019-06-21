@@ -3,11 +3,11 @@
 void configuracion_inicial(void) {
 	t_config* CONFIG = config_create("config.cfg");
 	if (!CONFIG) {
-		log_error(LOGGER, "No encuentro el archivo config");
+		log_error(LOG_ERROR, "No encuentro el archivo config");
 		exit_gracefully(EXIT_FAILURE);
 	}
 
-	LOGGER_METRICS = log_create("logger_metrics.log", "log_metrics", 0, LOG_LEVEL_INFO);
+	LOGGER_METRICS = log_create("log_metrics.log", "log_metrics", 0, LOG_LEVEL_INFO);
 
 	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
 	IP_MEMORIA_PPAL = config_get_string_value(CONFIG,"IP_MEMORIA_PPAL");

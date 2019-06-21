@@ -14,7 +14,7 @@ int compac_search_tmp_files(t_list* tmpc_files, char* tableName){
 					char*oldfilename = malloc(strlen(path)+1+strlen(dir->d_name)+1);
 					sprintf(oldfilename,"%s/%s",path,dir->d_name);
 					if (rename(oldfilename,newfilename)!=0){
-						log_error(LOGGER,"Error al renombrar el archivo %s a %s, %s",dir->d_name,newfilename,strerror(errno));
+						log_error(LOG_ERROR,"Error al renombrar el archivo %s a %s, %s",dir->d_name,newfilename,strerror(errno));
 						free(newfilename);
 						free(oldfilename);
 						free(path);
@@ -27,7 +27,7 @@ int compac_search_tmp_files(t_list* tmpc_files, char* tableName){
 		}
 		closedir(d);
 	} else{
-		log_error(LOGGER,"Error al abrir el directorio %s, %s",path,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el directorio %s, %s",path,strerror(errno));
 		free(path);
 		return 1;
 	}

@@ -72,23 +72,18 @@ void logicaCreate(Create * create){
 
 	Instruccion * instruccionRespuestaCreate = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, i, KERNEL, T_INSTRUCCION);
 	print_instruccion_parseada(instruccionRespuestaCreate);
-
-	free(instruccionRespuestaCreate);
 }
 
 void logicaAdd(Add * add){
 	Memoria *memoria = getMemoria(list_get(memorias, DISP), add->memoria);
 	if(memoria == NULL){
-		printf("Las memorias disponibles son: ");
-		list_iterate(list_get(memorias, DISP), (void*)mostrarId);
-		printf("\n");
+		log_error(LOG_OUTPUT, "No corresponde a un id de memoria válido");
 		return;
 	}
 	if(add->consistencia == SHC){
 		list_iterate(list_get(memorias, SHC), (void*)enviar_journal);
 	}
 	asignarConsistenciaAMemoria(memoria, add->consistencia);
-
 }
 
 void enviar_journal(Memoria *memoria){
@@ -98,8 +93,6 @@ void enviar_journal(Memoria *memoria){
 	journal->timestamp = get_timestamp();
 	instruccion->instruccion_a_realizar = journal;
 	Instruccion * instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
-	free(instruccion->instruccion_a_realizar);
-	free(instruccion);
 	free(instruccionRespuesta->instruccion_a_realizar);
 	free(instruccionRespuesta);
 }
@@ -131,13 +124,8 @@ void logicaSelect(Select * select){
 				Instruccion * i = malloc(sizeof(Instruccion));
 				i->instruccion_a_realizar = (void *) select;
 				i->instruccion = SELECT;
-				Instruccion * instruccionRespuesta = malloc(sizeof(Instruccion));
-				instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, i, KERNEL, T_INSTRUCCION);
+				Instruccion *instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, i, KERNEL, T_INSTRUCCION);
 				print_instruccion_parseada(instruccionRespuesta);
-				free(instruccionRespuesta->instruccion_a_realizar);
-				free(instruccionRespuesta);
-				free(i->instruccion_a_realizar);
-				free(i);
 			}
 		}else{
 			log_error(LOG_ERROR, "No hay memorias asignadas para ese criterio");
@@ -166,18 +154,11 @@ void logicaInsert(Insert * insert){
 		if(mem != NULL){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
 			print_instruccion_parseada(instruccionRespuesta);
-
-			free(i->instruccion_a_realizar);
-			free(i);
-			free(instruccionRespuesta->instruccion_a_realizar);
-			free(instruccionRespuesta);
 		}else{
-			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
-			free(i->instruccion_a_realizar);
-			free(i);
+			log_error(LOG_OUTPUT, "No hay memorias asignadas a este criterio");
 		}
 	}else{
-		log_error(LOGGER, "Error al buscar la consistencia");
+		log_error(LOG_OUTPUT, "La tabla no existe");
 	}
 }
 
@@ -196,20 +177,14 @@ void logicaDrop(Drop * drop){
 		pthread_mutex_lock(&mutexRecursosCompartidos);
 		mem = list_get(memoriasAsoc, randomId - 1);
 		pthread_mutex_unlock(&mutexRecursosCompartidos);
-
-
 		if(mem != NULL){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
-			free(i);
-			free(mem);
-			free(instruccionRespuesta);
+			print_instruccion_parseada(instruccionRespuesta);
 		}else{
-			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
-			free(i);
-			free(mem);
+			log_error(LOG_OUTPUT, "No hay memorias asignadas para ese criterio");
 		}
 	}else{
-		log_error(LOGGER, "Error al buscar la consistencia");
+		log_error(LOG_OUTPUT, "La tabla no existe");
 	}
 }
 
@@ -218,7 +193,6 @@ void logicaJournal(Journal * journal){
 	for(consistencia = EC; consistencia < DISP; consistencia++){
 		list_iterate(list_get(memorias, consistencia), (void*)enviar_journal);
 	}
-
 }
 
 void logicaDescribe(Describe * describe){
@@ -245,17 +219,16 @@ void logicaDescribe(Describe * describe){
 				if(mem != NULL){
 					Instruccion * intstruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, inst, KERNEL, T_INSTRUCCION);
 					print_instruccion_parseada(intstruccionRespuesta);
-					free(intstruccionRespuesta);
 				}
 			}else{
-				log_error(LOGGER, "No hay memorias asignadas a la consistencia correspondiente");
+				log_error(LOG_OUTPUT, "No hay memorias asignadas para ese criterio");
 			}
+		}else{
+			log_error(LOG_OUTPUT, "La tabla no existe");
 		}
 	}else{
 		Instruccion * intstruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, inst, KERNEL, T_INSTRUCCION);
 		print_instruccion_parseada(intstruccionRespuesta);
-		/*liberar con instruccion kevin*/
-		free(intstruccionRespuesta);
 	}
 }
 Consistencias obtenerConsistencia(char * nombreTabla){
