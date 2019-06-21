@@ -1,20 +1,38 @@
 #include "utils.h"
 
 void configure_logger() {
-	LOGGER = log_create("logger.log","tp-lissandra",0,LOG_LEVEL_INFO);
-	LOG_ERROR = log_create("log_error.log","tp-lissandra",1,LOG_LEVEL_ERROR);
+	fd_disponibles = dictionary_create();
+	LOG_INFO = log_create("log_info.log","tp-lissandra", 0, LOG_LEVEL_INFO);
+	LOG_ERROR = log_create("log_error.log","tp-lissandra", 1, LOG_LEVEL_ERROR);
+	LOG_DEBUG = log_create("log_debug.log","tp-lissandra", 1, LOG_LEVEL_ERROR);
+	LOG_OUTPUT = log_create("log_output.log", "tp-lissandra", 1, LOG_LEVEL_INFO);
 }
 
 void exit_gracefully(int exit_code){
 	if(exit_code == EXIT_FAILURE){
-		log_error(LOGGER,strerror(errno));
+		log_error(LOG_ERROR,strerror(errno));
 	}
 	else{
-		log_info(LOGGER,"Proceso termino correctamente");
+		log_info(LOG_INFO,"Proceso termino correctamente");
 	}
-	log_destroy(LOGGER);
+	dictionary_destroy_and_destroy_elements(fd_disponibles, (void*)eliminar_y_cerrar_fd_abiertos);
+	log_destroy(LOG_INFO);
+	log_destroy(LOG_ERROR);
+	log_destroy(LOG_DEBUG);
+	log_destroy(LOG_OUTPUT);
 	exit(exit_code);
 }
+
+void eliminar_y_cerrar_fd_abiertos(int * fd){
+	bool fd_is_valid(int fd){
+    	return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
+	}
+	if(fd_is_valid(*fd)){
+		close(*fd);
+	}
+	free(fd);
+}
+
 char *consistencia2string(Consistencias consistencia){
 	char* str=malloc(4);
 	switch(consistencia){
@@ -27,9 +45,12 @@ char *consistencia2string(Consistencias consistencia){
 		case SHC:
 			strcpy(str,"SHC");
 		break;
+		default:
+			strcpy(str,"S/D");
 	}
 	return str;
 }
+
 int string2consistencia(char* consistencia){
 	if(strcmp(consistencia,"EC")==0){
 		return EC;
@@ -37,22 +58,24 @@ int string2consistencia(char* consistencia){
 	if(strcmp(consistencia,"SC")==0){
 		return SC;
 	}
-	return SHC;
+	if(strcmp(consistencia,"SHC")==0){
+		return SHC;
+	}
+	return DISP;
 }
-
 
 int monitorNode(char * node,int mode,int(*callback)(void)){
 	char buffer[EVENT_BUF_LEN];
 	int infd = inotify_init();
 	if (infd < 0) {
-		log_error(LOGGER,"Problemas al crear el inotify para %s, %s",node,strerror(errno));
+		log_error(LOG_ERROR,"Problemas al crear el inotify para %s, %s",node,strerror(errno));
 		return 1;
 	}
 	int wfd = inotify_add_watch(infd,node,mode);
 	while(1){
 		int length = read(infd,buffer,EVENT_BUF_LEN);
 		if (length < 0) {
-			log_error(LOGGER,"Problemas al leer el inotify de %s, %s",node,strerror(errno));
+			log_error(LOG_ERROR,"Problemas al leer el inotify de %s, %s",node,strerror(errno));
 			inotify_rm_watch(infd,wfd);
 			close(infd);
 			return 1;
@@ -73,4 +96,45 @@ int monitorNode(char * node,int mode,int(*callback)(void)){
 void print_guenguencha(){
 	printf("@                                `:,,,:`                      @\n@                             ;'+;#++:',:                     @\n@                         ,;',++#'#+#'++;:`                   @\n@                         ;'+;++###+#+++++'.                  @\n@                   ,'+;';'##++++####+#+#++;:                 @\n@                   ;'+++,++'+########++++++'.                @\n@                  ;++;++;++####+##++++++++#'+                @\n@                ';'++###+++#######++++++++++++++#            @\n@                '+;+###+++++#################++++',          @\n@               '+####++++++###########################++     @\n@              ;++####++++######+++++++++++##############+    @\n@             ;'+#####++##########++++++++++++++###@######+#  @\n@             +'#####++##++++++++++++++++++++++####@#######+` @\n@            .'+#+####+''''''''+++++++++''+++######@######### @\n@            `++#+###'''''#######++''''+'''+++##+##@#######++ @\n@            .'+####''''@########+''''''''''''''+#@########+  @\n@            ;'++###'''@@@@@@@@####+''''''####+'''#@########+ @\n@            @+++###'''##++    ####''''''#######''#@########+ @\n@           `++#+#+#'''####+++###+++';'''#@@#@#@''@@@#######+ @\n@            '+#++#@'''''+######++'';;;''@@@   @@''@@######++ @\n@           @@@@@##@';;:;;''+++'''';::;''@@@@@@@@+@@@@#####+. @\n@           @@@@@#@;:::::;;''''''';;::;;;'+@@@@+++@@@@####++  @\n@          @@@@##@#:,,,::;;'''';;;::::;;;''++###+'@@@@####+,  @\n@          @@@@@@@':,,,::;;'''';;::::::;;;''++++''@@@@####+   @\n@          +@@@@@;,;::'#+'';;;;;;;;;::;;;::''++';:@#:         @\n@          '@@@@@;::::'++;;;;;;;;';;;;;;;;''''+';,'`          @\n@            @@@@:,:::'++#+':;;;'''''';;'''''++':;'           @\n@            @@@@,::;:'++##'#;;;;''''+'''';;;'#';;;           @\n@             @@@;::':'+++ '#::'''''''''';;' ++';';           @\n@              ;@+::;:;+';  +:,;''''''''''#  #';'',           @\n@                 :;::;+';  ';,;:''''''';    +':';:           @\n@                 :;:;:'';;   ;,;::::''''   #;;;+''           @\n@                 :::;:'';;;   ;;;::;;'    +';,'''            @\n@                 ::;;:;';;:             :;+;;:               @\n@                 :::;;;;;;:;           ;:'';',               @\n@              ::::::;;;::;;;;        ;;;;;                   @\n@             ,:::::;;;;;::;;;;;     ;;;;:                    @\n@            :,:::::;;;;;;:;;;;;'''''';;;                     @\n@  ######'::,::;::::;;;;;;;:;;;;;;;;;;;;:                     @\n@#########;:,::;;:::;;;''';;;;;;;;;;;;;;                      @\n@@########+:,:;;;;;;;;;''''';;;;;;;;;;';';;'+##               @\n@@#@#######+,,;;;;;;;;''''''''''';;;;;;;:;:;+###              @\n@@@@@######@':;;;;;;;''''''''''++++;;;;::+;;+######           @\n@@@#@@#####@@';';;;;;;'''''''''''';;;;;:'##:+#########+       @\n@@@@@@@@@@@##@+;;;;;;;'''''''''''';;;;;:+@#'+###########`     @\n@@@@@@@@@@@@@@@#';;;;;'''''''''''';;;;;:@##++###########+     @\n@@@@@@@@@@@@@@@@@';;;'''''''''''';;;;;;:####+#############    @\n");
 
+}
+
+char *get_local_ip(void){
+	int fd;
+	struct ifreq ifr;
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	ifr.ifr_addr.sa_family = AF_INET;
+	memcpy(ifr.ifr_name, "enp0s3", IFNAMSIZ-1);
+	ioctl(fd, SIOCGIFADDR, &ifr);
+	close(fd);
+	strcpy(LOCAL_IP,inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+	return LOCAL_IP;
+}
+
+Memoria *duplicar_memoria(Memoria *memoria){
+	Memoria * duplicada = malloc(sizeof(Memoria));
+	duplicada->idMemoria = memoria->idMemoria;
+	duplicada->ip = malloc(strlen(memoria->ip) + 1);
+	strcpy(duplicada->ip, memoria->ip);
+	duplicada->puerto = malloc(strlen(memoria->puerto) + 1);
+	strcpy(duplicada->puerto, memoria->puerto);
+	return duplicada;
+}
+
+Retorno_Describe *duplicar_describe(Retorno_Describe *describe){
+	Retorno_Describe *duplicado = malloc(sizeof(Retorno_Describe));
+	duplicado->nombre_tabla = malloc(strlen(describe->nombre_tabla) + 1);
+	strcpy(duplicado->nombre_tabla, describe->nombre_tabla);
+	duplicado->consistencia = describe->consistencia;
+	duplicado->particiones = describe->particiones;
+	duplicado->compactation_time = describe->compactation_time;
+	return duplicado;
+}
+
+t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*)){
+	t_list *duplicate = list_create();
+	void duplicar(Memoria *memoria){
+		list_add(duplicate, duplicador(memoria));
+	}
+	list_iterate(lista, (void*)duplicar);
+	return duplicate;
 }

@@ -2,10 +2,12 @@
 
 // Hay que definirla ya que no tiene definición en kernel y sino rompería, de todos modos no se usa
 void retornarControl(Instruccion *instruccion, int socket_cliente){};
+void *TH_describe(void *p);
 
 int main(void) {
 	print_guenguencha();
 	pthread_mutex_init(&mutexRecursosCompartidos, NULL);
+	pthread_mutex_init(&lista_de_tablas_mx,NULL);
 	sem_init(&semaforoSePuedePlanificar,0,0);
 	sem_init(&semaforoNewToReady, 0, 0);
 
@@ -14,11 +16,15 @@ int main(void) {
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
 
-	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics, T_confMonitor;
+	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics, T_confMonitor, T_describe;
+
+	pthread_create(&T_describe,NULL,TH_describe,NULL);
+	pthread_detach(T_describe);
 
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL);
+	pthread_detach(T_confMonitor);
 
-	pthread_create(&memoriasDisponibles, NULL, (void*) preguntarPorMemoriasDisponibles, NULL);
+	pthread_create(&memoriasDisponibles, NULL, (void*) lanzar_gossiping, NULL);
 	pthread_detach(memoriasDisponibles);
 
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,
@@ -150,6 +156,7 @@ void ejecutar() {
 			default:
 				break;
 		}
+		free(proceso->instruccionAProcesar); // REVISAR: Porque sino nunca la liberamos
 		if(!proceso->esProcesoRun || proceso->instruccionAProcesar->instruccion == ERROR){
 			encolar(estadoExit, proceso);
 		}else {
@@ -168,11 +175,10 @@ void *TH_confMonitor(void * p){
 	int confMonitor_cb(void){
 		t_config* conf = config_create("config.cfg");
 		if(conf == NULL) {
-			log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
+			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
 			return 1;
 		}
-		//aca hay que modificar las variables globales
-		//log_info(LOGGER,"Se ha actualizado el archivo de configuracion: retardo: %d, tiempo_dump: %d",global_conf.retardo,global_conf.tiempo_dump);
+		actualizar_configuracion(conf);
 		config_destroy(conf);
 		return 0;
 	}
@@ -182,4 +188,17 @@ void *TH_confMonitor(void * p){
 		return (void*)1;
 	}
 	return (void*)0;
+}
+
+/*
+	Manejo Describe
+*/
+void *TH_describe(void *p){
+	lista_de_tablas = list_create();
+	while(true){
+		realizarDescribeGeneral();
+		usleep(TIEMPO_DESCRIBE*1000);
+	}
+	list_destroy(lista_de_tablas);
+	pthread_mutex_destroy(&lista_de_tablas_mx);
 }

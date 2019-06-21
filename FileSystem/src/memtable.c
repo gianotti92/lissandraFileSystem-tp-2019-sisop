@@ -65,7 +65,7 @@ void deleteInTableMetadata(char*tableName) {
 		pthread_t hilo_asesino;
 		pthread_create(&hilo_asesino,NULL,TH_asesino,(void*)found);
 		pthread_detach(hilo_asesino);
-		list_remove_by_condition(global_table_metadata,(void*)condition);
+		list_remove_by_condition(global_table_metadata,(void*)condition); // LEAK - liberar estructura antes de eliminar
 	}
 }
 void destroyTableMetadata(void){

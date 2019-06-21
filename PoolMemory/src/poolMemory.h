@@ -30,7 +30,8 @@ int PAGINAS_MODIFICADAS; //contador de paginas modificadas, para simplificar el 
 int PAGINAS_USADAS;		 //contador de paginas en uso
 t_list* L_MARCOS;		 //lista de "marcos" de la memoria
 t_list* L_SEGMENTOS;	 //lista de segmentos, cada segmento tiene su lista de paginas
-t_list* L_MEMORIAS;		 //lista de IPs-PUERTO de las memorias disponibles
+t_list* L_MEMORIAS;
+t_list* L_SEEDS;
 
 
 pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias;

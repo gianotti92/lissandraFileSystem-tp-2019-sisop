@@ -69,9 +69,9 @@ struct FileSystemMetadata{
 
 /* Tables */
 struct tableRegister{
-	uint16_t key;
+	t_key key;
 	char* value;
-	long timestamp;
+	t_timestamp timestamp;
 };
 struct memtableItem{
 	struct tableRegister reg;
@@ -112,8 +112,8 @@ void loadCurrentTableMetadata(void);
 void loadDescribesTableMetadata(t_list*lista_describes);
 
 /* Registros */
-long getTimestamp(void);
-struct tableRegister createTableRegister(uint16_t key,char* value,long timestamp);
+t_timestamp getTimestamp(void);
+struct tableRegister createTableRegister(t_key key,char* value,t_timestamp timestamp);
 
 /* Utils */
 int tableExists(char * table);

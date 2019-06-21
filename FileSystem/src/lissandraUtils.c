@@ -1,6 +1,6 @@
 #include "lissandra.h"
 
-struct tableRegister createTableRegister(uint16_t key,char* value,long timestamp) {
+struct tableRegister createTableRegister(t_key key,char* value,t_timestamp timestamp) {
 	struct tableRegister reg;
 	reg.key=key;
 	reg.value=malloc(global_conf.max_value_size);
@@ -43,7 +43,7 @@ void global_conf_destroy(void){
 	free(global_conf.puerto);
 }
 
-long getTimestamp(void) {
+t_timestamp getTimestamp(void) {
 	struct timeval t;
 	gettimeofday(&t,NULL);
 	return t.tv_sec*1000+t.tv_usec/1000;
@@ -100,7 +100,7 @@ int deleteTable(char* tabla){
 				sprintf(filename,"%s/%s",path,dir->d_name);
 				if(strcmp(dir->d_name,"Metadata.txt")==0){
 					if(remove(filename)){
-						log_error(LOGGER,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
+						log_error(LOG_ERROR,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
 						closedir(d);
 						free(path);
 						free(filename);
@@ -120,12 +120,12 @@ int deleteTable(char* tabla){
 		}
 		closedir(d);
 	} else {
-		log_error(LOGGER,"Error al abrir el directorio %s, %s",path, strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el directorio %s, %s",path, strerror(errno));
 		free(path);
 		return DIR_OPEN_ERROR;
 	}
 	if(remove(path)){
-		log_error(LOGGER,"Error al eliminar el directorio '%s', %s",path,strerror(errno));
+		log_error(LOG_ERROR,"Error al eliminar el directorio '%s', %s",path,strerror(errno));
 		free(path);
 		return DIR_DELETE_ERROR;
 	}
@@ -162,7 +162,7 @@ int read_temp_files(char* tabla,t_list* listaRegistros){
 		}
 		closedir(d);
 	} else {
-		log_error(LOGGER,"Error al abrir el directorio %s, %s",path,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el directorio %s, %s",path,strerror(errno));
 		free(path);
 		return DIR_OPEN_ERROR;
 	}
@@ -195,7 +195,7 @@ Retorno_Describe* pack_describe(char *nombre_tabla,Consistencias consistencia,ui
 }
 void showDescribeList(Retorno_Describe* describe){
 	char* consistencia=consistencia2string(describe->consistencia);
-	printf("Tabla: %s - Consistencia: %s - Particiones: %d - Tiempo de Compactacion: %d\n",describe->nombre_tabla,consistencia,describe->particiones,describe->compactation_time);
+	log_info(LOG_OUTPUT,"Tabla: %s - Consistencia: %s - Particiones: %d - Tiempo de Compactacion: %d\n",describe->nombre_tabla,consistencia,describe->particiones,describe->compactation_time);
 	free(consistencia);
 }
 

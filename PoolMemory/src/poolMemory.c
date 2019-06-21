@@ -35,7 +35,7 @@ int main(void) {
 	pthread_join(T_confMonitor,&TR_confMonitor);
 
 	if((int)TR_confMonitor != 0) {
-		log_error(LOGGER,"Error con el thread de monitoreo de configuracion: %d",(int)TR_confMonitor);
+		log_error(LOG_ERROR,"Error con el thread de monitoreo de configuracion: %d",(int)TR_confMonitor);
 	}
 
 	list_destroy(L_MARCOS); //entender el list_destroy_and_destroy_elements()
@@ -88,19 +88,18 @@ void configuracion_inicial(void){
 			Retorno_Max_Value* retorno_maxValue = retorno_generico->retorno;
 			MAX_VAL = retorno_maxValue->value_size;
 
-			log_info(LOGGER, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
+			log_info(LOG_INFO, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
 
 		} else {
 			print_instruccion_parseada(respuesta);
-			log_error(LOGGER, "Memoria: No se obtuvo un MAX_VALUE al pedir el MAX_VALUE al FileSystem.");
-			exit_gracefully(-1);
+			log_error(LOG_ERROR, "Memoria: No se obtuvo un MAX_VALUE al pedir el MAX_VALUE al FileSystem.");
+			exit_gracefully(EXIT_FAILURE);
 		}
 
 	} else {
-
 		print_instruccion_parseada(respuesta);
-		log_error(LOGGER, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
-		exit_gracefully(-1);
+		log_error(LOG_ERROR, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
+		exit_gracefully(EXIT_FAILURE);
 	}
 
 
@@ -116,15 +115,16 @@ void retorno_consola(char* leido){
 
 void retornarControl(Instruccion *instruccion, int cliente){
 
-	printf("Lo que me llego desde KERNEL es:\n");
-	print_instruccion_parseada(instruccion);
-	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
+	//printf("Lo que me llego desde KERNEL es:\n");
+	//print_instruccion_parseada(instruccion);
+	//printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
 
 	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
 
 	responder(cliente, respuesta);
 
 	free_consulta(respuesta);
+
 }
 
 void inicializar_memoria(){
@@ -137,7 +137,7 @@ void inicializar_memoria(){
 	PAGINAS_MODIFICADAS = 0; //contador de paginas para saber si estoy full
 
 	if (MEMORIA_PRINCIPAL == NULL){
-		log_error(LOGGER, "Memoria: No se pudo malloquear la memoria principal.");
+		log_error(LOG_ERROR, "Memoria: No se pudo malloquear la memoria principal.");
 		pthread_mutex_unlock(&mutexMarcos);
 		pthread_mutex_unlock(&mutexSegmentos);
 		exit_gracefully(-1);
@@ -158,7 +158,7 @@ void inicializar_memoria(){
 		Marco* registro_maestra = malloc(sizeof(Marco)); //registro para la tabla maestra de paginas
 
 		if (registro_maestra == NULL){
-			log_error(LOGGER, "Memoria: Fallo malloc para marco.");
+			log_error(LOG_ERROR, "Memoria: Fallo malloc para marco.");
 			exit_gracefully(-1);
 		}
 
@@ -192,15 +192,15 @@ void inicializar_memoria(){
 	pthread_mutex_unlock(&mutexMarcos);
 	pthread_mutex_unlock(&mutexSegmentos);
 
-	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
-	log_info(LOGGER, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
+	
+	log_info(LOG_INFO, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
 }
 
 Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 		sem_wait(&semJournal);
 
-		Instruccion* instruccion_respuesta; //instruccion_respuesta = malloc(sizeof(Instruccion));
+		Instruccion* instruccion_respuesta;
 
 		switch	(instruccion_parseada->instruccion){
 		case SELECT:;
@@ -245,12 +245,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 							} else if (result_insert < 0){
 								instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 							}
-						} else {
-							instruccion_respuesta = respuesta_error(BAD_RESPONSE);
-						}
+						} 
 					} 
-
-
 				}
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
 			} else {
@@ -329,8 +325,22 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case GOSSIP:;
-			instruccion_respuesta = respuesta_success();
-			free_consulta(instruccion_parseada);
+
+			instruccion_respuesta = malloc(sizeof(Instruccion));
+			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
+			t_list *lista_gossip = gossip->lista_memorias;
+			int aux = 0;
+			while(aux < lista_gossip->elements_count){
+				Memoria * mem = list_get(lista_gossip, aux);
+				add_memory_if_not_exists(mem);
+			}
+			instruccion_respuesta->instruccion = RETORNO;
+			Retorno_Generico * retorno = malloc(sizeof(Retorno_Generico));
+			retorno->tipo_retorno = RETORNO_GOSSIP;
+			Gossip * gossip_ret = malloc(sizeof(Gossip));
+			gossip_ret->lista_memorias = L_MEMORIAS;
+			retorno->retorno = gossip_ret;
+			instruccion_respuesta->instruccion_a_realizar = retorno; 
 
 			break;
 
@@ -633,10 +643,8 @@ void print_pagina(void* pagina){
 
 
 void lanzar_gossiping(){
-
-	// ME FALTA EL CASO EN ATENDER CONSULTA EN EL QUE AGREGO MEMORIAS A L_MEMORIAS CUANDO LLEGAN
-
 	int posicion = 0;
+	L_SEEDS = list_create();
 	while (IP_SEEDS[posicion] != NULL && PUERTOS_SEEDS[posicion] != NULL){
 		char* ip = IP_SEEDS[posicion];
 		char* puerto = PUERTOS_SEEDS[posicion];
@@ -646,14 +654,21 @@ void lanzar_gossiping(){
 		nueva_memoria->puerto = malloc(sizeof(puerto));
 		nueva_memoria->puerto = puerto;
 		nueva_memoria->idMemoria = posicion;
-		pthread_mutex_lock(&mutexListaMemorias);
-		list_add(L_MEMORIAS, nueva_memoria);
-		pthread_mutex_unlock(&mutexListaMemorias);
+		list_add(L_SEEDS, nueva_memoria);
 		posicion++;
 	}
+	Memoria * memoria = malloc(sizeof(Memoria));
+	memoria->ip = malloc(strlen(get_local_ip())+1);
+	strcpy(memoria->ip, get_local_ip());
+	memoria->puerto = malloc(strlen(PUERTO_DE_ESCUCHA)+1);
+	strcpy(memoria->puerto, PUERTO_DE_ESCUCHA);
+	memoria->idMemoria = NUMERO_MEMORIA;
+	pthread_mutex_lock(&mutexListaMemorias);
+	list_add(L_MEMORIAS, memoria);
+	pthread_mutex_unlock(&mutexListaMemorias);
 	while(true){
 		sleep(10);
-		list_iterate(L_MEMORIAS, (void*)gossipear);
+		list_iterate(L_SEEDS, (void*)gossipear);
 	}
 }
 
@@ -661,7 +676,7 @@ void gossipear(Memoria *mem){
 	if(chequear_conexion_a(mem->ip, mem->puerto)){
 		Instruccion *inst  = malloc(sizeof(Instruccion));
 		Gossip * gossip = malloc(sizeof(Gossip));
-		gossip->lista_memorias = list_filter(L_MEMORIAS, (void*)chequear_conexion_a);
+		gossip->lista_memorias = L_MEMORIAS;
 		inst ->instruccion = GOSSIP;
 		inst ->instruccion_a_realizar = gossip;
 		Instruccion *res = enviar_instruccion(mem->ip, mem->puerto, inst, POOLMEMORY, T_GOSSIPING);
@@ -671,8 +686,8 @@ void gossipear(Memoria *mem){
 			free(res);
 			Retorno_Generico *ret = res->instruccion_a_realizar;
 			if(ret->tipo_retorno == RETORNO_GOSSIP){
-				free(ret);
 				Gossip *gossip = ret->retorno;
+				free(ret);
 				t_list *lista_retorno = gossip->lista_memorias;
 				free(gossip);
 				list_iterate(lista_retorno, (void*)add_memory_if_not_exists);
@@ -685,7 +700,7 @@ void gossipear(Memoria *mem){
 void add_memory_if_not_exists(Memoria *mem){
 	if(!existe_memoria(mem)){
 		pthread_mutex_lock(&mutexListaMemorias);
-		list_add_in_index(L_MEMORIAS, L_MEMORIAS->elements_count, mem);
+		list_add(L_MEMORIAS, mem);
 		pthread_mutex_unlock(&mutexListaMemorias);
 	}else{
 		free(mem->ip);
@@ -821,7 +836,7 @@ int seleccionar_marco(){
 		}
 
 		printf("No hay mas memoria chinguenguencha!");
-		log_info(LOGGER,"Memoria - LRU no selecciono una memoria.");
+		log_info(LOG_INFO,"Memoria - LRU no selecciono una memoria.");
 		return -1;
 	}
 }
@@ -854,7 +869,7 @@ void *TH_confMonitor(void * p){
 		t_config* CONFIG = config_create("config.cfg");
 
 		if(CONFIG == NULL) {
-			log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
+			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
 			return 1;
 		}
 
@@ -864,7 +879,7 @@ void *TH_confMonitor(void * p){
 		RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
 
 
-		log_info(LOGGER,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
+		log_info(LOG_ERROR,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
 		config_destroy(CONFIG);
 		return 0;
 	}
