@@ -35,7 +35,7 @@ int main(void) {
 	pthread_join(T_confMonitor,&TR_confMonitor);
 
 	if((int)TR_confMonitor != 0) {
-		log_error(LOGGER,"Error con el thread de monitoreo de configuracion: %d",(int)TR_confMonitor);
+		log_error(LOG_ERROR,"Error con el thread de monitoreo de configuracion: %d",(int)TR_confMonitor);
 	}
 
 	list_destroy(L_MARCOS); //entender el list_destroy_and_destroy_elements()
@@ -87,23 +87,20 @@ void configuracion_inicial(void){
 		if (retorno_generico->tipo_retorno == TAMANIO_VALOR_MAXIMO) {
 			Retorno_Max_Value* retorno_maxValue = retorno_generico->retorno;
 			MAX_VAL = retorno_maxValue->value_size;
-
-			log_info(LOGGER, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
-
-			// libero instruccion
-			free(instruccion_maxValue);
+			free(retorno_maxValue);
+			free(retorno_generico);
+			free(respuesta);
 
 		} else {
 			print_instruccion_parseada(respuesta);
-			log_error(LOGGER, "Memoria: No se obtuvo un MAX_VALUE al pedir el MAX_VALUE al FileSystem.");
-			exit_gracefully(-1);
+			log_error(LOG_ERROR, "Memoria: No se obtuvo un MAX_VALUE al pedir el MAX_VALUE al FileSystem.");
+			exit_gracefully(EXIT_FAILURE);
 		}
 
 	} else {
-
 		print_instruccion_parseada(respuesta);
-		log_error(LOGGER, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
-		exit_gracefully(-1);
+		log_error(LOG_ERROR, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
+		exit_gracefully(EXIT_FAILURE);
 	}
 
 
@@ -138,7 +135,7 @@ void inicializar_memoria(){
 	PAGINAS_MODIFICADAS = 0; //contador de paginas para saber si estoy full
 
 	if (MEMORIA_PRINCIPAL == NULL){
-		log_error(LOGGER, "Memoria: No se pudo malloquear la memoria principal.");
+		log_error(LOG_ERROR, "Memoria: No se pudo malloquear la memoria principal.");
 		pthread_mutex_unlock(&mutexMarcos);
 		pthread_mutex_unlock(&mutexSegmentos);
 		exit_gracefully(-1);
@@ -159,7 +156,7 @@ void inicializar_memoria(){
 		Marco* registro_maestra = malloc(sizeof(Marco)); //registro para la tabla maestra de paginas
 
 		if (registro_maestra == NULL){
-			log_error(LOGGER, "Memoria: Fallo malloc para marco.");
+			log_error(LOG_ERROR, "Memoria: Fallo malloc para marco.");
 			exit_gracefully(-1);
 		}
 
@@ -193,8 +190,8 @@ void inicializar_memoria(){
 	pthread_mutex_unlock(&mutexMarcos);
 	pthread_mutex_unlock(&mutexSegmentos);
 
-	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
-	log_info(LOGGER, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
+	
+	log_info(LOG_INFO, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
 }
 
 Instruccion* atender_consulta (Instruccion* instruccion_parseada){
@@ -784,8 +781,8 @@ void* seleccionar_pagina (){
 		return marco->pagina;
 	}
 	else {
-		printf("No hay mas memoria chinguenguencha!");
-		log_info(LOGGER,"Memoria - La memoria esta FULL.");
+		
+		log_error(LOG_ERROR,"Memoria - La memoria esta FULL.");
 		return (void*) NULL;
 	}
 }
@@ -818,7 +815,7 @@ void *TH_confMonitor(void * p){
 		t_config* CONFIG = config_create("config.cfg");
 
 		if(CONFIG == NULL) {
-			log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
+			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
 			return 1;
 		}
 
@@ -828,7 +825,7 @@ void *TH_confMonitor(void * p){
 		RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
 
 
-		log_info(LOGGER,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
+		log_info(LOG_ERROR,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
 		config_destroy(CONFIG);
 		return 0;
 	}

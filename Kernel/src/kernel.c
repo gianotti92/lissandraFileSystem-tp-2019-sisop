@@ -156,6 +156,7 @@ void ejecutar() {
 			default:
 				break;
 		}
+		free(proceso->instruccionAProcesar); // REVISAR: Porque sino nunca la liberamos
 		if(!proceso->esProcesoRun || proceso->instruccionAProcesar->instruccion == ERROR){
 			encolar(estadoExit, proceso);
 		}else {
@@ -174,11 +175,10 @@ void *TH_confMonitor(void * p){
 	int confMonitor_cb(void){
 		t_config* conf = config_create("config.cfg");
 		if(conf == NULL) {
-			log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
+			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
 			return 1;
 		}
 		actualizar_configuracion(conf);
-		//log_info(LOGGER,"Se ha actualizado el archivo de configuracion: tiempo metrics: %d, tiempo preguntar memorias: %d, tiempo describe: %d",SEGUNDOS_METRICS,PREGUNTAR_POR_MEMORIAS,TIEMPO_DESCRIBE);
 		config_destroy(conf);
 		return 0;
 	}

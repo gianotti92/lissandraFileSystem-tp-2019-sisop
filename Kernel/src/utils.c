@@ -76,54 +76,49 @@ void lanzar_gossiping(){
 	memoriaPrincipal->ip = IP_MEMORIA_PPAL;
 
 	list_add((t_list*)list_get(memorias, DISP), memoriaPrincipal);
-//	agregarMemoria(memoriaPrincipal);
-//	free(memoriaPrincipal);
-//	while(true){
-//		sleep(PREGUNTAR_POR_MEMORIAS);
-//		Instruccion *inst = malloc(sizeof(Instruccion));
-//		inst->instruccion = GOSSIP;
-//		Gossip *gossip = malloc(sizeof(Gossip));
-//		gossip->lista_memorias = list_create();
-//		inst->instruccion_a_realizar = gossip;
-//		Instruccion * resp = enviar_instruccion(IP_MEMORIA_PPAL,
-//												PUERTO_MEMORIA_PPAL,
-//												inst,
-//												KERNEL,
-//												T_GOSSIPING);
-//		list_destroy(gossip->lista_memorias);
-//		free(gossip);
-//		free(inst);
-//		if(resp->instruccion == RETORNO){
-//			Retorno_Generico *ret = resp->instruccion_a_realizar;
-//			free(resp);
-//			if (ret->tipo_retorno == RETORNO_GOSSIP){
-//				Gossip * gossip = ret->retorno;
-//				free(ret);
-//				t_list * lista_memorias_retorno_gossip =  gossip->lista_memorias;
-//				if(lista_memorias_retorno_gossip->elements_count == 0) {
-//					break;
-//				}
-//				int aux = 0;
-//				while(aux < lista_memorias_retorno_gossip->elements_count){
-//					Memoria *mem = list_get(lista_memorias_retorno_gossip, aux);
-//					agregarSiNoExiste(list_get(memorias, DISP), mem);
-//					aux++;
-//				}
-//				aux = 0;
-//				while(aux < ((t_list*)list_get(memorias, DISP))->elements_count){
-//					Memoria *mem = list_get(list_get(memorias, DISP), aux);
-//					if(existe_memoria_en(mem, lista_memorias_retorno_gossip) < 0){
-//						sacarMemoriaDeTodasLasListas(mem);
-//						//list_remove_and_destroy_element(list_get(memorias, DISP), aux, (void*)eliminar_memoria);
-//					}
-//					aux++;
-//				}
-//				list_destroy_and_destroy_elements(lista_memorias_retorno_gossip, (void*)eliminar_memoria);
-//			}
-//		}
-////		free(resp->instruccion_a_realizar);
-////		free(resp);
-//	}
+	agregarMemoria(memoriaPrincipal);
+	free(memoriaPrincipal);
+	while(true){
+		sleep(PREGUNTAR_POR_MEMORIAS);
+		Instruccion *inst = malloc(sizeof(Instruccion));
+		inst->instruccion = GOSSIP;
+		Gossip *gossip = malloc(sizeof(Gossip));
+		gossip->lista_memorias = list_create();
+		inst->instruccion_a_realizar = gossip;
+		Instruccion * resp = enviar_instruccion(IP_MEMORIA_PPAL,
+												PUERTO_MEMORIA_PPAL,
+												inst,
+												KERNEL,
+												T_GOSSIPING);
+		if(resp->instruccion == RETORNO){
+			Retorno_Generico *ret = resp->instruccion_a_realizar;
+			free(resp);
+			if (ret->tipo_retorno == RETORNO_GOSSIP){
+				Gossip * gossip = ret->retorno;
+				free(ret);
+				t_list * lista_memorias_retorno_gossip =  gossip->lista_memorias;
+				if(lista_memorias_retorno_gossip->elements_count == 0) {
+					break;
+				}
+				int aux = 0;
+				while(aux < lista_memorias_retorno_gossip->elements_count){
+					Memoria *mem = list_get(lista_memorias_retorno_gossip, aux);
+					agregarSiNoExiste(list_get(memorias, DISP), mem);
+					aux++;
+				}
+				aux = 0;
+				while(aux < ((t_list*)list_get(memorias, DISP))->elements_count){
+					Memoria *mem = list_get(list_get(memorias, DISP), aux);
+					if(existe_memoria_en(mem, lista_memorias_retorno_gossip) < 0){
+						sacarMemoriaDeTodasLasListas(mem);
+					}
+					aux++;
+				}
+				list_destroy_and_destroy_elements(lista_memorias_retorno_gossip, (void*)eliminar_memoria);
+			}
+		}
+
+	}
 }
 
 void eliminar_memoria(Memoria * memoria){

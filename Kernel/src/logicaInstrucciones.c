@@ -77,9 +77,7 @@ void logicaCreate(Create * create){
 void logicaAdd(Add * add){
 	Memoria *memoria = getMemoria(list_get(memorias, DISP), add->memoria);
 	if(memoria == NULL){
-		printf("Las memorias disponibles son: ");
-		list_iterate(list_get(memorias, DISP), (void*)mostrarId);
-		printf("\n");
+		log_error(LOG_OUTPUT, "No corresponde a un id de memoria válido");
 		return;
 	}
 	if(add->consistencia == SHC){
@@ -95,6 +93,8 @@ void enviar_journal(Memoria *memoria){
 	journal->timestamp = get_timestamp();
 	instruccion->instruccion_a_realizar = journal;
 	Instruccion * instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
+	free(instruccionRespuesta->instruccion_a_realizar);
+	free(instruccionRespuesta);
 }
 
 void logicaSelect(Select * select){
@@ -155,10 +155,10 @@ void logicaInsert(Insert * insert){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
 			print_instruccion_parseada(instruccionRespuesta);
 		}else{
-			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
+			log_error(LOG_OUTPUT, "No hay memorias asignadas a este criterio");
 		}
 	}else{
-		log_error(LOGGER, "Error al buscar la consistencia");
+		log_error(LOG_OUTPUT, "La tabla no existe");
 	}
 }
 
@@ -177,15 +177,14 @@ void logicaDrop(Drop * drop){
 		pthread_mutex_lock(&mutexRecursosCompartidos);
 		mem = list_get(memoriasAsoc, randomId - 1);
 		pthread_mutex_unlock(&mutexRecursosCompartidos);
-
-
 		if(mem != NULL){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, i, KERNEL, T_INSTRUCCION);
+			print_instruccion_parseada(instruccionRespuesta);
 		}else{
-			log_error(LOGGER, "Kernel. No hay memorias asignadas a este criterio %s\n", consistencia);
+			log_error(LOG_OUTPUT, "No hay memorias asignadas para ese criterio");
 		}
 	}else{
-		log_error(LOGGER, "Error al buscar la consistencia");
+		log_error(LOG_OUTPUT, "La tabla no existe");
 	}
 }
 
@@ -222,8 +221,10 @@ void logicaDescribe(Describe * describe){
 					print_instruccion_parseada(intstruccionRespuesta);
 				}
 			}else{
-				log_error(LOGGER, "No hay memorias asignadas a la consistencia correspondiente");
+				log_error(LOG_OUTPUT, "No hay memorias asignadas para ese criterio");
 			}
+		}else{
+			log_error(LOG_OUTPUT, "La tabla no existe");
 		}
 	}else{
 		Instruccion * intstruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, inst, KERNEL, T_INSTRUCCION);

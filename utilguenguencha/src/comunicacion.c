@@ -1,310 +1,280 @@
 #include "comunicacion.h"
+#include<pthread.h>
+
+pthread_mutex_t lock; // Lock para estructura de diccionario
 
 /**
 * @NAME: iniciar_servidor
 * @DESC: Es la funcion que inicia los parametros para recibir en localhost:puerto
-* @ARGS: char* puerto -> puerto donde va a escuchar
-* @RET: int fd_servidor -> fd donde correspondiente al servidor
 */
 int iniciar_servidor(char* puerto);
 /**
 * @NAME: crear_conexion
 * @DESC: Funcion que crea una conexion con la IP y Puerto y devuelve fd asociado
-* @ARGS: char* ip -> ip asociada al destino que quiero conectarme
-* 		 char* puerto -> puerto asociado al destino donde quiero conectarme
-* @RET: int fd_destino -> fd del destino
 */
 int crear_conexion(char* ip, char* puerto);
 /**
 * @NAME: crear_paquete
 * @DESC: Funcion que crea un paquete con los datos suministrados
-* @ARGS: Tipo_Comunicacion tipo_comu -> tipo de comunicacion que se esta realizando
-* 		 Procesos proceso_del_que_envio -> source del request
-* 		 Instruccion *instruccion -> instruccion a empaquetar
-* @RET: t_paquete *paquete -> paquete a enviar
 */
 t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_envio, Instruccion* instruccion);
 /**
 * @NAME: crear_paquete_retorno
 * @DESC: Crea un paquete de retorno para enviar
-* @ARGS: Instruccion* instruccion -> el retorno o error a enviar
-* @RET:  t_paquete *paquete -> paquete armado
 */
 t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion);
 /**
 * @NAME: enviar_paquete
 * @DESC: Funcion que serializa el paquete y lo envia al fd indicado
-* @ARGS: t_paquete *paquete -> paquete a enviar
-* 		 int socket_cliente -> fd del destino al que le envio le paquete
-* @RET:  bool Enviado / No Enviado
 */
 bool enviar_paquete(t_paquete* paquete, int socket_cliente);
 /**
 * @NAME: liberar_conexion
 * @DESC: Cierra el fd enviado por parametro
-* @ARGS: int socket_cliente -> fd a cerrar
-* @RET:  void
 */
 void liberar_conexion(int socket_cliente);
 /**
 * @NAME: eliminar_paquete
 * @DESC: Vacia las estructuras de un paquete y libera memoria
-* @ARGS: t_paquete* paquete -> paquete a liberar
-* @RET:  void
 */
 void eliminar_paquete(t_paquete* paquete);
 /**
 * @NAME: eliminar_paquete_retorno()
 * @DESC: Borra las estrucutas del paquete
-* @ARGS: t_paquete *paquete -> paquete a borrar
-* @RET:  void
 */
 void eliminar_paquete_retorno(t_paquete_retorno* paquete);
 /**
 * @NAME: empaquetar_select
 * @DESC: Empaqueta la estructura de un select en el paquete enviado
-* @ARGS: t_paquete *paquete -> paquete donde empaquetar
-* 		 Select *select -> Estructura a empaquetar
-* @RET:  void
 */
 void empaquetar_select(t_paquete *paquete, Select *select);
 /**
 * @NAME: empaquetar_insert
 * @DESC: Empaqueta la estructura de un insert en el paquete enviado
-* @ARGS: t_paquete *paquete -> paquete donde empaquetar
-* 		 Insert *insert -> Estructura a empaquetar
-* @RET:  void
 */
 void empaquetar_insert(t_paquete *paquete, Insert *insert);
 /**
 * @NAME: empaquetar_create
 * @DESC: Empaqueta la estructura de un create en el paquete enviado
-* @ARGS: t_paquete *paquete -> paquete donde empaquetar
-* 		 Create *create -> Estructura a empaquetar
-* @RET:  void
 */
 void empaquetar_create(t_paquete * paquete, Create *create);
 /**
 * @NAME: empaquetar_describe
 * @DESC: Empaqueta la estructura de un describe en el paquete enviado
-* @ARGS: t_paquete *paquete -> paquete donde empaquetar
-* 		 Describe *describe -> Estructura a empaquetar
-* @RET:  void
 */
 void empaquetar_describe(t_paquete * paquete, Describe *describe);
 /**
 * @NAME: empaquetar_drop
 * @DESC: Empaqueta la estructura de un drop en el paquete enviado
-* @ARGS: t_paquete *paquete -> paquete donde empaquetar
-* 		 Drop *drop -> Estructura a empaquetar
-* @RET:  void
 */
 void empaquetar_drop(t_paquete * paquete, Drop * drop);
 /**
 * @NAME: empaquetar_journal
 * @DESC: Empaqueta la estructura de un journal en el paquete enviado
-* @ARGS: t_paquete *paquete -> paquete donde empaquetar
-* 		 Journal *journal -> Estructura a empaquetar
-* @RET:  void
 */
 void empaquetar_journal(t_paquete * paquete, Journal * journal);
 /**
 * @NAME: empaquetar_gossip
 * @DESC: Empaqueta la estructura de un gossip en el paquete enviado
-* @ARGS: t_paquete *paquete -> paquete donde empaquetar
-* 		 Gossip *gossip -> Estructura a empaquetar
-* @RET:  void
 */
 void empaquetar_gossip(t_paquete * paquete, Gossip * gossip);
 /**
 * @NAME: serializar_paquete
 * @DESC: Devuelve un puntero a un stream en el que se contiene todo
-* @ARGS: t_paquete *paquete -> paquete a serializar
-* @RET:  void *
-*/
-//size_t serializar_paquete(t_paquete* paquete, void** a_enviar);
-/**
-* @NAME: recibir_buffer
-* @DESC: Abstraccion realizada para recibir lo correspondiente a un servidor
-* @ARGS: int aux1 -> fd donde estoy recibiendo
-* 		 Instruccion *instruccion -> instruccion donde dejo lo recibido
-* 		 Tipo_Comunicacion tipo_comu -> tipo de comunicacion que tealizo
-* @RET:  bool PUDE RECIBIR / NO PUDE RECIBIR
 */
 bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_comu);
 /**
 * @NAME: desempaquetar_select
 * @DESC: Desempaqueta lo recibido en stream y lo mete en la estructura
-* @ARGS: void *stream -> stream donde estan los datos a leer
-* @RET:  Select *select -> estructura que levanto del desempaquetado
 */
 Select *desempaquetar_select(void* stream);
 /**
 * @NAME: desempaquetar_insert
 * @DESC: Desempaqueta lo recibido en stream y lo mete en la estructura
-* @ARGS: void *stream -> stream donde estan los datos a leer
-* @RET:  Insert *insert -> estructura que levanto del desempaquetado
 */
 Insert *desempaquetar_insert(void* stream);
 /**
 * @NAME: desempaquetar_create
 * @DESC: Desempaqueta lo recibido en stream y lo mete en la estructura
-* @ARGS: void *stream -> stream donde estan los datos a leer
-* @RET:  Create *create -> estructura que levanto del desempaquetado
 */
 Create *desempaquetar_create(void* stream);
 /**
 * @NAME: desempaquetar_describe
 * @DESC: Desempaqueta lo recibido en stream y lo mete en la estructura
-* @ARGS: void *stream -> stream donde estan los datos a leer
-* @RET:  Describe *describe -> estructura que levanto del desempaquetado
 */
 Describe *desempaquetar_describe(void* stream);
 /**
 * @NAME: desempaquetar_drop
 * @DESC: Desempaqueta lo recibido en stream y lo mete en la estructura
-* @ARGS: void *stream -> stream donde estan los datos a leer
-* @RET:  Drop *drop -> estructura que levanto del desempaquetado
 */
 Drop *desempaquetar_drop(void* stream);
 /**
 * @NAME: desempaquetar_journal
 * @DESC: Desempaqueta lo recibido en stream y lo mete en la estructura
-* @ARGS: void *stream -> stream donde estan los datos a leer
-* @RET:  Journal *journal -> estructura que levanto del desempaquetado
 */
 Journal *desempaquetar_journal(void* stream);
 /**
 * @NAME: desempaquetar_gossip
 * @DESC: Desempaqueta lo recibido en stream y lo mete en la estructura
-* @ARGS: void *stream -> stream donde estan los datos a leer
-* @RET:  Gossip *gossip -> estructura que levanto del desempaquetado
 */
 Gossip *desempaquetar_gossip(void* stream);
 /**
 * @NAME: validar_sender
 * @DESC: Valida el sender segun el tipo de comunicacion, el sender y el receiver
-* @ARGS: Procesos sender -> quien envio la instruccion
-* 		 Procesos receiver -> quien esta recibiendo la instruccion
-* 		 Tipo_Comunicacion -> el tipo de comunicacion que se tiene
-* @RET:  bool Valido Recibir mensaje / No valido Recibir Mensaje
 */
 bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comunicacion);
 /**
 * @NAME: recibir_respuesta
 * @DESC: Se bloquea (Temporalmente) esperando respuesta de a quien le envie
-* @ARGS: int fd_a_escuchar -> a donde temos que escuchar
-* @RET:	 Instruccion *respuesta -> respuesta que obtenemos del que nos envia
-*		 Solo puede ser RETORNO->(Seteado con el que corresponda)
-*		 					(VALOR, DATOS_DESCRIBE, TAMANIO_VALOR_MAXIMO, SUCCESS)
-*		 				ERROR->(Seteado con el que corresponda)
 */
-Instruccion *recibir_respuesta(int fd_a_escuchar);
+Instruccion *recibir_respuesta(int fd_a_escuchar, char* ip, char* puerto);
 /**
 * @NAME: recibir_retorno
 * @DESC: Recibe Retorno y devuelve el la instruccion
-* @ARGS: int fd_a_escuchar -> es el fd donde escucho el retorno
-* @RET:  Instruccion *respuesta -> La respuesta del retorno
 */
-Instruccion *recibir_retorno(int fd_a_escuchar);
+Instruccion *recibir_retorno(int fd_a_escuchar, char *ip, char *puerto);
 /**
 * @NAME: armar_retorno_value
 * @DESC: Devuelve la instruccion correspondiente a Retorno con value
-* @ARGS: char *value -> el valor a retornar
-* 		 t_timestamp timestamp -> el timestamp correspondiente
-* @RET:  Instruccion *respuesta -> La respuesta del retorno con el value
 */
 Instruccion *armar_retorno_value(void *chunk);
 /**
 * @NAME: recibir_error
 * @DESC: Recibe el error correspondiente en el fd que le enviamos por parametro
-* @ARGS: int fd_a_escuchar -> donde recibimos el error
-* @RET:  Instruccion *respuesta -> La respuesta con el error asiciado
 */
-Instruccion *recibir_error(int fd_a_escuchar);
+Instruccion *recibir_error(int fd_a_escuchar, char *ip, char *puerto);
 /**
 * @NAME: armar_retorno_gossip()
 * @DESC: Arma el retorno para el gossip
-* @ARGS: void *chunk -> chunk de datos
-* @RET:  Instruccion* i -> instruccion con los datos seteados
 */
 Instruccion *armar_retorno_gossip(void *chunk);
 /**
 * @NAME: serializar_paquete_retorno
 * @DESC: Devuelve un puntero a un stream en el que se contiene todo
-* @ARGS: t_paquete_retorno *paquete -> paquete a serializar
-* @RET:  void*
-*/
-//size_t serializar_paquete_retorno(t_paquete_retorno *paquete, void** a_enviar);
-/**
-* @NAME: enviar_paquete_retorno
-* @DESC: Funcion que serializa el paquete y lo envia al fd indicado
-* @ARGS: t_paquete_retorno *paquete -> paquete a enviar
-* 		 int socket_cliente -> fd del destino al que le envio le paquete
-* @RET:  bool Enviado / No Enviado
 */
 bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente);
 /**
 * @NAME: armar_retorno_max_value()
 * @DESC: Devuelve una instruccion con el MAX_VALUE seteado
-* @ARGS: void *chunk -> chunk de datos
-* @RET:  Instruccion* i -> instruccion con los datos seteados
 */
 Instruccion *armar_retorno_max_value(void *chunk);
 /**
 * @NAME: armar_retorno_describe()
 * @DESC: Recibe una lista de describes y devuelve una instruccion de retorno
-*		 con la lista
-* @ARGS: void *chunk -> chunk de datos
-* @RET:  Instruccion* i -> instruccion con los datos seteados
 */
 Instruccion *armar_retorno_describe(void *chunk);
 /**
 * @NAME: empaquetar_retorno_valor()
 * @DESC: Mete en el paquete los datos necesarios
-* @ARGS: void *chunk -> chunk de datos
-* @RET:  void
 */
 void empaquetar_retorno_valor(t_paquete_retorno *paquete, Retorno_Value *ret_val);
 /**
 * @NAME: empaquetar_retorno_describe()
 * @DESC: Mete en el paquete los datos necesarios
-* @ARGS: t_paquete *paquete -> paquete donde meter todo
-*		 t_list* list_of_describes -> lo que necesito meter en el paquete
-* @RET:  void
 */
 void empaquetar_retorno_describe(t_paquete_retorno *paquete, Describes *describes);
 /**
 * @NAME: empaquetar_retorno_max_val()
 * @DESC: Mete en el paquete los datos necesarios
-* @ARGS: t_paquete *paquete -> paquete donde meter todo
-*		 Retorno_Max_Value *max_val -> lo que necesito meter en el paquete
-* @RET:  void
 */
 void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *max_val);
 /**
 * @NAME: empaquetar_retorno_error()
 * @DESC: Mete en el paquete los datos necesarios
-* @ARGS: t_paquete *paquete -> paquete donde meter todo
-*		 Error *error -> lo que necesito meter en el paquete
-* @RET:  void
 */
 void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error);
 /**
 * @NAME: empaquetar_retorno_gossip()
 * @DESC: Mete en el paquete los datos necesarios
-* @ARGS: t_paquete *paquete -> paquete donde meter todo
-*		 Gossip *ret_gos -> lo que necesito meter en el paquete
-* @RET:  void
 */
 void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip *ret_gos);
 /**
 * @NAME: empaquetar_retorno_success()
 * @DESC: Empaqueta un success
-* @ARGS: t_paquete *paquete -> paquete donde meter todo
-* @RET:  void
 */
 void empaquetar_retorno_success(t_paquete_retorno *paquete);
+/**
+* @NAME: dame_fd()
+* @DESC: busca el fd correspondiente a ip y puerto dados si no esta da NULL
+*/
+int *dame_fd(char* ip, char* puerto);
+/**
+* @NAME: pone_fd()
+* @DESC: pone el fd en el diccionario y devuelve un puntero al mismo
+*/
+int *pone_fd(char *ip, char *puerto, int fd);
+/**
+* @NAME: quita_fd()
+* @DESC: quita el fd del diccionario que se encuentra en la ip y puerto dados
+*/
+void quita_fd(char *ip, char *puerto);
+/**
+* @NAME: elimina_memoria()
+* @DESC: para eliminar las memorias de una lista de gossip
+*/
+void eliminar_memoria_comu(Memoria * memoria);
+/**
+* @NAME: eliminar_describe_comu()
+* @DESC: para eliminar describe de una lista de describes
+*/
+void eliminar_describe_comu(Describe *describe);
+/**
+* @NAME: fd_is_valid()
+* @DESC: chequea que el fd sea aun valido
+*/
+int fd_is_valid(int fd);
+
+int *dame_fd(char *ip, char *puerto){
+	if( ip != NULL && puerto != NULL){
+		char *key = string_new();
+		string_append(&key, ip);
+		string_append(&key, puerto);
+		pthread_mutex_lock(&lock);
+		int *fd_ret = dictionary_get(fd_disponibles, key);
+		pthread_mutex_unlock(&lock);
+		free(key);
+		return fd_ret;
+	}else{
+		return NULL;
+	}
+}
+
+int *pone_fd(char *ip, char *puerto, int fd){
+	if( ip != NULL && puerto != NULL){
+		char *key = string_new();
+		string_append(&key, ip);
+		string_append(&key, puerto);
+		int *viejo_fd = dame_fd(ip, puerto);
+		if(viejo_fd == NULL){
+			int *fd_guardar = malloc(sizeof(int));
+			memcpy(fd_guardar, &fd, sizeof(fd));
+			pthread_mutex_lock(&lock);
+			dictionary_put(fd_disponibles, key, fd_guardar);
+			pthread_mutex_unlock(&lock);
+			return fd_guardar;
+		}else{
+			memcpy(viejo_fd, &fd, sizeof(fd));
+			return viejo_fd;
+		}
+		free(key);
+	}
+	return NULL;
+}
+
+void quita_fd(char *ip, char *puerto){
+	if( ip != NULL && puerto != NULL){
+		char *key = string_new();
+		string_append(&key, ip);
+		string_append(&key, puerto);
+		int *viejo_fd = dame_fd(ip, puerto);
+		if(viejo_fd != NULL){
+			pthread_mutex_lock(&lock);
+			dictionary_remove_and_destroy(fd_disponibles, key, (void*)free);
+			pthread_mutex_unlock(&lock);
+		}
+		free(key);
+	}
+}
 
 void servidor_comunicacion(Comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
@@ -535,46 +505,45 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 }
 
 Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
+
 	int server_fd = crear_conexion(ip, puerto);
-	if (server_fd < 0) {
-		log_error(LOGGER, "No se puede establecer comunicacion con destino");
+	t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
+	if (enviar_paquete(paquete, server_fd)) {
+		eliminar_paquete(paquete);
+		return recibir_respuesta(server_fd, ip, puerto);
+	}else{
+		eliminar_paquete(paquete);
+		if(!fd_is_valid(server_fd)){
+			quita_fd(ip, puerto);
+		}
 		return respuesta_error(CONNECTION_ERROR);
-	} else {
-		t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
-		if (paquete == NULL){
-			return respuesta_error(BAD_REQUEST);
-		}
-		if (enviar_paquete(paquete, server_fd)) {
-			eliminar_paquete(paquete);
-			return recibir_respuesta(server_fd);
-		}else{
-			eliminar_paquete(paquete);
-			liberar_conexion(server_fd);
-			log_error(LOGGER, "No se pudo enviar la instruccion");
-			return respuesta_error(CONNECTION_ERROR);
-		}
 	}
+	
 }
 
 int crear_conexion(char *ip, char* puerto) {
-	struct addrinfo hints;
-	struct addrinfo *server_info;
+	int* socket_cliente = dame_fd(ip, puerto);
+	if(socket_cliente == NULL){
+		struct addrinfo hints;
+		struct addrinfo *server_info;
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_family = AF_UNSPEC;
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_flags = AI_PASSIVE;
 
-	getaddrinfo(ip, puerto, &hints, &server_info);
+		getaddrinfo(ip, puerto, &hints, &server_info);
+		int nuevo_socket;
+		nuevo_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 
-	int socket_cliente = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
-
-	if (connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen) == -1) {
-		return -1;
+		if (connect(nuevo_socket, server_info->ai_addr, server_info->ai_addrlen) == -1) {
+			return -1;
+		}
+		freeaddrinfo(server_info);
+		return *pone_fd(ip, puerto, nuevo_socket);
+	}else{
+		return *socket_cliente;
 	}
-	freeaddrinfo(server_info);
-
-	return socket_cliente;
 }
 
 bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
@@ -589,6 +558,10 @@ bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
 	memcpy(a_enviar + desplazamiento, &paquete->buffer->size, sizeof(paquete->buffer->size));
 	desplazamiento += sizeof(paquete->buffer->size);
 	if(paquete->buffer->size == 0){
+		if(!fd_is_valid(socket_cliente)){
+			free(a_enviar);
+			return false;
+		}
 		if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
 			free(a_enviar);
 			return false;
@@ -600,6 +573,10 @@ bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
 		a_enviar = realloc(a_enviar, desplazamiento + paquete->buffer->size);
 		memcpy(a_enviar + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
 		desplazamiento += paquete->buffer->size;
+		if(!fd_is_valid(socket_cliente)){
+			free(a_enviar);
+			return false;
+		}
 		if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
 			free(a_enviar);
 			return false;
@@ -619,6 +596,10 @@ bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente) {
 	desplazamiento += sizeof(paquete->buffer->size);
 	memcpy(a_enviar + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
 	desplazamiento += paquete->buffer->size;
+	if(!fd_is_valid(socket_cliente)){
+		free(a_enviar);
+		return false;
+	}
 	if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
 		free(a_enviar);
 		return false;
@@ -684,12 +665,11 @@ t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_e
 	case GOSSIP:
 		empaquetar_gossip(paquete, (Gossip*) instruccion->instruccion_a_realizar);
 		break;
-	case MAX_VALUE:
-		break;
 	default:
-		eliminar_paquete(paquete);
-		return (t_paquete*) NULL;
+		// Al default el unico que debe llegar es el MAX_VAL porque es el unico que usa esta opcion
+		break;
 	}
+	free(instruccion);
 	return paquete;
 }
 
@@ -698,7 +678,7 @@ t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion){
 	paquete->header = instruccion->instruccion;
 	crear_buffer_retorno(paquete);
 	switch (instruccion->instruccion) {
-		case RETORNO:{
+		case RETORNO:;
 			Retorno_Generico *retorno = instruccion->instruccion_a_realizar;
 			switch(retorno->tipo_retorno){
 				case VALOR:
@@ -715,19 +695,18 @@ t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion){
 					break;
 				case SUCCESS:
 					empaquetar_retorno_success(paquete);
+					free(retorno->retorno);
 					break;
 			}
+			free(instruccion->instruccion_a_realizar);
 			break;
-		}
-		case ERROR:{
+		
+		default:;
 			Error *error = instruccion->instruccion_a_realizar;
 			empaquetar_retorno_error(paquete, error);
 			break;
-		}
-		default:
-			eliminar_paquete_retorno(paquete);
-			break;
 	}
+	free(instruccion);
 	return paquete;
 }
 
@@ -742,6 +721,8 @@ void empaquetar_select(t_paquete *paquete, Select *select) {
 	paquete->buffer->size += tamanio_nombre_tabla;
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &select->timestamp, sizeof(select->timestamp));
 	paquete->buffer->size += sizeof(select->timestamp);
+	free(select->nombre_tabla);
+	free(select);
 }
 
 void empaquetar_insert(t_paquete *paquete, Insert *insert) {
@@ -762,6 +743,9 @@ void empaquetar_insert(t_paquete *paquete, Insert *insert) {
 	paquete->buffer->size += sizeof(tamanio_value);
 	memcpy(paquete->buffer->stream + paquete->buffer->size, insert->value, tamanio_value);
 	paquete->buffer->size += tamanio_value;
+	free(insert->nombre_tabla);
+	free(insert->value);
+	free(insert);
 }
 
 void empaquetar_create(t_paquete * paquete, Create *create) {
@@ -779,20 +763,25 @@ void empaquetar_create(t_paquete * paquete, Create *create) {
 	paquete->buffer->size += sizeof(create->particiones);
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &create->timestamp, sizeof(create->timestamp));
 	paquete->buffer->size += sizeof(create->timestamp);
+	free(create->nombre_tabla);
+	free(create);
 }
 
 void empaquetar_describe(t_paquete * paquete, Describe *describe) {
 	if(describe->nombre_tabla == NULL){
-		return;
+		free(describe);
+	}else{
+		size_t tamanio_nombre_tabla = (strlen(describe->nombre_tabla) + 1);
+		paquete->buffer->stream = malloc( sizeof(size_t) + tamanio_nombre_tabla + sizeof(describe->timestamp));
+		memcpy(paquete->buffer->stream, &tamanio_nombre_tabla, sizeof(tamanio_nombre_tabla));
+		paquete->buffer->size += sizeof(tamanio_nombre_tabla);
+		memcpy(paquete->buffer->stream + paquete->buffer->size, describe->nombre_tabla, tamanio_nombre_tabla);
+		paquete->buffer->size += tamanio_nombre_tabla;
+		memcpy(paquete->buffer->stream + paquete->buffer->size, &describe->timestamp, sizeof(describe->timestamp));
+		paquete->buffer->size += sizeof(describe->timestamp);
+		free(describe->nombre_tabla);
+		free(describe);
 	}
-	size_t tamanio_nombre_tabla = (strlen(describe->nombre_tabla) + 1);
-	paquete->buffer->stream = malloc( sizeof(size_t) + tamanio_nombre_tabla + sizeof(describe->timestamp));
-	memcpy(paquete->buffer->stream, &tamanio_nombre_tabla, sizeof(tamanio_nombre_tabla));
-	paquete->buffer->size += sizeof(tamanio_nombre_tabla);
-	memcpy(paquete->buffer->stream + paquete->buffer->size, describe->nombre_tabla, tamanio_nombre_tabla);
-	paquete->buffer->size += tamanio_nombre_tabla;
-	memcpy(paquete->buffer->stream + paquete->buffer->size, &describe->timestamp, sizeof(describe->timestamp));
-	paquete->buffer->size += sizeof(describe->timestamp);
 }
 
 void empaquetar_drop(t_paquete * paquete, Drop * drop) {
@@ -804,17 +793,22 @@ void empaquetar_drop(t_paquete * paquete, Drop * drop) {
 	paquete->buffer->size += tamanio_nombre_tabla;
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &drop->timestamp, sizeof(drop->timestamp));
 	paquete->buffer->size += sizeof(drop->timestamp);
+	free(drop->nombre_tabla);
+	free(drop);
 }
 
 void empaquetar_journal(t_paquete * paquete, Journal * journal) {
 	paquete->buffer->stream = malloc(sizeof(journal->timestamp));
 	memcpy(paquete->buffer->stream, &journal->timestamp, sizeof(journal->timestamp));
 	paquete->buffer->size += sizeof(journal->timestamp);
+	free(journal);
 }
 
 void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
 	int cantidad_memorias = list_size(gossip->lista_memorias);
 	if (cantidad_memorias == 0){
+		list_destroy(gossip->lista_memorias);
+		free(gossip);
 		return;
 	}
 	paquete->buffer->stream = malloc(sizeof(int));
@@ -841,6 +835,14 @@ void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
 		cantidad_memorias--;
 		free(memoria);
 	}
+	list_destroy_and_destroy_elements(gossip->lista_memorias, (void*)eliminar_memoria_comu);
+	free(gossip);
+}
+
+void eliminar_memoria_comu(Memoria * memoria){
+	free(memoria->ip);
+	free(memoria->puerto);
+	free(memoria);
 }
 
 Select *desempaquetar_select(void* stream) {
@@ -951,9 +953,6 @@ Gossip *desempaquetar_gossip(void* stream){
 		memcpy(&memoria->idMemoria, stream + desplazamiento, sizeof(int));
 		desplazamiento += sizeof(int);
 		list_add(gossip->lista_memorias, memoria);
-		//free(memoria->ip);
-		//free(memoria->puerto);
-		//free(memoria);
 		cantidad_memorias--;
 	}
 	return gossip;
@@ -980,79 +979,69 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 }
 
 Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
-	if(instruccion->instruccion == RETORNO || instruccion->instruccion == ERROR){
-		t_paquete_retorno *paquete = crear_paquete_retorno(instruccion);
-		if(enviar_paquete_retorno(paquete, fd_a_responder)){
-			eliminar_paquete_retorno(paquete);
-			return respuesta_success();
-		}else{
-			eliminar_paquete_retorno(paquete);
-			liberar_conexion(fd_a_responder);
-			log_error(LOGGER, "No se pudo enviar la respuesta");
-			return respuesta_error(CONNECTION_ERROR);
-		}
+	t_paquete_retorno *paquete = crear_paquete_retorno(instruccion);
+	if(enviar_paquete_retorno(paquete, fd_a_responder)){
+		eliminar_paquete_retorno(paquete);
+		return respuesta_success();
 	}else{
-		return respuesta_error(BAD_RESPONSE);
+		eliminar_paquete_retorno(paquete);
+		liberar_conexion(fd_a_responder);
+		return respuesta_error(CONNECTION_ERROR);
 	}
 }
 
-Instruccion *recibir_respuesta(int fd_a_escuchar){
+Instruccion *recibir_respuesta(int fd_a_escuchar, char *ip, char *puerto){
 	int bytes_recibidos;
 	Instruction_set retorno;
 	if((bytes_recibidos = recv(fd_a_escuchar, &retorno, sizeof(Instruction_set), MSG_WAITALL)) <= 0){
-		liberar_conexion(fd_a_escuchar);
+		quita_fd(ip, puerto);
 		return respuesta_error(CONNECTION_ERROR);
 	}
 	switch(retorno){
-	case RETORNO:
-		return recibir_retorno(fd_a_escuchar);
-	case ERROR:
-		return recibir_error(fd_a_escuchar);
-	default:
-		liberar_conexion(fd_a_escuchar);
-		return respuesta_error(UNKNOWN);
+		case RETORNO:
+			return recibir_retorno(fd_a_escuchar, ip, puerto);
+		default:
+			return recibir_error(fd_a_escuchar, ip, puerto);
 	}
 }
 
-Instruccion *recibir_error(int fd_a_escuchar){
+Instruccion *recibir_error(int fd_a_escuchar, char *ip, char *puerto){
 	int bytes_recibidos;
 	Error_set tipo_error;
 	size_t buffer_size;
 	if ((bytes_recibidos = recv(fd_a_escuchar, &buffer_size, sizeof(buffer_size), MSG_WAITALL)) <= 0){
-				liberar_conexion(fd_a_escuchar);
-				return respuesta_error(CONNECTION_ERROR);
+		quita_fd(ip, puerto);
+		return respuesta_error(CONNECTION_ERROR);
 	}
 	if ((bytes_recibidos = recv(fd_a_escuchar, &tipo_error, buffer_size, MSG_WAITALL)) <= 0){
-		liberar_conexion(fd_a_escuchar);
+		quita_fd(ip, puerto);
 		return respuesta_error(CONNECTION_ERROR);
 	}else{
-		liberar_conexion(fd_a_escuchar);
 		return respuesta_error(tipo_error);
 	}
 }
 
 
-Instruccion *recibir_retorno(int fd_a_escuchar){
+Instruccion *recibir_retorno(int fd_a_escuchar, char *ip, char *puerto){
 	int bytes_recibidos;
 	size_t buffer_size;
 	if ((bytes_recibidos = recv(fd_a_escuchar, &buffer_size, sizeof(buffer_size), MSG_WAITALL)) <= 0){
-				liberar_conexion(fd_a_escuchar);
+				quita_fd(ip, puerto);
 				return respuesta_error(CONNECTION_ERROR);
 	}
 	void *stream = malloc(buffer_size);
 	if ((bytes_recibidos = recv(fd_a_escuchar, stream, buffer_size, MSG_WAITALL)) <= 0){
 		free(stream);
-		liberar_conexion(fd_a_escuchar);
+		quita_fd(ip, puerto);
 		return respuesta_error(CONNECTION_ERROR);
 	}
 	Tipo_Retorno tipo_ret;
 	memcpy(&tipo_ret, stream, sizeof(Tipo_Retorno));
 	void *chunk = stream + sizeof(Tipo_Retorno);
-	Instruccion *inst;
+	Instruccion * inst;
 	switch(tipo_ret){
 		case VALOR:;
 			inst = armar_retorno_value(chunk);
-			break;
 		case DATOS_DESCRIBE:;
 			inst = armar_retorno_describe(chunk);
 			break;
@@ -1069,7 +1058,6 @@ Instruccion *recibir_retorno(int fd_a_escuchar){
 			inst = respuesta_error(UNKNOWN);
 			break;
 	}
-	liberar_conexion(fd_a_escuchar);
 	free(stream);
 	return inst;
 }
@@ -1177,7 +1165,9 @@ void empaquetar_retorno_valor(t_paquete_retorno *paquete, Retorno_Value *ret_val
 	memcpy(paquete->buffer->stream + paquete->buffer->size, ret_val->value, tamanio_value);
 	paquete->buffer->size += tamanio_value;
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &ret_val->timestamp, sizeof(ret_val->timestamp));
-	paquete->buffer->size += sizeof(ret_val->timestamp); 
+	paquete->buffer->size += sizeof(ret_val->timestamp);
+	free(ret_val->value);
+	free(ret_val);
 }
 
 void empaquetar_retorno_describe(t_paquete_retorno *paquete, Describes *describes){
@@ -1207,6 +1197,13 @@ void empaquetar_retorno_describe(t_paquete_retorno *paquete, Describes *describe
 		cantidad_describes--;
 		free(ret_desc);
 	}
+	list_destroy_and_destroy_elements(describes->lista_describes, (void*)eliminar_describe_comu);
+	free(describes);
+}
+
+void eliminar_describe_comu(Describe *describe){
+	free(describe->nombre_tabla);
+	free(describe);
 }
 
 void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *max_val){
@@ -1214,9 +1211,9 @@ void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *m
 	paquete->buffer->stream = malloc(sizeof(header) + sizeof(max_val->value_size));
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &header, sizeof(header));
 	paquete->buffer->size += sizeof(header);
-	//paquete->buffer->stream = malloc(sizeof(max_val->value_size)); //no habria que hacer este malloc por lo que entiendo.
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &max_val->value_size, sizeof(max_val->value_size));
 	paquete->buffer->size += sizeof(max_val->value_size);
+	free(max_val);
 }
 
 void empaquetar_retorno_success(t_paquete_retorno *paquete){
@@ -1253,14 +1250,16 @@ void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip* gossip){
 		memcpy(paquete->buffer->stream + paquete->buffer->size, &memoria->idMemoria, sizeof(memoria->idMemoria));
 		paquete->buffer->size += sizeof(memoria->idMemoria);
 		cantidad_memorias--;
-		//free(memoria);
 	}
+	list_destroy_and_destroy_elements(gossip->lista_memorias, (void*)eliminar_memoria_comu);
+	free(gossip);
 }
 
 void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error){
 	paquete->buffer->stream = malloc(sizeof(error->error));
 	memcpy(paquete->buffer->stream, &error->error, sizeof(error->error));
 	paquete->buffer->size += sizeof(error->error);
+	free(error);
 }
 
 bool chequear_conexion_a(char* ip, char* puerto){
@@ -1272,4 +1271,11 @@ bool chequear_conexion_a(char* ip, char* puerto){
 	}else{
 		return false;
 	}
+}
+
+int fd_is_valid(int fd){
+	if(fd != -1){
+    	return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
+    }
+    return false;
 }
