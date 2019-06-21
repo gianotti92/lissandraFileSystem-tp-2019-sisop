@@ -55,7 +55,7 @@ struct TableMetadata{
 
 struct tableMetadataItem {
 	struct TableMetadata metadata;
-	char tableName[100];
+	char* tableName;
 	pthread_rwlock_t lock;
 	pthread_t thread;
 	int endFlag;
@@ -75,11 +75,11 @@ struct tableRegister{
 };
 struct memtableItem{
 	struct tableRegister reg;
-	char tableName[100];
+	char* tableName;
 };
 /* Dump Memtable Struct*/
 struct dumpTableList{
-	char tableName[100];
+	char* tableName;
 	t_list* registros;
 };
 
@@ -125,6 +125,7 @@ int read_temp_files(char* tabla,t_list* listaRegistros);
 char* getTablePath(char*tabla);
 int digitos(int num);
 int digitos_long(long num);
+void deleteDescribeList(Retorno_Describe* describe);
 
 /* Armar Instruccion */
 Instruccion* armarRetornoValue(char *value,t_timestamp timestamp);

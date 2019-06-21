@@ -135,6 +135,7 @@ int deleteTable(char* tabla){
 void clean_registers_list(t_list*registers){
 	void cleanValue(struct tableRegister* reg){
 		free(reg->value);
+		free(reg);
 	}
 	list_iterate(registers,(void*)cleanValue);
 }
@@ -187,7 +188,8 @@ int digitos_long(long num){
 /* Describe */
 Retorno_Describe* pack_describe(char *nombre_tabla,Consistencias consistencia,uint8_t particiones,t_timestamp compactation_time){
 	Retorno_Describe* respuesta = malloc(sizeof(Retorno_Describe));
-	respuesta->nombre_tabla=nombre_tabla;
+	respuesta->nombre_tabla=malloc(strlen(nombre_tabla)+1);
+	strcpy(respuesta->nombre_tabla,nombre_tabla);
 	respuesta->consistencia=consistencia;
 	respuesta->particiones=particiones;
 	respuesta->compactation_time=compactation_time;
@@ -206,7 +208,8 @@ Instruccion* armarRetornoValue(char *value,t_timestamp timestamp){
 	Retorno_Generico * retorno = malloc(sizeof(Retorno_Generico));
 	retorno->tipo_retorno=VALOR;
 	Retorno_Value * retval = malloc(sizeof(Retorno_Value));
-	retval->value=value;
+	retval->value = malloc(strlen(value)+1);
+	strcpy(retval->value,value);
 	retval->timestamp=timestamp;
 	retorno->retorno=retval;
 	instruccion->instruccion_a_realizar=retorno;
@@ -234,4 +237,7 @@ Instruccion* armarRetornoMaxValue(void){
 	instruccion->instruccion_a_realizar=retorno;
 	return instruccion;
 }
-
+void deleteDescribeList(Retorno_Describe* describe){
+	free(describe->nombre_tabla);
+	free(describe);
+}

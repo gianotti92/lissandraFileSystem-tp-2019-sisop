@@ -3,12 +3,11 @@
 void* TH_asesino(void*p);
 
 struct memtableItem* createMemtableItem(char* tableName, struct tableRegister reg) {
-	struct memtableItem item;
-	strcpy(item.tableName,tableName);
-	item.reg = reg;
-	struct memtableItem * ret = malloc(sizeof(struct memtableItem));
-	*ret = item;
-	return ret;
+	struct memtableItem * item = malloc(sizeof(struct memtableItem));
+	item->reg = reg;
+	item->tableName = malloc(strlen(tableName)+1);
+	strcpy(item->tableName,tableName);
+	return item;
 }
 void initMemtable(void){
 	global_memtable = list_create();
@@ -20,6 +19,7 @@ void cleanMemtable(void){
 	void freeValues(void* elem) {
 		struct memtableItem* item = (struct memtableItem*)elem;
 		free(item->reg.value);
+		free(item);
 	}
 	list_iterate(global_memtable, &freeValues);
 	list_clean(global_memtable);
@@ -47,8 +47,16 @@ void initTableMetadata(void){
 	loadCurrentTableMetadata();
 }
 void insertInTableMetadata(char*tableName,struct TableMetadata tMetadata) {
+	bool criterio(struct tableMetadataItem* t){
+		return !strcmp(t->tableName,tableName);
+	}
+	struct tableMetadataItem* old = list_find(global_table_metadata,(void*)criterio);
+	if(old != NULL){
+		list_remove_by_condition(global_table_metadata,(void*)criterio);
+	}
 	struct tableMetadataItem* item = malloc(sizeof(struct tableMetadataItem));
 	item->metadata=tMetadata;
+	item->tableName = malloc(strlen(tableName)+1);
 	strcpy(item->tableName,tableName);
 	pthread_rwlock_init(&item->lock,NULL);
 	item->endFlag=0;
@@ -65,7 +73,7 @@ void deleteInTableMetadata(char*tableName) {
 		pthread_t hilo_asesino;
 		pthread_create(&hilo_asesino,NULL,TH_asesino,(void*)found);
 		pthread_detach(hilo_asesino);
-		list_remove_by_condition(global_table_metadata,(void*)condition); // LEAK - liberar estructura antes de eliminar
+		list_remove_by_condition(global_table_metadata,(void*)condition);
 	}
 }
 void destroyTableMetadata(void){
@@ -88,6 +96,7 @@ void loadCurrentTableMetadata(void){
 				pthread_rwlock_init(&item->lock,NULL);
 				item->endFlag=0;
 				pthread_create(&item->thread,NULL,TH_compactacion,(void*)item);
+				item->tableName = malloc(strlen(dir->d_name)+1);
 				strcpy(item->tableName,dir->d_name);
 				item->metadata.consistencia=string2consistencia(config_get_string_value(conf,"CONSISTENCY"));
 				item->metadata.numero_particiones=config_get_int_value(conf,"PARTITIONS");
@@ -112,9 +121,10 @@ void loadDescribesTableMetadata(t_list*lista_describes){
 }
 void* TH_asesino(void*p){
 	struct tableMetadataItem* item = (struct tableMetadataItem*)p;
-	pthread_rwlock_destroy(&item->lock);
 	item->endFlag=1;
 	pthread_join(item->thread,NULL);
+	pthread_rwlock_destroy(&item->lock);
+	free(item->tableName);
 	free(item);
 	return (void*)0;
 }
