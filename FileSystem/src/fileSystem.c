@@ -198,11 +198,13 @@ int fs_write_get_free_blocks(t_list* blocks,int cant_blocks){
 		}
 	}
 	if(cant_blocks != cantAsign){
+		free(bitarray->bitarray);
 		bitarray_destroy(bitarray);
 		log_error(LOG_ERROR,"Error al asignar %i bloques, se asignaron %d",cant_blocks,cantAsign);
 		return BLOCK_ASSIGN_ERROR;
 	}
 	bitarray_to_file(bitarray->bitarray);
+	free(bitarray->bitarray);
 	bitarray_destroy(bitarray);
 	return 0;
 }
@@ -284,7 +286,7 @@ int fs_create_set_mdata(char* filename){
 	}
 	char buff[17];
 	strcpy(buff,"SIZE=0\nBLOCKS=[]");
-	fwrite(buff,strlen(buff),1,f);
+	fwrite(buff,strlen(buff)+1,1,f);
 	fclose(f);
 	return 0;
 }
@@ -311,6 +313,7 @@ int fs_delete_set_free_blocks(t_list* blocks){
 	list_iterate(blocks,(void*)limpiar);
 
 	bitarray_to_file(bitarray->bitarray);
+	free(bitarray->bitarray);
 	bitarray_destroy(bitarray);
 	return error;
 }
@@ -466,9 +469,9 @@ void bitarray_to_file(char *bitarray){
 		free(filename);
 		return;
 	}
-	free(filename);
 	fwrite(bitarray,bitarray_size(),1,fd);
 	fclose(fd);
+	free(filename);
 }
 int bitarray_size(void){
 	int CANTIDAD = global_fs_conf.BLOCKS;

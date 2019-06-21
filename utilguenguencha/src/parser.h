@@ -129,12 +129,6 @@ unsigned long int string_to_ulint(char*);
 void leer_por_consola(void (*f) (char*));
 
 /**
-* @NAME: free_consulta
-* @DESC: Realiza free a una Instruccion y a lo que contenga.
-*/
-void free_consulta(Instruccion*);
-
-/**
 * @NAME: get_timestamp
 * @DESC: Devuelve el timestamp del sistema.
 */

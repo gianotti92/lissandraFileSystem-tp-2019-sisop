@@ -1,4 +1,5 @@
 #include "parser.h"
+void free_consulta_separada(int length,char** consulta_separada);
 
 Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
@@ -22,11 +23,12 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 		if (length != 3) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > SELECT [NOMBRE_TABLA] [KEY], chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else if (!es_numero(consulta_separada[2])
 				|| string_to_ulint(consulta_separada[2]) > 65535) {
 			log_error(LOG_ERROR, "La Key es incorrecta, debe ser menor a 65.535!");
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_KEY);
 		}else{
 			Select * nuevoSelect = malloc(sizeof(Select));
@@ -40,17 +42,14 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[3]);
 			nuevoSelect->timestamp = timestamp;				// cargo timestamp
 
-			free(consulta_separada[0]);
-			free(consulta_separada[1]);
-			free(consulta_separada[2]);
-			free(consulta_separada);
+			free_consulta_separada(length,consulta_separada);
 			consultaParseada = crear_instruccion(SELECT, nuevoSelect, sizeof(nuevoSelect));
 
 		}
 	} else if (es_insert(consulta_separada)) {
 		if (length < 4) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP], chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		}
 		if (length >= 5) {
@@ -82,18 +81,19 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			if (length > 5) {
 				log_error(LOG_ERROR, "La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP], chinguengencha!");
+				free_consulta_separada(length,consulta_separada);
 				return respuesta_error(BAD_REQUEST);
 			}
 		}
 
 		if ((length == 5) && !es_numero(consulta_separada[4])) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > INSERT [NOMBRE_TABLA] [KEY] ”[VALUE]” ?[TIMESTAMP], chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else if (!es_numero(consulta_separada[2])
 				|| string_to_ulint(consulta_separada[2]) > 65535) {
 			log_error(LOG_ERROR, "Parser: La Key es incorrecta, debe ser menor a 65.535");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_KEY);
 		} else {
 
@@ -111,19 +111,15 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			strcpy(nuevoInsert->nombre_tabla, consulta_separada[1]);// cargo tabla
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
 			nuevoInsert->key = key;					 				// cargo key
-
-			nuevoInsert->value = consulta_separada[3];			// cargo value
+	
+			nuevoInsert->value = malloc(strlen(consulta_separada[3])+1);
+			strcpy(nuevoInsert->value,consulta_separada[3]); // cargo value
 
 			if (length == 4) {			// no vino con timestamp en la consulta
 				uint32_t timestamp = (uint32_t) string_to_ulint(
 						consulta_separada[4]);
 				nuevoInsert->timestamp_insert = timestamp;// cargo timestamp_insert
 				nuevoInsert->timestamp = timestamp;			// cargo timestamp
-				free(consulta_separada[0]);
-				free(consulta_separada[1]);
-				free(consulta_separada[2]);
-				free(consulta_separada[3]);
-				free(consulta_separada);
 			} else {						// vino con timestamp en la consulta
 				uint32_t timestamp_insert = (uint32_t) string_to_ulint(
 						consulta_separada[4]);
@@ -131,14 +127,9 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 				uint32_t timestamp = (uint32_t) string_to_ulint(
 						consulta_separada[5]);
 				nuevoInsert->timestamp = timestamp;			// cargo timestamp
-				free(consulta_separada[0]);
-				free(consulta_separada[1]);
-				free(consulta_separada[2]);
-				free(consulta_separada[3]);
-				free(consulta_separada[4]);
-				free(consulta_separada);
 			}
 
+			free_consulta_separada(length,consulta_separada);
 			consultaParseada = crear_instruccion(INSERT, nuevoInsert,
 					sizeof(nuevoInsert));
 
@@ -146,15 +137,15 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 	} else if (es_create(consulta_separada)) {
 		if (length != 5) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > CREATE [NOMBRE_TABLA] [TIPO_CONSISTENCIA] [NUMERO_PARTICIONES] [COMPACTION_TIME], chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else if (!es_numero(consulta_separada[3])) {
 			log_error(LOG_ERROR,"La cantidad de particiones debe ser un numero.");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_PARTITION);
 		} else if (!es_numero(consulta_separada[4])) {
 			log_error(LOG_ERROR, "Parser: El tiempo de compactacion debe ser un numero.");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_COMPACTATION);
 		} else {
 
@@ -177,7 +168,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			} else {
 				log_error(LOG_ERROR, "Los criterios de consistencia aceptados son [SC, SHC, EC], chinguengencha!");
-
+				free_consulta_separada(length,consulta_separada);
 				return respuesta_error(BAD_CONSISTENCY);
 			};
 
@@ -194,20 +185,13 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			consultaParseada = crear_instruccion(CREATE, nuevoCreate,
 					sizeof(nuevoCreate));
 
-			free(consulta_separada[0]);
-			free(consulta_separada[1]);
-			free(consulta_separada[2]);
-			free(consulta_separada[3]);
-			free(consulta_separada[4]);
-			free(consulta_separada[5]);
-			free(consulta_separada);
-
+			free_consulta_separada(length,consulta_separada);
 		}
 	} else if (es_describe(consulta_separada)) {
 
 		if (length > 2) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > DESCRIBE [NOMBRE_TABLA] o DESCRIBE, chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else {
 
@@ -229,10 +213,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			}
 
-			free(consulta_separada[0]);
-			free(consulta_separada[1]);
-			free(consulta_separada[2]);
-			free(consulta_separada);
+			free_consulta_separada(length,consulta_separada);
 
 			consultaParseada = crear_instruccion(DESCRIBE, nuevoDescribe,
 					sizeof(nuevoDescribe));
@@ -242,7 +223,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 		if (length != 2) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > DROP [NOMBRE_TABLA], chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else {
 
@@ -255,31 +236,27 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[2]);
 			nuevoDrop->timestamp = timestamp;				// cargo timestamp
 
+			free_consulta_separada(length,consulta_separada);
+
 			consultaParseada = crear_instruccion(DROP, nuevoDrop,
 					sizeof(nuevoDrop));
-
-			free(consulta_separada[0]);
-			free(consulta_separada[1]);
-			free(consulta_separada[2]);
-			free(consulta_separada);
-
 		}
 	} else if (es_add(consulta_separada) & (procesoOrigen == KERNEL)) {
 
 		if (length != 5) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO], chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else if (!es_numero(consulta_separada[2])) {
 			log_error(LOG_ERROR, "La memoria debe ser un numero.");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_MEMORY);
 		} else if (!(string_equals_ignore_case(
 				string_from_format("%s %s", consulta_separada[0],
 						consulta_separada[1]), "ADD MEMORY")
 				& (string_equals_ignore_case(consulta_separada[3], "TO")))) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO], chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else {
 
@@ -299,7 +276,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 				consistencia = EC;
 			} else {
 				log_error(LOG_ERROR, "Los criterios de consistencia aceptados son [SC, SHC, EC]");
-
+				free_consulta_separada(length,consulta_separada);
 				return respuesta_error(BAD_CONSISTENCY);
 			}
 
@@ -308,23 +285,16 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[5]);
 			nuevoAddMemory->timestamp = timestamp;			// cargo timestamp
 
+			free_consulta_separada(length,consulta_separada);
+
 			consultaParseada = crear_instruccion(ADD, nuevoAddMemory,
 					sizeof(nuevoAddMemory));
-
-			free(consulta_separada[0]);
-			free(consulta_separada[1]);
-			free(consulta_separada[2]);
-			free(consulta_separada[3]);
-			free(consulta_separada[4]);
-			free(consulta_separada[5]);
-			free(consulta_separada);
-
 		}
 	} else if (es_run(consulta_separada) & (procesoOrigen == KERNEL)) {
 
 		if (length != 2) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > RUN [ARCHIVO], chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else {
 
@@ -336,19 +306,16 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[2]);
 			nuevoRun->timestamp = timestamp;				 // cargo timestamp
 
+			free_consulta_separada(length,consulta_separada);
+
 			consultaParseada = crear_instruccion(RUN, nuevoRun,
 					sizeof(nuevoRun));
-
-			free(consulta_separada[0]);
-			free(consulta_separada[1]);
-			free(consulta_separada[2]);
-			free(consulta_separada);
 		}
 	} else if (es_metrics(consulta_separada) & (procesoOrigen == KERNEL)) {
 
 		if (length != 1) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > METRICS, chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else {
 
@@ -359,20 +326,17 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[1]);
 			nuevoMetrics->timestamp = timestamp;			// cargo timestamp
 
+			free_consulta_separada(length,consulta_separada);
+
 			consultaParseada = crear_instruccion(METRICS, nuevoMetrics,
 					sizeof(nuevoMetrics));
-
-			free(consulta_separada[0]);
-			free(consulta_separada[1]);
-			free(consulta_separada);
-
 		}
 	} else if (es_journal(consulta_separada)
 			& (procesoOrigen == POOLMEMORY || procesoOrigen == KERNEL)) {
 
 		if (length != 1) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > JOURNAL, chinguengencha!");
-
+			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_REQUEST);
 		} else {
 
@@ -382,10 +346,9 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
 			nuevoJournal->timestamp = timestamp;			// cargo timestamp
 
+			free_consulta_separada(length,consulta_separada);
+
 			consultaParseada = crear_instruccion(JOURNAL, nuevoJournal, sizeof(nuevoJournal));
-			free(consulta_separada[0]);
-			free(consulta_separada[1]);
-			free(consulta_separada);
 		}
 	} else {
 
@@ -404,7 +367,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 		}
 
-
+		free_consulta_separada(length,consulta_separada);
 		return respuesta_error(BAD_OPERATION);
 	}
 
@@ -414,8 +377,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 Instruccion* crear_instruccion(Instruction_set operacion,
 		void* operacion_a_realizar, int tamanio) {
 
-	void * p_instruccion_a_realizar = malloc(sizeof(tamanio));
-	p_instruccion_a_realizar = operacion_a_realizar;
+	void * p_instruccion_a_realizar = operacion_a_realizar;
 
 	Instruccion * p_instruccion = malloc(sizeof(Instruccion));
 	p_instruccion->instruccion = operacion;
@@ -575,6 +537,8 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					log_error(LOG_ERROR,"REQUEST NO VALIDO");
 				break;
 
+				case DIV_BY_ZERO:;
+					log_error(LOG_ERROR,"SE INTENTO DIVIDIR POR 0");
 				default:
 					break;
 			}
@@ -647,6 +611,7 @@ void leer_por_consola(void (*f)(char*)) {
 
 	while (!string_equals_ignore_case(leido, "EXIT")) {
 		f(leido);
+		free(leido);
 		leido = readline("\n>>");
 		add_history(leido);
 	}
@@ -654,97 +619,6 @@ void leer_por_consola(void (*f)(char*)) {
 	free(leido);
 	exit_gracefully(EXIT_SUCCESS);
 }
-
-//void free_consulta(Instruccion* consulta) {
-//	free(consulta->instruccion_a_realizar);
-//	free(consulta);
-//}
-
-void free_consulta(Instruccion* consulta) {
-
-	switch (consulta->instruccion) {
-			case SELECT:;
-				free(((Select*)consulta->instruccion_a_realizar)->nombre_tabla);
-
-				break;
-
-			case INSERT:;
-				free(((Insert*)consulta->instruccion_a_realizar)->nombre_tabla);
-				//free(((Insert*)consulta->instruccion_a_realizar)->value);
-
-				break;
-			case CREATE:;
-				free(((Create*)consulta->instruccion_a_realizar)->nombre_tabla);
-
-				break;
-			case DESCRIBE:;
-				free(((Describe*)consulta->instruccion_a_realizar)->nombre_tabla);
-
-				break;
-			case ADD:;
-
-				break;
-			case RUN:;
-				free(((Run*)consulta->instruccion_a_realizar)->path);
-
-				break;
-			case DROP:;
-				free(((Drop*)consulta->instruccion_a_realizar)->nombre_tabla);
-
-				break;
-
-			case JOURNAL:;
-
-
-				break;
-
-			case METRICS:;
-
-
-				break;
-			case GOSSIP:;
-				list_destroy(((Gossip*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->lista_memorias);
-
-
-				break;
-			case ERROR:;
-
-
-				break;
-			case MAX_VALUE:;
-
-
-				break;
-			case RETORNO:;
-
-				switch(((Retorno_Generico*)consulta->instruccion_a_realizar)->tipo_retorno){
-				case VALOR:;
-					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
-
-					break;
-				case SUCCESS:;
-					break;
-				case DATOS_DESCRIBE:;
-					free(((Retorno_Describe*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->nombre_tabla);
-					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
-					break;
-				case RETORNO_GOSSIP:;
-					list_destroy(((Gossip*)(((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno))->lista_memorias);
-					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
-					break;
-				case TAMANIO_VALOR_MAXIMO:;
-
-					free((((Retorno_Generico*)consulta->instruccion_a_realizar)->retorno));
-					break;
-				}
-
-			break;
-
-	}
-	free(consulta->instruccion_a_realizar);
-	free(consulta);
-}
-
 
 uintmax_t get_timestamp() {
 
@@ -759,4 +633,10 @@ uintmax_t get_timestamp() {
 
 	return echo_time;
 
+}
+void free_consulta_separada(int length,char** consulta_separada){
+	for(int i=0;i<=length;i++){
+		free(consulta_separada[i]);
+	}
+	free(consulta_separada);
 }

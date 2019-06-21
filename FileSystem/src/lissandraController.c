@@ -10,10 +10,16 @@ Instruccion* _insert(Insert* insert){
 	usleep(global_conf.retardo*1000);
 	if(!tableExists(insert->nombre_tabla)) {
 		log_error(LOG_ERROR,"INSERT: no existe la tabla '%s'",insert->nombre_tabla);
+		free(insert->nombre_tabla);
+		free(insert->value);
+		free(insert);
 		return respuesta_error(MISSING_TABLE);
 	}
 	if(strlen(insert->value)>global_conf.max_value_size) {
 		log_error(LOG_ERROR,"INSERT: value demasiado largo: '%d', maximo: '%d'",strlen(insert->value),global_conf.max_value_size);
+		free(insert->nombre_tabla);
+		free(insert->value);
+		free(insert);
 		return respuesta_error(LARGE_VALUE);
 	}
 	struct tableRegister reg = createTableRegister(insert->key,insert->value,insert->timestamp);
@@ -23,17 +29,24 @@ Instruccion* _insert(Insert* insert){
 	insertInMemtable(createMemtableItem(insert->nombre_tabla,reg));
 	/* desbloqueo mutex*/
 	pthread_mutex_unlock(&memtableMutex);
+	free(insert->nombre_tabla);
+	free(insert->value);
+	free(insert);
 	return respuesta_success();
 }
 Instruccion* _select(Select* select){
 	usleep(global_conf.retardo*1000);
 	if(!tableExists(select->nombre_tabla)) {
 		log_error(LOG_ERROR,"SELECT: no existe la tabla '%s'",select->nombre_tabla);
+		free(select->nombre_tabla);
+		free(select);
 		return respuesta_error(MISSING_TABLE);
 	}
 	struct tableMetadataItem* found = get_table_metadata(select->nombre_tabla);
 	if(found == NULL) {
 		log_error(LOG_ERROR,"SELECT: No se encontro la metadata de la tabla '%s'",select->nombre_tabla);
+		free(select->nombre_tabla);
+		free(select);
 		return respuesta_error(UNKNOWN);
 	}
 
@@ -42,6 +55,13 @@ Instruccion* _select(Select* select){
 	// Reviso Memtable
 	findInMemtable(select->nombre_tabla,select->key,listaRegistros);
 
+	if(found->metadata.numero_particiones == 0){
+		clean_registers_list(listaRegistros);
+		list_destroy(listaRegistros);
+		free(select->nombre_tabla);
+		free(select);
+		return respuesta_error(DIV_BY_ZERO);
+	}
 	int particion = select->key%found->metadata.numero_particiones;
 	char*particionFile = malloc(strlen(global_conf.directorio_tablas)+strlen(select->nombre_tabla)+digitos(particion)+6);
 	sprintf(particionFile,"%s%s/%d.bin",global_conf.directorio_tablas,select->nombre_tabla,particion);
@@ -56,6 +76,8 @@ Instruccion* _select(Select* select){
 		list_destroy(listaRegistros);
 		pthread_rwlock_unlock(&found->lock);
 		free(particionFile);
+		free(select->nombre_tabla);
+		free(select);
 		return respuesta_error(retval);
 	}
 	free(particionFile);
@@ -66,6 +88,8 @@ Instruccion* _select(Select* select){
 		clean_registers_list(listaRegistros);
 		list_destroy(listaRegistros);
 		pthread_rwlock_unlock(&found->lock);
+		free(select->nombre_tabla);
+		free(select);
 		return respuesta_error(retval);
 	}
 
@@ -93,31 +117,41 @@ Instruccion* _select(Select* select){
 		clean_registers_list(listaRegistros);
 		list_destroy(listaRegistros);
 		free(max.value);
+		free(select->nombre_tabla);
+		free(select);
 		return respuesta_error(BAD_KEY);
 	}
 
 	clean_registers_list(listaRegistros);
 	list_destroy(listaRegistros);
-
-	return armarRetornoValue(max.value,max.timestamp);
-	//free(max.value);
+	free(select->nombre_tabla);
+	free(select);
+	Instruccion * retornoInstruccion = armarRetornoValue(max.value,max.timestamp);
+	free(max.value);
+	return retornoInstruccion;
 }
 Instruccion* _create(Create* create){
 	usleep(global_conf.retardo*1000);
 	char*directorio=getTablePath(create->nombre_tabla);
 	int retval = crearDirectorio(global_conf.directorio_tablas,create->nombre_tabla);
 	if(retval != 0){
+		free(create->nombre_tabla);
+		free(create);
 		free(directorio);
 		return respuesta_error(retval);
 	}
 	retval = crearMetadataTableFile(directorio,setTableMetadata(create->consistencia,create->particiones,create->compactation_time));
 	if(retval != 0) {
 		free(directorio);
+		free(create->nombre_tabla);
+		free(create);
 		return respuesta_error(retval);
 	}
 	retval = crearBinarios(directorio,create->particiones);
 	if(retval != 0) {
 		free(directorio);
+		free(create->nombre_tabla);
+		free(create);
 		return respuesta_error(retval);
 	}
 	free(directorio);
@@ -125,6 +159,8 @@ Instruccion* _create(Create* create){
 	pthread_mutex_lock(&tableMetadataMutex);
 	insertInTableMetadata(create->nombre_tabla,setTableMetadata(create->consistencia,create->particiones,create->compactation_time));
 	pthread_mutex_unlock(&tableMetadataMutex);
+	free(create->nombre_tabla);
+	free(create);
 	return respuesta_success();
 }
 Instruccion* _describe(Describe * describe){
@@ -132,26 +168,35 @@ Instruccion* _describe(Describe * describe){
 	if(describe->nombre_tabla==NULL){
 		t_list* lista_describes=list_create();
 		loadDescribesTableMetadata(lista_describes);
+		free(describe);
 		return armarRetornoDescribe(lista_describes);
 	}
 	if(!tableExists(describe->nombre_tabla)) {
 		log_error(LOG_ERROR,"DESCRIBE: no existe la tabla '%s'",describe->nombre_tabla);
+		free(describe->nombre_tabla);
+		free(describe);
 		return respuesta_error(MISSING_TABLE);
 	}
 	struct tableMetadataItem* found = get_table_metadata(describe->nombre_tabla);
 	if(found==NULL){
 		log_error(LOG_ERROR,"DESCRIBE: No se encontro la metadata de la tabla %s",describe->nombre_tabla);
+		free(describe->nombre_tabla);
+		free(describe);
 		return respuesta_error(UNKNOWN);
 	}
 	Retorno_Describe* actualDescribe = pack_describe(found->tableName,found->metadata.consistencia,found->metadata.numero_particiones,found->metadata.compaction_time);
 	t_list* lista_describes=list_create();
 	list_add(lista_describes,actualDescribe);
-	return armarRetornoDescribe(lista_describes); // LEAK, falta liberar la lista
+	free(describe->nombre_tabla);
+	free(describe);
+	return armarRetornoDescribe(lista_describes);
 }
 Instruccion* _drop(Drop* drop){
 	usleep(global_conf.retardo*1000);
 	if(!tableExists(drop->nombre_tabla)) {
 		log_error(LOG_ERROR,"DROP: no existe la tabla '%s'",drop->nombre_tabla);
+		free(drop->nombre_tabla);
+		free(drop);
 		return respuesta_error(MISSING_TABLE);
 	}
 	pthread_mutex_lock(&tableMetadataMutex);
@@ -159,8 +204,12 @@ Instruccion* _drop(Drop* drop){
 	pthread_mutex_unlock(&tableMetadataMutex);
 	int retval = deleteTable(drop->nombre_tabla);
 	if(retval != 0){
+		free(drop->nombre_tabla);
+		free(drop);
 		return respuesta_error(retval);
 	}
+	free(drop->nombre_tabla);
+	free(drop);
 	return respuesta_success();
 }
 Instruccion* controller(Instruccion* instruccion){
@@ -182,11 +231,13 @@ Instruccion* controller(Instruccion* instruccion){
 			res=_drop((Drop*)instruccion->instruccion_a_realizar);
 		break;
 		case MAX_VALUE:
+			free(instruccion->instruccion_a_realizar);
 			res=armarRetornoMaxValue();
 		break;
 		default:
 			res=respuesta_error(BAD_REQUEST);
 		break;
 	}
+	free(instruccion);
 	return res;
 }
