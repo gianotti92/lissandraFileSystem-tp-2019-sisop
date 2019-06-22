@@ -107,23 +107,16 @@ void configuracion_inicial(void){
 
 void retorno_consola(char* leido){
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
-	Instruccion* respuesta = atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
+	Instruccion* respuesta = atender_consulta(instruccion_parseada);
 	print_instruccion_parseada(respuesta);
 
-	free_consulta(respuesta);
 }
 
 void retornarControl(Instruccion *instruccion, int cliente){
 
-	//printf("Lo que me llego desde KERNEL es:\n");
-	//print_instruccion_parseada(instruccion);
-	//printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
-
-	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
-
+	Instruccion* respuesta = atender_consulta(instruccion);
 	responder(cliente, respuesta);
-
-	free_consulta(respuesta);
+	free_retorno(respuesta);
 
 }
 
@@ -214,12 +207,15 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			pthread_mutex_lock(&mutexSegmentos);
 
 			Select* instruccion_select = instruccion_parseada->instruccion_a_realizar;
+			char* nombre_tabla = malloc(strlen(instruccion_select->nombre_tabla)+1);
+			strcpy(nombre_tabla, instruccion_select->nombre_tabla);
+			t_key key = instruccion_select->key;
 
-			Segmento* segmento = buscar_segmento(instruccion_select->nombre_tabla);
+			Segmento* segmento = buscar_segmento(nombre_tabla);
 			int id_pagina = -1;
 
 			if (segmento != NULL){
-				id_pagina = buscar_pagina_en_segmento(segmento, instruccion_select->key);
+				id_pagina = buscar_pagina_en_segmento(segmento, key);
 			}
 
 			pthread_mutex_unlock(&mutexSegmentos);
@@ -238,6 +234,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 						if (resp_retorno_generico->tipo_retorno == VALOR){
 							Retorno_Value* resp_retorno_value = resp_retorno_generico->retorno;
+
 							int result_insert = insertar_en_memoria(o_nombre_tabla, o_key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
 
 							if(result_insert == -2){
@@ -249,27 +246,31 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 					} 
 				}
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
-			} else {
+			}else {
 			// tenemos la tabla-key en memoria
 				instruccion_respuesta = malloc(sizeof(Instruccion));
 				instruccion_respuesta->instruccion = RETORNO;
 				Retorno_Generico* p_retorno_generico = malloc(sizeof(Retorno_Generico));
-				p_retorno_generico->tipo_retorno = VALOR;
 				Retorno_Value* p_retorno_valor = malloc(sizeof(Retorno_Value));
-				p_retorno_generico->retorno = p_retorno_valor;
 
 				void* pagina = get_pagina(id_pagina);
 				p_retorno_valor->timestamp = *get_timestamp_pagina(pagina);
-				p_retorno_valor->value = get_value_pagina(pagina);
+				char* value = get_value_pagina(pagina);
+				p_retorno_valor->value = malloc(strlen(value) + 1);
+				strcpy(p_retorno_valor->value, value);
+				p_retorno_generico->tipo_retorno = VALOR;
+				p_retorno_generico->retorno = p_retorno_valor;
 
 				instruccion_respuesta->instruccion_a_realizar = p_retorno_generico;
 
 				marcar_ultimo_uso(id_pagina);
 
-				free_consulta(instruccion_parseada);
+				free(instruccion_select->nombre_tabla);
+				free(instruccion_select);
+				free(instruccion_parseada);
 
 			}
-
+			free(nombre_tabla);
 			break;
 
 		case INSERT:;
@@ -296,7 +297,11 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			}
 
 			instruccion_respuesta = respuesta_success();
-			free_consulta(instruccion_parseada);
+
+//			free(instruccion_insert->nombre_tabla);
+			free(instruccion_insert->value);
+			free(instruccion_insert);
+			free(instruccion_parseada);
 
 			break;
 
@@ -306,6 +311,10 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			eliminar_de_memoria(instruccion_drop->nombre_tabla);
 
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
+
+			free(instruccion_drop->nombre_tabla);
+			free(instruccion_drop);
+			free(instruccion_parseada);
 
 			break;
 
@@ -320,7 +329,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				instruccion_respuesta = respuesta_error(JOURNAL_FAILURE);
 			}
 
-			free_consulta(instruccion_parseada);
+			free(instruccion_journal);
+			free(instruccion_parseada);
 
 			break;
 
@@ -733,15 +743,14 @@ int lanzar_journal(t_timestamp timestamp_journal){
 	t_list* paginas;
 	int id_pagina;
 	void* pagina;
-
-	Instruccion* instruccion_respuesta;
-
+	Marco* marco;
 
 	while(posicion_segmento >= 0){
 
 		segmento = list_get(L_SEGMENTOS, posicion_segmento);
 		paginas = segmento->paginas;
 		posicion_pagina = (paginas->elements_count -1);
+
 
 		while (posicion_pagina >= 0){
 			id_pagina = (int) list_get(paginas, posicion_pagina);
@@ -761,21 +770,16 @@ int lanzar_journal(t_timestamp timestamp_journal){
 
 				instruccion_insert->timestamp_insert = *get_timestamp_pagina(pagina);
 
-				instruccion_insert->value = malloc(strlen(get_value_pagina(pagina))+1);
-				strcpy( instruccion_insert->value, get_value_pagina(pagina));
-
+				char* value = get_value_pagina(pagina);
+				instruccion_insert->value = malloc(strlen(value) + 1);
+				strcpy(instruccion_insert->value, value);
 				instruccion_insert->timestamp = timestamp_journal;
-
-				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
-
-					if(instruccion_respuesta->instruccion == ERROR){
-						log_error(LOG_ERROR, "Memoria: Fallo insert de journal"); //loguear mejor los errores posibles, como mal key, mal value, mal table
-					}
-
-				free_consulta(instruccion_respuesta);
-
+				Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION);
+				//print_instruccion_parseada(instruccion_respuesta);
+				free_retorno(instruccion_respuesta);
+				marco = list_get(L_MARCOS, id_pagina);
+				marco->en_uso = false;
 				PAGINAS_MODIFICADAS--;
-				}
 			}
 
 			posicion_pagina--;

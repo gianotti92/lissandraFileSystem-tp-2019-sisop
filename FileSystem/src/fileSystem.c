@@ -76,13 +76,13 @@ int fs_read(char* filename, t_list* registros){
 	retval=fs_read_blocks_to_buffer(bufferData,&mdata);
 	if(retval != 0){
 		free(bufferData);
-		list_destroy(mdata.blocks);
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 		return retval;
 	}
 	fs_read_buffer_to_registers(bufferData,mdata.size,registros);
 	free(bufferData);
 	if(mdata.blocks!=NULL){
-		list_destroy(mdata.blocks);
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 	}
 	return 0;
 }
@@ -100,24 +100,24 @@ int fs_write(char* filename, t_list* registros){
 	mdata.blocks = list_create();
 	int retval = fs_write_get_free_blocks(mdata.blocks,cant_blocks);
 	if(retval != 0){
-		list_destroy(mdata.blocks);
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 		free(buffer);
 		return retval;
 	}
 	retval = fs_write_buffer_to_blocks(buffer,&mdata);
 	if(retval != 0){
-		list_destroy(mdata.blocks);
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 		free(buffer);
 		return retval;
 	}
 	retval = fs_write_set_mdata(filename,&mdata);
 	if(retval != 0){
-		list_destroy(mdata.blocks);
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 		free(buffer);
 		return retval;
 	}
 
-	list_destroy(mdata.blocks);
+	list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 	free(buffer);
 	return 0;
 }
@@ -139,17 +139,17 @@ int fs_delete(char* filename){
 	}
 	retval = fs_delete_set_free_blocks(mdata.blocks);
 	if(retval != 0){
-		list_destroy(mdata.blocks);
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 		return retval;
 	}
 	
 	if(remove(filename)){
 		log_error(LOG_ERROR,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
-		list_destroy(mdata.blocks);
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 		return FILE_DELETE_ERROR;
 	}
 
-	list_destroy(mdata.blocks);
+	list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 	return 0;
 }
 
@@ -386,15 +386,17 @@ int fs_read_get_mdata(char* filename,struct file_mdata* mdata){
 		config_destroy(conf);
 		return 0;
 	}
-	char**blocks = config_get_array_value(conf,"BLOCKS");
+	char**blocks = config_get_array_value(conf,"BLOCKS"); // Aca valgind se queja, posible memory leak
 	mdata->blocks = list_create();
 	char**p=blocks;
 	while(p!=NULL && *p!=NULL){
-		int * block=malloc(sizeof(int));
+		int * block=malloc(sizeof(int)); // Aca valgind se queja, posible memory leak
 		sscanf(*p,"%d",block);
 		list_add(mdata->blocks,(void*)block);
+		free(*p);
 		p++;
 	}
+	free(blocks);
 	config_destroy(conf);
 	return 0;
 }

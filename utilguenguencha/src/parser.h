@@ -54,7 +54,7 @@ void print_instruccion_parseada(Instruccion*);
 * @NAME: crear_instruccion
 * @DESC: Crea una instruccion pasandole como parametro el enum de la operacion, el puntero a una operacion y el sizeof() de esa operacion.
 */
-Instruccion* crear_instruccion(Instruction_set, void*, int);
+Instruccion* crear_instruccion(Instruction_set, void* instruccion_a_realizar);
 
 /**
 * @NAME: es_select
@@ -133,5 +133,18 @@ void leer_por_consola(void (*f) (char*));
 * @DESC: Devuelve el timestamp del sistema.
 */
 uintmax_t get_timestamp();
+
+/**
+* @NAME: free_consistencias
+* @DESC: Libera la consistencia de un describe.
+*/
+
+void free_consistencias(Retorno_Describe *describe);
+
+/**
+* @NAME: free_retorno
+* @DESC: Libera una instruccion tipo RETORNO.
+*/
+void free_retorno(Instruccion * instruccion_parseada);
 
 #endif /* UTILGUENGUENCHA_PARSER_H_ */

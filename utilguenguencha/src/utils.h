@@ -38,5 +38,14 @@ char *get_local_ip(void);
 Memoria *duplicar_memoria(Memoria *memoria);
 Retorno_Describe *duplicar_describe(Retorno_Describe *describe);
 t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*));
-
+/**
+* @NAME: elimina_memoria()
+* @DESC: para eliminar las memorias de una lista de gossip
+*/
+void eliminar_memoria(Memoria * memoria);
+/**
+* @NAME: eliminar_describe_comu()
+* @DESC: para eliminar describe de una lista de describes
+*/
+void eliminar_describe(Describe *describe);
 #endif /* UTILGUENGUENCHA_UTILS_H_ */
