@@ -222,10 +222,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			if(id_pagina < 0){
 			// no tenemos la tabla-key en memoria
-				char* o_nombre_tabla = malloc(sizeof(instruccion_select->nombre_tabla)+1);
-				strcpy(o_nombre_tabla, instruccion_select->nombre_tabla);
-
-				t_key o_key = instruccion_select->key;
 
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
 
@@ -235,7 +231,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 						if (resp_retorno_generico->tipo_retorno == VALOR){
 							Retorno_Value* resp_retorno_value = resp_retorno_generico->retorno;
 
-							int result_insert = insertar_en_memoria(o_nombre_tabla, o_key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
+							int result_insert = insertar_en_memoria(nombre_tabla, key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
 
 							if(result_insert == -2){
 								instruccion_respuesta = respuesta_error(MEMORY_FULL);
@@ -283,12 +279,18 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
 
+			char* nombre_tabla_insert = malloc(strlen(instruccion_insert->nombre_tabla)+1);
+			strcpy(nombre_tabla_insert, instruccion_insert->nombre_tabla);
+			char* value_insert = malloc(strlen(instruccion_insert->value)+1);
+			strcpy(value_insert, instruccion_insert->value);
+			t_key key_insert = instruccion_insert->key;
+
 			if (string_length(instruccion_insert->value) > MAX_VAL) {
 				instruccion_respuesta = respuesta_error(LARGE_VALUE);
 				break;
 			}
 
-			int result_insert = insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
+			int result_insert = insertar_en_memoria(nombre_tabla_insert , key_insert, value_insert, instruccion_insert->timestamp_insert, true);
 
 			if(result_insert == -2){
 				instruccion_respuesta = respuesta_error(MEMORY_FULL);
@@ -298,7 +300,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			instruccion_respuesta = respuesta_success();
 
-//			free(instruccion_insert->nombre_tabla);
+			free(instruccion_insert->nombre_tabla);
 			free(instruccion_insert->value);
 			free(instruccion_insert);
 			free(instruccion_parseada);
@@ -308,13 +310,12 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 		case DROP:;
 			Drop* instruccion_drop = (Drop*) instruccion_parseada->instruccion_a_realizar;
 
-			eliminar_de_memoria(instruccion_drop->nombre_tabla);
+			char* nombre_tabla_drop = malloc(strlen(instruccion_drop->nombre_tabla)+1);
+			strcpy(nombre_tabla_drop, instruccion_drop->nombre_tabla);
+
+			eliminar_de_memoria(nombre_tabla_drop);
 
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
-
-			free(instruccion_drop->nombre_tabla);
-			free(instruccion_drop);
-			free(instruccion_parseada);
 
 			break;
 
