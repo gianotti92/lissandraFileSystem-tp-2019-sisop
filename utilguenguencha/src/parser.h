@@ -135,13 +135,6 @@ void leer_por_consola(void (*f) (char*));
 uintmax_t get_timestamp();
 
 /**
-* @NAME: free_consistencias
-* @DESC: Libera la consistencia de un describe.
-*/
-
-void free_consistencias(Retorno_Describe *describe);
-
-/**
 * @NAME: free_retorno
 * @DESC: Libera una instruccion tipo RETORNO.
 */

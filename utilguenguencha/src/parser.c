@@ -11,10 +11,12 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 	uintmax_t echo_time = get_timestamp();
 
-	consulta = string_from_format("%s %ju", consulta, (uintmax_t) echo_time);
-
+	char * palabra = malloc(strlen(consulta) +1);
+	strcpy(palabra, consulta);
+	free(consulta);
+	consulta = string_from_format("%s %ju", palabra, (uintmax_t) echo_time);
+	free(palabra);
 	char** consulta_separada = string_split(consulta, " ");
-
 	free(consulta);
 
 	int length = cantidad_elementos(consulta_separada) - 1;
@@ -40,7 +42,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			nuevoSelect->key = key;	 								// cargo key
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[3]);
 			nuevoSelect->timestamp = timestamp;				// cargo timestamp
-			free_consulta_separada(length,consulta_separada);
+
 			consultaParseada = crear_instruccion(SELECT, nuevoSelect);
 
 		}
@@ -62,8 +64,13 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 				while ((!string_ends_with(consulta_separada[3], "\"") || i == 0)
 						& (i + 4 < length)) {
-					consulta_separada[3] = string_from_format("%s %s",
-							consulta_separada[3], consulta_separada[4]);
+					char* palabra1 = malloc(strlen(consulta_separada[3])+1);
+					strcpy(palabra1, consulta_separada[3]);
+					free(consulta_separada[3]);
+					char* palabra2 = malloc(strlen(consulta_separada[4])+1);
+					strcpy(palabra2, consulta_separada[4]);
+					free(consulta_separada[4]);
+					consulta_separada[3] = string_from_format("%s %s", palabra1, palabra2);
 					i++;
 					consulta_separada[4] = consulta_separada[4 + i];
 				}
@@ -130,7 +137,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 				nuevoInsert->timestamp = timestamp;			// cargo timestamp
 			}
 
-			free_consulta_separada(length,consulta_separada);
+
 			consultaParseada = crear_instruccion(INSERT, nuevoInsert);
 
 		}
@@ -182,7 +189,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[5]);
 			nuevoCreate->timestamp = timestamp;				// cargo timestamp
 
-			free_consulta_separada(length,consulta_separada);
+
 			consultaParseada = crear_instruccion(CREATE, nuevoCreate);
 
 		}
@@ -212,7 +219,6 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			}
 
-			free_consulta_separada(length,consulta_separada);
 
 			consultaParseada = crear_instruccion(DESCRIBE, nuevoDescribe);
 
@@ -234,12 +240,11 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[2]);
 			nuevoDrop->timestamp = timestamp;				// cargo timestamp
 
-			free_consulta_separada(length,consulta_separada);
 
 			consultaParseada = crear_instruccion(DROP, nuevoDrop);
 		}
 	} else if (es_add(consulta_separada) & (procesoOrigen == KERNEL)) {
-
+		char* palabra1;
 		if (length != 5) {
 			log_error(LOG_ERROR, "La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO], chinguengencha!");
 			free_consulta_separada(length,consulta_separada);
@@ -248,13 +253,11 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			log_error(LOG_ERROR, "La memoria debe ser un numero.");
 			free_consulta_separada(length,consulta_separada);
 			return respuesta_error(BAD_MEMORY);
-		} else if (!(string_equals_ignore_case(
-				string_from_format("%s %s", consulta_separada[0],
-						consulta_separada[1]), "ADD MEMORY")
-				& (string_equals_ignore_case(consulta_separada[3], "TO")))) {
-			log_error(LOG_ERROR, "La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO], chinguengencha!");
-			free_consulta_separada(length,consulta_separada);
-			return respuesta_error(BAD_REQUEST);
+		} else if ( (palabra1 = string_from_format("%s %s", consulta_separada[0], consulta_separada[1])) && !(string_equals_ignore_case(palabra1, "ADD MEMORY")& (string_equals_ignore_case(consulta_separada[3], "TO")))) {
+				log_error(LOG_ERROR, "La sintaxis correcta es > ADD MEMORY [NÚMERO] TO [CRITERIO], chinguengencha!");
+				free_consulta_separada(length,consulta_separada);
+				free(palabra1);
+				return respuesta_error(BAD_REQUEST);
 		} else {
 
 			// es ADD MEMORY
@@ -282,7 +285,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[5]);
 			nuevoAddMemory->timestamp = timestamp;			// cargo timestamp
 
-			free_consulta_separada(length,consulta_separada);
+
 
 			consultaParseada = crear_instruccion(ADD, nuevoAddMemory);
 		}
@@ -302,7 +305,6 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[2]);
 			nuevoRun->timestamp = timestamp;				 // cargo timestamp
 
-			free_consulta_separada(length,consulta_separada);
 
 			consultaParseada = crear_instruccion(RUN, nuevoRun);
 		}
@@ -321,7 +323,6 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[1]);
 			nuevoMetrics->timestamp = timestamp;			// cargo timestamp
 
-			free_consulta_separada(length,consulta_separada);
 
 			consultaParseada = crear_instruccion(METRICS, nuevoMetrics);
 		}
@@ -340,7 +341,6 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[1]);
 			nuevoJournal->timestamp = timestamp;			// cargo timestamp
 
-			free_consulta_separada(length,consulta_separada);
 
 			consultaParseada = crear_instruccion(JOURNAL, nuevoJournal);
 		}
@@ -364,7 +364,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 		free_consulta_separada(length,consulta_separada);
 		return respuesta_error(BAD_OPERATION);
 	}
-
+	free_consulta_separada(length,consulta_separada);
 	return consultaParseada;
 }
 
@@ -625,15 +625,10 @@ uintmax_t get_timestamp() {
 
 }
 void free_consulta_separada(int length,char** consulta_separada){
-	for(int i=0;i<=length;i++){
+	for(int i=0;i<=(length+1);i++){
 		free(consulta_separada[i]);
 	}
 	free(consulta_separada);
-}
-
-void free_consistencias(Retorno_Describe *describe){
-	char*consistencia=consistencia2string(describe->consistencia);
-	free(consistencia);
 }
 
 void free_retorno(Instruccion * instruccion_parseada) {
@@ -645,31 +640,23 @@ void free_retorno(Instruccion * instruccion_parseada) {
 				Retorno_Value* retorno_value = retorno_generico->retorno;
 				free(retorno_value->value);
 				free(retorno_value);
-				free(retorno_generico);
-				free(instruccion_parseada);
 				break;
-			case SUCCESS:;
-				free(retorno_generico);
-				free(instruccion_parseada);
+			case RETORNO_GOSSIP:;
+				list_destroy_and_destroy_elements(((Gossip*)retorno_generico->retorno)->lista_memorias, (void*)eliminar_memoria);
+				free(retorno_generico->retorno);
 				break;
 			case DATOS_DESCRIBE:
-				list_iterate(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes, (void*)free_consistencias);
-				list_destroy_and_destroy_elements(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes, (void*)eliminar_describe);
-				free(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno));
-				free((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar));
-				free(instruccion_parseada);
+				list_destroy_and_destroy_elements(((Describes*)retorno_generico->retorno)->lista_describes, (void*)eliminar_describe);
+				free(((Describes*)retorno_generico->retorno));
 				break;
-			default:
+			default:; // SUCCESS TAMANIO_VALOR_MAXIMO
+				free(retorno_generico->retorno);
 				break;
 			}
 		break;
-		case ERROR:;
-			Error* error = instruccion_parseada->instruccion_a_realizar;
-			free(error);
-			free(instruccion_parseada);
-			break;
-
 		default:
 			break;
 		}
+	free(instruccion_parseada->instruccion_a_realizar);
+	free(instruccion_parseada);
 }

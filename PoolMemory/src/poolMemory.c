@@ -75,9 +75,10 @@ void configuracion_inicial(void){
 	while(config_ip_seeds[i]!= NULL){
 		IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
 		IP_SEEDS[i] = string_duplicate(config_ip_seeds[i]);
+		free(config_ip_seeds[i]);
 		i++;
 	}
-
+	free(config_ip_seeds);
 	IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
 	IP_SEEDS[i] = NULL;
 
@@ -87,8 +88,10 @@ void configuracion_inicial(void){
 	while(config_puertos_seeds[i]!= NULL){
 		PUERTOS_SEEDS= realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
 		PUERTOS_SEEDS[i] = string_duplicate(config_puertos_seeds[i]);
+		free(config_puertos_seeds[i]);
 		i++;
 	}
+	free(config_puertos_seeds);
 	PUERTOS_SEEDS = realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
 	PUERTOS_SEEDS[i] = NULL;
 
@@ -109,7 +112,7 @@ void configuracion_inicial(void){
 		if (retorno_generico->tipo_retorno == TAMANIO_VALOR_MAXIMO) {
 			Retorno_Max_Value* retorno_maxValue = retorno_generico->retorno;
 			MAX_VAL = retorno_maxValue->value_size;
-
+			free_retorno(respuesta);
 			log_info(LOG_INFO, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
 
 		} else {
