@@ -71,20 +71,27 @@ void configuracion_inicial(void){
 	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
 	char** config_ip_seeds = config_get_array_value(CONFIG,"IP_SEEDS");
 	int i = 0;
-	IP_SEEDS = malloc(sizeof(int));
+
 	while(config_ip_seeds[i]!= NULL){
+		IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
 		IP_SEEDS[i] = string_duplicate(config_ip_seeds[i]);
 		i++;
 	}
+
+	IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
 	IP_SEEDS[i] = NULL;
+
+
 	char** config_puertos_seeds = config_get_array_value(CONFIG,"PUERTOS_SEEDS");
 	i = 0;
-	PUERTOS_SEEDS = malloc(sizeof(int));
 	while(config_puertos_seeds[i]!= NULL){
+		PUERTOS_SEEDS= realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
 		PUERTOS_SEEDS[i] = string_duplicate(config_puertos_seeds[i]);
 		i++;
 	}
+	PUERTOS_SEEDS = realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
 	PUERTOS_SEEDS[i] = NULL;
+
 	RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
 	RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
 	RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
@@ -222,15 +229,15 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			pthread_mutex_lock(&mutexSegmentos);
 
 			Select* instruccion_select = instruccion_parseada->instruccion_a_realizar;
-			char* nombre_tabla = malloc(strlen(instruccion_select->nombre_tabla)+1);
-			strcpy(nombre_tabla, instruccion_select->nombre_tabla);
-			t_key key = instruccion_select->key;
+			char* nombre_tabla_select = malloc(strlen(instruccion_select->nombre_tabla)+1);
+			strcpy(nombre_tabla_select, instruccion_select->nombre_tabla);
+			t_key key_select = instruccion_select->key;
 
-			Segmento* segmento = buscar_segmento(nombre_tabla);
+			Segmento* segmento = buscar_segmento(nombre_tabla_select);
 			int id_pagina = -1;
 
 			if (segmento != NULL){
-				id_pagina = buscar_pagina_en_segmento(segmento, key);
+				id_pagina = buscar_pagina_en_segmento(segmento, key_select);
 			}
 
 			pthread_mutex_unlock(&mutexSegmentos);
@@ -246,7 +253,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 						if (resp_retorno_generico->tipo_retorno == VALOR){
 							Retorno_Value* resp_retorno_value = resp_retorno_generico->retorno;
 
-							int result_insert = insertar_en_memoria(nombre_tabla, key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
+							int result_insert = insertar_en_memoria(nombre_tabla_select, key_select, resp_retorno_value->value, resp_retorno_value->timestamp, false);
 
 							if(result_insert == -2){
 								instruccion_respuesta = respuesta_error(MEMORY_FULL);
@@ -281,7 +288,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				free(instruccion_parseada);
 
 			}
-			free(nombre_tabla);
+			free(nombre_tabla_select);
 			break;
 
 		case INSERT:;
@@ -331,6 +338,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			eliminar_de_memoria(nombre_tabla_drop);
 
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
+
+			free(nombre_tabla_drop);
 
 			break;
 
@@ -480,16 +489,14 @@ void eliminar_de_memoria(char* nombre_tabla){
 		}
 
 
-		list_destroy_and_destroy_elements(paginas, (void*)free);
+		list_destroy(paginas);
 		int index = index_segmento(nombre_tabla);
 
 		if (index >= 0){
 			Segmento* segmento_liberar = list_get(L_SEGMENTOS, index);
 			list_remove(L_SEGMENTOS, index);
-
-			list_destroy(segmento_liberar->paginas);
 			free(segmento_liberar->nombre);
-			//free(segmento_liberar);
+			free(segmento_liberar);
 
 		}
 	}
@@ -866,7 +873,8 @@ int seleccionar_marco(){
 Segmento* crear_segmento(char* nombre_segmento){
 
 	Segmento* nuevo_segmento = malloc(sizeof(Segmento));
-	nuevo_segmento->nombre = nombre_segmento;
+	nuevo_segmento->nombre = malloc(strlen(nombre_segmento)+1);
+	strcpy(nuevo_segmento->nombre, nombre_segmento);
 	nuevo_segmento->paginas = list_create();
 	list_add(L_SEGMENTOS, nuevo_segmento);
 
