@@ -240,6 +240,7 @@ int *pone_fd(char *ip, char *puerto, int fd){
 			memcpy(fd_guardar, &fd, sizeof(fd));
 			pthread_mutex_lock(&lock);
 			dictionary_put(fd_disponibles, key, fd_guardar);
+			free(key);
 			pthread_mutex_unlock(&lock);
 			return fd_guardar;
 		}else{
@@ -270,6 +271,9 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
 	int aux1, bytes_recibidos, fd_max, server_socket;
 	server_socket = iniciar_servidor(comunicacion->puerto_servidor);
+	Procesos proceso_servidor = comunicacion->proceso;
+	free(comunicacion->puerto_servidor);
+	free(comunicacion);
 	FD_ZERO(&fd_set_master);
 	FD_ZERO(&fd_set_temporal);
 	FD_SET(server_socket, &fd_set_master);
@@ -305,7 +309,7 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 						if ((bytes_recibidos = recv(aux1, &proceso_que_envia, sizeof(Procesos), MSG_WAITALL)) <= 0) {
 							liberar_conexion(aux1);
 							FD_CLR(aux1, &fd_set_master);
-						}else if(validar_sender(proceso_que_envia, comunicacion->proceso, tipo_comu)){
+						}else if(validar_sender(proceso_que_envia, proceso_servidor, tipo_comu)){
 							Instruccion *instruccion = malloc(sizeof(Instruccion));
 							if ((bytes_recibidos = recv(aux1, &instruccion->instruccion, sizeof(Instruction_set), MSG_WAITALL))<= 0) {
 								free(instruccion);

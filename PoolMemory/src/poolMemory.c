@@ -59,23 +59,38 @@ void configuracion_inicial(void){
 		printf("Memoria: Archivo de configuracion no encontrado. \n");
 		exit_gracefully(EXIT_FAILURE);
 	}
-
-	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
-	IP_FS = config_get_string_value(CONFIG,"IP_FS");
-	PUERTO_FS = config_get_string_value(CONFIG,"PUERTO_FS");
-
+	char* config_puerto_escucha = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
+	PUERTO_DE_ESCUCHA = malloc(strlen(config_puerto_escucha) + 1);
+	strcpy(PUERTO_DE_ESCUCHA, config_puerto_escucha);
+	char* config_ip_fs = config_get_string_value(CONFIG,"IP_FS");
+	IP_FS = malloc(strlen(config_ip_fs)+1);
+	strcpy(IP_FS, config_ip_fs);
+	char* config_puerto_fs = config_get_string_value(CONFIG,"PUERTO_FS");
+	PUERTO_FS = malloc(strlen(config_puerto_fs) + 1);
+	strcpy(PUERTO_FS, config_puerto_fs);
 	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
-	IP_SEEDS = config_get_array_value(CONFIG,"IP_SEEDS");
-	PUERTOS_SEEDS = config_get_array_value(CONFIG,"PUERTOS_SEEDS");
-
+	char** config_ip_seeds = config_get_array_value(CONFIG,"IP_SEEDS");
+	int i = 0;
+	IP_SEEDS = malloc(sizeof(int));
+	while(config_ip_seeds[i]!= NULL){
+		IP_SEEDS[i] = string_duplicate(config_ip_seeds[i]);
+		i++;
+	}
+	IP_SEEDS[i] = NULL;
+	char** config_puertos_seeds = config_get_array_value(CONFIG,"PUERTOS_SEEDS");
+	i = 0;
+	PUERTOS_SEEDS = malloc(sizeof(int));
+	while(config_puertos_seeds[i]!= NULL){
+		PUERTOS_SEEDS[i] = string_duplicate(config_puertos_seeds[i]);
+		i++;
+	}
+	PUERTOS_SEEDS[i] = NULL;
 	RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
 	RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
 	RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
 	RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
 	NUMERO_MEMORIA = config_get_int_value(CONFIG,"NUMERO_MEMORIA");
-
-	//config_destroy(CONFIG);
-
+	config_destroy(CONFIG);
 	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
 	instruccion_maxValue->instruccion = MAX_VALUE;
 
@@ -416,7 +431,7 @@ void eliminar_de_memoria(char* nombre_tabla){
 
 
 
-		list_destroy(paginas);
+		list_destroy_and_destroy_elements(paginas, (void*)free);
 
 		int index = index_segmento(nombre_tabla);
 
@@ -808,7 +823,6 @@ void *TH_confMonitor(void * p){
 
 	int confMonitor_cb(void){
 		t_config* CONFIG = config_create("config.cfg");
-
 		if(CONFIG == NULL) {
 			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
 			return 1;

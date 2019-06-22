@@ -179,9 +179,9 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[5]);
 			nuevoCreate->timestamp = timestamp;				// cargo timestamp
 
+			free_consulta_separada(length,consulta_separada);
 			consultaParseada = crear_instruccion(CREATE, nuevoCreate);
 
-			free_consulta_separada(length,consulta_separada);
 		}
 	} else if (es_describe(consulta_separada)) {
 
