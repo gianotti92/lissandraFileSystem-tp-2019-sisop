@@ -54,7 +54,7 @@ void print_instruccion_parseada(Instruccion*);
 * @NAME: crear_instruccion
 * @DESC: Crea una instruccion pasandole como parametro el enum de la operacion, el puntero a una operacion y el sizeof() de esa operacion.
 */
-Instruccion* crear_instruccion(Instruction_set, void*, int);
+Instruccion* crear_instruccion(Instruction_set, void* instruccion_a_realizar);
 
 /**
 * @NAME: es_select

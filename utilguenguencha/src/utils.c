@@ -138,3 +138,16 @@ t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*)){
 	list_iterate(lista, (void*)duplicar);
 	return duplicate;
 }
+
+
+void eliminar_describe(Describe *describe){
+	free(describe->nombre_tabla);
+	free(describe);
+}
+
+
+void eliminar_memoria(Memoria * memoria){
+	free(memoria->ip);
+	free(memoria->puerto);
+	free(memoria);
+}

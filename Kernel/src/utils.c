@@ -121,12 +121,6 @@ void lanzar_gossiping(){
 	}
 }
 
-void eliminar_memoria(Memoria * memoria){
-	free(memoria->ip);
-	free(memoria->puerto);
-	free(memoria);
-}
-
 int existe_memoria_en(Memoria *mem1, t_list* lista){
 	int aux = 0;
 	while(aux < lista->elements_count){

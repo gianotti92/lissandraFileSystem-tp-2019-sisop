@@ -38,12 +38,10 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			strcpy(nuevoSelect->nombre_tabla, consulta_separada[1]);
 			uint16_t key = (int) string_to_ulint(consulta_separada[2]);
 			nuevoSelect->key = key;	 								// cargo key
-			uint32_t timestamp = (uint32_t) string_to_ulint(
-					consulta_separada[3]);
+			uint32_t timestamp = (uint32_t) string_to_ulint(consulta_separada[3]);
 			nuevoSelect->timestamp = timestamp;				// cargo timestamp
-
 			free_consulta_separada(length,consulta_separada);
-			consultaParseada = crear_instruccion(SELECT, nuevoSelect, sizeof(nuevoSelect));
+			consultaParseada = crear_instruccion(SELECT, nuevoSelect);
 
 		}
 	} else if (es_insert(consulta_separada)) {
@@ -130,8 +128,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			}
 
 			free_consulta_separada(length,consulta_separada);
-			consultaParseada = crear_instruccion(INSERT, nuevoInsert,
-					sizeof(nuevoInsert));
+			consultaParseada = crear_instruccion(INSERT, nuevoInsert);
 
 		}
 	} else if (es_create(consulta_separada)) {
@@ -182,8 +179,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					consulta_separada[5]);
 			nuevoCreate->timestamp = timestamp;				// cargo timestamp
 
-			consultaParseada = crear_instruccion(CREATE, nuevoCreate,
-					sizeof(nuevoCreate));
+			consultaParseada = crear_instruccion(CREATE, nuevoCreate);
 
 			free_consulta_separada(length,consulta_separada);
 		}
@@ -215,8 +211,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			free_consulta_separada(length,consulta_separada);
 
-			consultaParseada = crear_instruccion(DESCRIBE, nuevoDescribe,
-					sizeof(nuevoDescribe));
+			consultaParseada = crear_instruccion(DESCRIBE, nuevoDescribe);
 
 		}
 	} else if (es_drop(consulta_separada)) {
@@ -238,8 +233,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			free_consulta_separada(length,consulta_separada);
 
-			consultaParseada = crear_instruccion(DROP, nuevoDrop,
-					sizeof(nuevoDrop));
+			consultaParseada = crear_instruccion(DROP, nuevoDrop);
 		}
 	} else if (es_add(consulta_separada) & (procesoOrigen == KERNEL)) {
 
@@ -287,8 +281,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			free_consulta_separada(length,consulta_separada);
 
-			consultaParseada = crear_instruccion(ADD, nuevoAddMemory,
-					sizeof(nuevoAddMemory));
+			consultaParseada = crear_instruccion(ADD, nuevoAddMemory);
 		}
 	} else if (es_run(consulta_separada) & (procesoOrigen == KERNEL)) {
 
@@ -308,8 +301,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			free_consulta_separada(length,consulta_separada);
 
-			consultaParseada = crear_instruccion(RUN, nuevoRun,
-					sizeof(nuevoRun));
+			consultaParseada = crear_instruccion(RUN, nuevoRun);
 		}
 	} else if (es_metrics(consulta_separada) & (procesoOrigen == KERNEL)) {
 
@@ -328,8 +320,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			free_consulta_separada(length,consulta_separada);
 
-			consultaParseada = crear_instruccion(METRICS, nuevoMetrics,
-					sizeof(nuevoMetrics));
+			consultaParseada = crear_instruccion(METRICS, nuevoMetrics);
 		}
 	} else if (es_journal(consulta_separada)
 			& (procesoOrigen == POOLMEMORY || procesoOrigen == KERNEL)) {
@@ -348,7 +339,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 			free_consulta_separada(length,consulta_separada);
 
-			consultaParseada = crear_instruccion(JOURNAL, nuevoJournal, sizeof(nuevoJournal));
+			consultaParseada = crear_instruccion(JOURNAL, nuevoJournal);
 		}
 	} else {
 
@@ -374,15 +365,10 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 	return consultaParseada;
 }
 
-Instruccion* crear_instruccion(Instruction_set operacion,
-		void* operacion_a_realizar, int tamanio) {
-
-	void * p_instruccion_a_realizar = operacion_a_realizar;
-
+Instruccion* crear_instruccion(Instruction_set operacion, void* instruccion_a_realizar) {
 	Instruccion * p_instruccion = malloc(sizeof(Instruccion));
 	p_instruccion->instruccion = operacion;
-	p_instruccion->instruccion_a_realizar = p_instruccion_a_realizar;
-
+	p_instruccion->instruccion_a_realizar = instruccion_a_realizar;
 	return p_instruccion;
 
 }
@@ -430,7 +416,6 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 				free(retorno_generico);
 				free(instruccion_parseada);
 				break;
-
 			case SUCCESS:;
 				log_info(LOG_OUTPUT,"Operacion completada correctamente");
 				free(retorno_generico);
@@ -438,7 +423,7 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 				break;
 			case DATOS_DESCRIBE:
 				list_iterate(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes, (void*)show_describes);
-				free(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes);
+				list_destroy_and_destroy_elements(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes, (void*)eliminar_describe);
 				free(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno));
 				free((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar));
 				free(instruccion_parseada);

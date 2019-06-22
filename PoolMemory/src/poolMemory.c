@@ -205,12 +205,15 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			pthread_mutex_lock(&mutexSegmentos);
 
 			Select* instruccion_select = instruccion_parseada->instruccion_a_realizar;
+			char* nombre_tabla = malloc(strlen(instruccion_select->nombre_tabla)+1);
+			strcpy(nombre_tabla, instruccion_select->nombre_tabla);
+			t_key key = instruccion_select->key;
 
-			Segmento* segmento = buscar_segmento(instruccion_select->nombre_tabla);
+			Segmento* segmento = buscar_segmento(nombre_tabla);
 			void* pagina = NULL;
 
 			if (segmento != NULL){
-				pagina = buscar_pagina_en_segmento(segmento, instruccion_select->key);
+				pagina = buscar_pagina_en_segmento(segmento, key);
 			}
 
 			pthread_mutex_unlock(&mutexSegmentos);
@@ -224,7 +227,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 						if (resp_retorno_generico->tipo_retorno == VALOR){
 							Retorno_Value* resp_retorno_value = resp_retorno_generico->retorno;
-							int result_insert = insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
+							int result_insert = insertar_en_memoria(nombre_tabla, key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
 
 							if(result_insert == -2){
 								instruccion_respuesta = respuesta_error(MEMORY_FULL);
@@ -235,22 +238,22 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 					} 
 				}
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
-			} else {
+			}else {
 			// tenemos la tabla-key en memoria
 				instruccion_respuesta = malloc(sizeof(Instruccion));
 				instruccion_respuesta->instruccion = RETORNO;
 				Retorno_Generico* p_retorno_generico = malloc(sizeof(Retorno_Generico));
 				Retorno_Value* p_retorno_valor = malloc(sizeof(Retorno_Value));
-
 				p_retorno_valor->timestamp = *get_timestamp_pagina(pagina);
-				p_retorno_valor->value = get_value_pagina(pagina);
-
+				char* value = get_value_pagina(pagina);
+				p_retorno_valor->value = malloc(strlen(value) + 1);
+				strcpy(p_retorno_valor->value, value);
 				p_retorno_generico->tipo_retorno = VALOR;
 				p_retorno_generico->retorno = p_retorno_valor;
 
 				instruccion_respuesta->instruccion_a_realizar = p_retorno_generico;
 			}
-
+			free(nombre_tabla);
 			break;
 
 		case INSERT:;
@@ -720,21 +723,15 @@ int lanzar_journal(t_timestamp timestamp_journal){
 				instruccion_insert->key = *get_key_pagina(pagina);
 				instruccion_insert->nombre_tabla = segmento->nombre;
 				instruccion_insert->timestamp_insert = *get_timestamp_pagina(pagina);
-				instruccion_insert->value = get_value_pagina(pagina);
+				char* value = get_value_pagina(pagina);
+				instruccion_insert->value = malloc(strlen(value) + 1);
+				strcpy(instruccion_insert->value, value);
 				instruccion_insert->timestamp = timestamp_journal;
-
-				Instruccion* instruccion_respuesta;
-				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
-
-					if(instruccion_respuesta->instruccion == ERROR){
-						log_error(LOG_ERROR, "Memoria: Fallo insert de journal"); //loguear mejor los errores posibles, como mal key, mal value, mal table
-					}
-				}
-
+				Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION);
+				print_instruccion_parseada(instruccion_respuesta);
 				marco = buscar_marco(pagina);
 				marco->en_uso = false;
 				PAGINAS_MODIFICADAS--;
-
 			}
 			posicion_pagina--;
 		}
@@ -742,10 +739,6 @@ int lanzar_journal(t_timestamp timestamp_journal){
 		posicion_segmento--;
 	}
 
-	free(instruccion_insert->nombre_tabla);
-	free(instruccion_insert->value);
-	free(instruccion_insert);
-	free(instruccion);
 	sem_post(&semJournal);
 	return 1;
 }

@@ -231,7 +231,6 @@ Instruccion* controller(Instruccion* instruccion){
 			res=_drop((Drop*)instruccion->instruccion_a_realizar);
 		break;
 		case MAX_VALUE:
-			free(instruccion->instruccion_a_realizar);
 			res=armarRetornoMaxValue();
 		break;
 		default:

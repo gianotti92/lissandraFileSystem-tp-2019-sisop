@@ -209,16 +209,6 @@ int *pone_fd(char *ip, char *puerto, int fd);
 */
 void quita_fd(char *ip, char *puerto);
 /**
-* @NAME: elimina_memoria()
-* @DESC: para eliminar las memorias de una lista de gossip
-*/
-void eliminar_memoria_comu(Memoria * memoria);
-/**
-* @NAME: eliminar_describe_comu()
-* @DESC: para eliminar describe de una lista de describes
-*/
-void eliminar_describe_comu(Describe *describe);
-/**
 * @NAME: fd_is_valid()
 * @DESC: chequea que el fd sea aun valido
 */
@@ -323,12 +313,9 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 								FD_CLR(aux1, &fd_set_master);
 							}
 							if (recibir_buffer(aux1, instruccion, tipo_comu)) {
-								FD_CLR(aux1, &fd_set_master);
 								retornarControl(instruccion, aux1);
 							} else {
 								free(instruccion);
-								FD_CLR(aux1, &fd_set_master);
-								liberar_conexion(aux1);
 							}
 						}else{
 							liberar_conexion(aux1);
@@ -532,11 +519,15 @@ int crear_conexion(char *ip, char* puerto) {
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_flags = AI_PASSIVE;
 
-		getaddrinfo(ip, puerto, &hints, &server_info);
+		if(getaddrinfo(ip, puerto, &hints, &server_info) != 0){
+			freeaddrinfo(server_info);
+			return -1;
+		}
 		int nuevo_socket;
 		nuevo_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 
 		if (connect(nuevo_socket, server_info->ai_addr, server_info->ai_addrlen) == -1) {
+			freeaddrinfo(server_info);
 			return -1;
 		}
 		freeaddrinfo(server_info);
@@ -695,10 +686,9 @@ t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion){
 					break;
 				case SUCCESS:
 					empaquetar_retorno_success(paquete);
-					free(retorno->retorno);
+					//free(retorno->retorno);
 					break;
 			}
-			free(instruccion->instruccion_a_realizar);
 			break;
 		
 		default:;
@@ -706,6 +696,7 @@ t_paquete_retorno *crear_paquete_retorno(Instruccion *instruccion){
 			empaquetar_retorno_error(paquete, error);
 			break;
 	}
+	free(instruccion->instruccion_a_realizar);
 	free(instruccion);
 	return paquete;
 }
@@ -835,14 +826,8 @@ void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
 		cantidad_memorias--;
 		free(memoria);
 	}
-	list_destroy_and_destroy_elements(gossip->lista_memorias, (void*)eliminar_memoria_comu);
+	list_destroy_and_destroy_elements(gossip->lista_memorias, (void*)eliminar_memoria);
 	free(gossip);
-}
-
-void eliminar_memoria_comu(Memoria * memoria){
-	free(memoria->ip);
-	free(memoria->puerto);
-	free(memoria);
 }
 
 Select *desempaquetar_select(void* stream) {
@@ -1042,6 +1027,7 @@ Instruccion *recibir_retorno(int fd_a_escuchar, char *ip, char *puerto){
 	switch(tipo_ret){
 		case VALOR:;
 			inst = armar_retorno_value(chunk);
+			break;
 		case DATOS_DESCRIBE:;
 			inst = armar_retorno_describe(chunk);
 			break;
@@ -1195,15 +1181,9 @@ void empaquetar_retorno_describe(t_paquete_retorno *paquete, Describes *describe
 		memcpy(paquete->buffer->stream + paquete->buffer->size, &ret_desc->compactation_time, sizeof(ret_desc->compactation_time));
 		paquete->buffer->size += sizeof(ret_desc->compactation_time);
 		cantidad_describes--;
-		free(ret_desc);
 	}
-	list_destroy_and_destroy_elements(describes->lista_describes, (void*)eliminar_describe_comu);
+	list_destroy_and_destroy_elements(describes->lista_describes, (void*)eliminar_describe);
 	free(describes);
-}
-
-void eliminar_describe_comu(Describe *describe){
-	free(describe->nombre_tabla);
-	free(describe);
 }
 
 void empaquetar_retorno_max_val(t_paquete_retorno *paquete, Retorno_Max_Value *max_val){
@@ -1232,8 +1212,7 @@ void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip* gossip){
 	memcpy(paquete->buffer->stream + paquete->buffer->size, &cantidad_memorias, sizeof(int));
 	paquete->buffer->size += sizeof(int);
 	while(cantidad_memorias > 0){
-		Memoria *memoria = malloc(sizeof(Memoria));
-		memoria = list_get(gossip->lista_memorias, cantidad_memorias - 1);
+		Memoria *memoria = list_get(gossip->lista_memorias, cantidad_memorias - 1);
 		size_t tamanio_ip = (strlen(memoria->ip) + 1 );
 		size_t tamanio_puerto = (strlen(memoria->puerto) + 1 );
 		size_t tamanio_id = sizeof(memoria->idMemoria);
@@ -1251,7 +1230,7 @@ void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip* gossip){
 		paquete->buffer->size += sizeof(memoria->idMemoria);
 		cantidad_memorias--;
 	}
-	list_destroy_and_destroy_elements(gossip->lista_memorias, (void*)eliminar_memoria_comu);
+	list_destroy_and_destroy_elements(gossip->lista_memorias, (void*)eliminar_memoria);
 	free(gossip);
 }
 
@@ -1259,7 +1238,6 @@ void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error){
 	paquete->buffer->stream = malloc(sizeof(error->error));
 	memcpy(paquete->buffer->stream, &error->error, sizeof(error->error));
 	paquete->buffer->size += sizeof(error->error);
-	free(error);
 }
 
 bool chequear_conexion_a(char* ip, char* puerto){
