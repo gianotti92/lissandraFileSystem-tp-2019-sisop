@@ -93,10 +93,11 @@ int main(void) {
 	Manejo Server
 */
 void *TH_server(void * p){
-	Comunicacion com;
-	com.puerto_servidor=global_conf.puerto;
-	com.proceso=FILESYSTEM;
-	servidor_comunicacion(&com);
+	Comunicacion *com = malloc(sizeof(Comunicacion));
+	com->puerto_servidor = malloc(strlen(global_conf.puerto)+1);
+	strcpy(com->puerto_servidor, global_conf.puerto);
+	com->proceso=FILESYSTEM;
+	servidor_comunicacion(com);
 	return (void *)0;
 }
 void retornarControl(Instruccion *instruccion, int socket_cliente){
