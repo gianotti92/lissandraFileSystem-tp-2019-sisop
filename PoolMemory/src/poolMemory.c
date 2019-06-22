@@ -216,6 +216,9 @@ void inicializar_memoria(){
 
 Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
+
+		usleep(RETARDO_MEM);
+
 		sem_wait(&semJournal);
 
 		Instruccion* instruccion_respuesta;
@@ -249,6 +252,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			// no tenemos la tabla-key en memoria
 
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
+					usleep(RETARDO_FS);
 
 					if (instruccion_respuesta->instruccion == RETORNO){
 						Retorno_Generico* resp_retorno_generico = instruccion_respuesta->instruccion_a_realizar;
@@ -343,6 +347,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			eliminar_de_memoria(nombre_tabla_drop);
 
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
+			usleep(RETARDO_FS);
 
 			free(nombre_tabla_drop);
 
@@ -365,6 +370,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case GOSSIP:;
+			usleep(RETARDO_GOSSIPING);
 
 			instruccion_respuesta = malloc(sizeof(Instruccion));
 			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
@@ -391,6 +397,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			   instruccion_parseada->instruccion != RUN &&
 			   instruccion_parseada->instruccion != JOURNAL){
 				instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
+				usleep(RETARDO_FS);
 			} else {
 				instruccion_respuesta = respuesta_error(BAD_REQUEST);
 			}
@@ -764,6 +771,7 @@ bool existe_memoria(Memoria *mem1){
 }
 
 int lanzar_journal(t_timestamp timestamp_journal){
+	usleep(RETARDO_JOURNAL);
 
 	sem_wait(&semJournal);
 
@@ -805,7 +813,7 @@ int lanzar_journal(t_timestamp timestamp_journal){
 				strcpy(instruccion_insert->value, value);
 				instruccion_insert->timestamp = timestamp_journal;
 				Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION);
-				//print_instruccion_parseada(instruccion_respuesta);
+				usleep(RETARDO_FS);
 				free_retorno(instruccion_respuesta);
 				marco = list_get(L_MARCOS, id_pagina);
 				marco->en_uso = false;
