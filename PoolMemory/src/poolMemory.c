@@ -326,6 +326,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			free(instruccion_insert->value);
 			free(instruccion_insert);
 			free(instruccion_parseada);
+			free(nombre_tabla_insert);
+			free(value_insert);
 
 			break;
 
