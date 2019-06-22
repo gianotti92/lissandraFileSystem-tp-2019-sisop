@@ -15,14 +15,11 @@ char** IP_SEEDS;
 char** PUERTOS_SEEDS;
 uint32_t RETARDO_MEM;
 uint32_t RETARDO_FS;
+uint32_t RETARDO_JOURNAL;
+uint32_t RETARDO_GOSSIPING;
 
 int SIZE_MEM;
-t_timestamp RETARDO_MEM;
-t_timestamp RETARDO_FS;
-t_timestamp RETARDO_JOURNAL;
-t_timestamp RETARDO_GOSSIPING;
 int NUMERO_MEMORIA;
-
 int MAX_VAL;
 
 void* MEMORIA_PRINCIPAL; //puntero a malloc gigante
