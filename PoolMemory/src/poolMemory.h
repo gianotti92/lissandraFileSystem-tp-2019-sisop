@@ -75,7 +75,6 @@ void print_lista_paginas();
 void print_pagina(void*);
 void lanzar_gossiping();
 int lanzar_journal(t_timestamp);
-void print_memorias ();
 void* pedir_pagina();
 int seleccionar_marco();
 Segmento* crear_segmento(char*);
@@ -85,10 +84,11 @@ Instruccion* crear_error(Error_set);
 void lanzar_gossiping();
 void gossipear(Memoria *mem);
 void add_memory_if_not_exists(Memoria *mem);
-bool existe_memoria(Memoria *mem1);
+bool existe_memoria(t_list *lista, Memoria *mem1);
 void *TH_confMonitor(void * p);
 void marcar_ultimo_uso(int id_pagina);
 int marco_por_LRU();
 void eliminar_referencia(int id_pagina);
+t_list* filtrar_memorias();
 
 #endif

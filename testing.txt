@@ -6,6 +6,7 @@ CREATE postres SHC 20 100
 INSERT postres 1 "flan"
 INSERT postres 2 "torta"
 INSERT postres 3 "sufle"
+JOURNAL
 DESCRIBE
 DESCRIBE frutas
 DESCRIBE postres

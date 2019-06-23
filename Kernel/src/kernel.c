@@ -16,10 +16,11 @@ int main(void) {
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
 
-	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics, T_confMonitor, T_describe;
+	//pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics, T_confMonitor, T_describe;
+	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics, T_confMonitor;
 
-	pthread_create(&T_describe,NULL,TH_describe,NULL);
-	pthread_detach(T_describe);
+	//pthread_create(&T_describe,NULL,TH_describe,NULL);
+	//pthread_detach(T_describe);
 
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL);
 	pthread_detach(T_confMonitor);

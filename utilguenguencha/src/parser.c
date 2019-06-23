@@ -601,7 +601,6 @@ void leer_por_consola(void (*f)(char*)) {
 
 	while (!string_equals_ignore_case(leido, "EXIT")) {
 		f(leido);
-		free(leido);
 		leido = readline("\n>>");
 		add_history(leido);
 	}
@@ -649,8 +648,10 @@ void free_retorno(Instruccion * instruccion_parseada) {
 				list_destroy_and_destroy_elements(((Describes*)retorno_generico->retorno)->lista_describes, (void*)eliminar_describe);
 				free(((Describes*)retorno_generico->retorno));
 				break;
-			default:; // SUCCESS TAMANIO_VALOR_MAXIMO
+			case TAMANIO_VALOR_MAXIMO:;
 				free(retorno_generico->retorno);
+				break;
+			default:
 				break;
 			}
 		break;
