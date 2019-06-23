@@ -44,8 +44,13 @@ t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*));
 */
 void eliminar_memoria(Memoria * memoria);
 /**
-* @NAME: eliminar_describe_comu()
+* @NAME: eliminar_describe()
 * @DESC: para eliminar describe de una lista de describes
 */
-void eliminar_describe(Describe *describe);
+void eliminar_describe(Retorno_Describe *ret_desc);
+/**
+* @NAME: mostrar_memoria()
+* @DESC: Mostrar las memorias
+*/
+void mostrar_memoria(Memoria * memoria);
 #endif /* UTILGUENGUENCHA_UTILS_H_ */

@@ -139,11 +139,11 @@ void retorno_consola(char* leido){
 
 void retornarControl(Instruccion *instruccion, int cliente){
 	Instruccion* respuesta = atender_consulta(instruccion);
-	responder(cliente, respuesta);
-	//free_retorno(respuesta);
+	Instruccion * resultado = responder(cliente, respuesta);
+	free_retorno(resultado);
 }
 
-void inicializar_memoria(){
+void inicializar_memoria(void){
 
 	pthread_mutex_lock(&mutexMarcos);
 	pthread_mutex_lock(&mutexSegmentos);
@@ -391,19 +391,10 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		default:;
-			if(instruccion_parseada->instruccion != ERROR &&
-			   instruccion_parseada->instruccion != METRICS &&
-			   instruccion_parseada->instruccion != ADD &&
-			   instruccion_parseada->instruccion != RUN &&
-			   instruccion_parseada->instruccion != JOURNAL){
 				instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
 				usleep(RETARDO_FS);
-			} else {
-				instruccion_respuesta = respuesta_error(BAD_REQUEST);
-			}
+				break;
 		}
-
-
 		sem_post(&semJournal);
 
 		return instruccion_respuesta;
@@ -656,7 +647,7 @@ void set_modificado_pagina( void* p_pagina, t_flag estado){
 	*(t_flag*) p_modif = estado;
 }
 
-void print_lista_paginas(){
+void print_lista_paginas(void){
 	int nro_pagina = 0;
 	int size_lista = L_MARCOS->elements_count;
 	Marco* marco;
@@ -689,7 +680,7 @@ void print_pagina(void* pagina){
 }
 
 
-void lanzar_gossiping(){
+void lanzar_gossiping(void){
 	int posicion = 0;
 	while (IP_SEEDS[posicion] != NULL && PUERTOS_SEEDS[posicion] != NULL){
 		char* ip = IP_SEEDS[posicion];
@@ -720,12 +711,13 @@ void lanzar_gossiping(){
 	while(true){
 		usleep(RETARDO_GOSSIPING);
 		t_list *lista = filtrar_memorias();
+		list_iterate(lista, (void*)mostrar_memoria);
 		list_iterate(lista, (void*)gossipear);
 		list_destroy(lista);
 	}
 }
 
-t_list* filtrar_memorias(){
+t_list* filtrar_memorias(void){
 	int aux = 0;
 	t_list *lista_filtrada = list_create();
 	Memoria *m1 = list_get(L_MEMORIAS, aux);
@@ -733,10 +725,12 @@ t_list* filtrar_memorias(){
 		return strcmp(m1->ip, m2->ip) == 0 && strcmp(m1->puerto, m2->puerto) == 0;
 	}
 	while(m1 != NULL){
-		if(list_count_satisfying(L_MEMORIAS, (void*)filtrar) > 0){
+		if(list_count_satisfying(L_MEMORIAS, (void*)filtrar) > 1){
 			if(m1->idMemoria != -1){
 				list_add(lista_filtrada, m1);
 			}
+		}else{
+			list_add(lista_filtrada, m1);
 		}
 
 		aux++;
@@ -862,7 +856,7 @@ int lanzar_journal(t_timestamp timestamp_journal){
 	return 1;
 }
 
-int seleccionar_marco(){
+int seleccionar_marco(void){
 
 	if(L_MARCOS->elements_count > PAGINAS_USADAS){
 		// hay paginas vacias
@@ -916,7 +910,7 @@ bool pagina_en_uso(Marco* marco){
 	return marco->en_uso == true;
 }
 
-bool memoria_full(){
+bool memoria_full(void){
 	return list_all_satisfy(L_MARCOS, (void*)pagina_en_uso);
 }
 
@@ -959,7 +953,7 @@ void marcar_ultimo_uso(int id_pagina){
 	}
 }
 
-int marco_por_LRU(){
+int marco_por_LRU(void){
 
 	Marco *marco, *marco_seleccionado;
 	int posicion = L_MARCOS->elements_count -1;

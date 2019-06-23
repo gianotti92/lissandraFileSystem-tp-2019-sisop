@@ -80,6 +80,7 @@ void lanzar_gossiping(){
 	eliminar_memoria(memoriaPrincipal);
 	while(true){
 		sleep(PREGUNTAR_POR_MEMORIAS);
+		list_iterate(list_get(memorias, DISP), (void*)mostrar_memoria);
 		Instruccion *inst = malloc(sizeof(Instruccion));
 		inst->instruccion = GOSSIP;
 		Gossip *gossip = malloc(sizeof(Gossip));

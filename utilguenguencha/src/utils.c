@@ -4,7 +4,7 @@ void configure_logger() {
 	fd_disponibles = dictionary_create();
 	LOG_INFO = log_create("log_info.log","tp-lissandra", 0, LOG_LEVEL_INFO);
 	LOG_ERROR = log_create("log_error.log","tp-lissandra", 1, LOG_LEVEL_ERROR);
-	LOG_DEBUG = log_create("log_debug.log","tp-lissandra", 1, LOG_LEVEL_ERROR);
+	LOG_DEBUG = log_create("log_debug.log","tp-lissandra", 1, LOG_LEVEL_DEBUG);
 	LOG_OUTPUT = log_create("log_output.log", "tp-lissandra", 1, LOG_LEVEL_INFO);
 }
 
@@ -140,14 +140,17 @@ t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*)){
 }
 
 
-void eliminar_describe(Describe *describe){
-	free(describe->nombre_tabla);
-	free(describe);
+void eliminar_describe(Retorno_Describe *ret_desc){
+	free(ret_desc->nombre_tabla);
+	free(ret_desc);
 }
-
 
 void eliminar_memoria(Memoria * memoria){
 	free(memoria->ip);
 	free(memoria->puerto);
 	free(memoria);
+}
+
+void mostrar_memoria(Memoria * memoria){
+	log_debug(LOG_DEBUG, "Memoria; %d, ip: %s, puerto: %s", memoria->idMemoria, memoria->ip, memoria->puerto);
 }

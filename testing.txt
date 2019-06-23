@@ -19,6 +19,117 @@ SELECT postres 3
 DROP frutas
 DROP postres
 
+POOLMEMORY
+
+==11670== Thread 4:
+==11670== Invalid read of size 4
+==11670==    at 0x80514D5: eliminar_memoria (utils.c:149)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x40553B7: list_clean_and_destroy_elements (in /usr/lib/libcommons.so)
+==11670==    by 0x4055422: list_destroy_and_destroy_elements (in /usr/lib/libcommons.so)
+==11670==    by 0x804DB96: empaquetar_gossip (comunicacion.c:833)
+==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
+==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
+==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
+==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
+==11670==    by 0x41A30AD: clone (clone.S:114)
+==11670==  Address 0x45bf8f8 is 0 bytes inside a block of size 12 free'd
+==11670==    at 0x402D358: free (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==11670==    by 0x804DB75: empaquetar_gossip (comunicacion.c:831)
+==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
+==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
+==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
+==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
+==11670==    by 0x41A30AD: clone (clone.S:114)
+==11670==  Block was alloc'd at
+==11670==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==11670==    by 0x80512E5: duplicar_memoria (utils.c:114)
+==11670==    by 0x8051411: duplicar.4362 (utils.c:136)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x805148A: list_duplicate_all (utils.c:138)
+==11670==    by 0x804B464: gossipear (poolMemory.c:748)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
+==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
+==11670==    by 0x41A30AD: clone (clone.S:114)
+==11670==
+==11670== Invalid read of size 4
+==11670==    at 0x80514E6: eliminar_memoria (utils.c:150)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x40553B7: list_clean_and_destroy_elements (in /usr/lib/libcommons.so)
+==11670==    by 0x4055422: list_destroy_and_destroy_elements (in /usr/lib/libcommons.so)
+==11670==    by 0x804DB96: empaquetar_gossip (comunicacion.c:833)
+==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
+==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
+==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
+==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
+==11670==    by 0x41A30AD: clone (clone.S:114)
+==11670==  Address 0x45bf8fc is 4 bytes inside a block of size 12 free'd
+==11670==    at 0x402D358: free (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==11670==    by 0x804DB75: empaquetar_gossip (comunicacion.c:831)
+==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
+==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
+==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
+==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
+==11670==    by 0x41A30AD: clone (clone.S:114)
+==11670==  Block was alloc'd at
+==11670==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==11670==    by 0x80512E5: duplicar_memoria (utils.c:114)
+==11670==    by 0x8051411: duplicar.4362 (utils.c:136)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x805148A: list_duplicate_all (utils.c:138)
+==11670==    by 0x804B464: gossipear (poolMemory.c:748)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
+==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
+==11670==    by 0x41A30AD: clone (clone.S:114)
+==11670==
+==11670== Invalid free() / delete / delete[] / realloc()
+==11670==    at 0x402D358: free (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==11670==    by 0x80514FF: eliminar_memoria (utils.c:151)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x40553B7: list_clean_and_destroy_elements (in /usr/lib/libcommons.so)
+==11670==    by 0x4055422: list_destroy_and_destroy_elements (in /usr/lib/libcommons.so)
+==11670==    by 0x804DB96: empaquetar_gossip (comunicacion.c:833)
+==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
+==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
+==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
+==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
+==11670==  Address 0x45bf8f8 is 0 bytes inside a block of size 12 free'd
+==11670==    at 0x402D358: free (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==11670==    by 0x804DB75: empaquetar_gossip (comunicacion.c:831)
+==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
+==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
+==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
+==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
+==11670==    by 0x41A30AD: clone (clone.S:114)
+==11670==  Block was alloc'd at
+==11670==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==11670==    by 0x80512E5: duplicar_memoria (utils.c:114)
+==11670==    by 0x8051411: duplicar.4362 (utils.c:136)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x805148A: list_duplicate_all (utils.c:138)
+==11670==    by 0x804B464: gossipear (poolMemory.c:748)
+==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
+==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
+==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
+==11670==    by 0x41A30AD: clone (clone.S:114)
+==11670==
+
+
+FILESYSTEM
 
 
 ==28111== 49 bytes in 6 blocks are definitely lost in loss record 30 of 67
