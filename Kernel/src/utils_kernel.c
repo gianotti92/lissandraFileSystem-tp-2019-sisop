@@ -62,9 +62,9 @@ char* getTablasSafe(t_dictionary * dic, char*key){
 void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
 	if(memoria != NULL){
 		if(existe_memoria_en(memoria, list_get(memorias, consistencia)) < 0 ){
+			pthread_mutex_lock(&mutexRecursosCompartidos);
 			list_add(list_get(memorias, consistencia), memoria);
 			pthread_mutex_unlock(&mutexRecursosCompartidos);
-			pthread_mutex_lock(&mutexRecursosCompartidos);
 		}
 	}
 }

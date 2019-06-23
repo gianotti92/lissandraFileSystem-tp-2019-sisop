@@ -15,11 +15,11 @@
 #include "../../utilguenguencha/src/utils.h"
 
 
-#define key1 "0"
-#define key2 "1"
-#define key3 "2"
-#define key4 "3"
-#define key5 "4"
+#define READS "0"
+#define WRITES "1"
+#define MEM_LOAD "2"
+#define WRITE_LAT "3"
+#define READ_LAT "4"
 
 t_log * LOGGER_METRICS;
 

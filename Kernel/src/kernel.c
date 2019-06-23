@@ -16,11 +16,11 @@ int main(void) {
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
 
-	//pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics, T_confMonitor, T_describe;
-	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics, T_confMonitor;
+	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, calcularMetrics, T_confMonitor, T_describe;
+	
 
-	//pthread_create(&T_describe,NULL,TH_describe,NULL);
-	//pthread_detach(T_describe);
+	pthread_create(&T_describe,NULL,TH_describe,NULL);
+	pthread_detach(T_describe);
 
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL);
 	pthread_detach(T_confMonitor);
@@ -88,18 +88,18 @@ void ejecutar() {
 			case METRICS:{
 
 				pthread_mutex_lock(&mutexRecursosCompartidos);
-				char * campo1 = dictionary_get(metrics, key1);
-				char * campo2 = dictionary_get(metrics, key2);
-				char * campo3 = dictionary_get(metrics, key3);
-				char * campo4 = dictionary_get(metrics, key4);
-				char * campo5 = dictionary_get(metrics, key5);
+				char * campo1 = dictionary_get(metrics, READS);
+				char * campo2 = dictionary_get(metrics, WRITES);
+				char * campo3 = dictionary_get(metrics, MEM_LOAD);
+				char * campo4 = dictionary_get(metrics, WRITE_LAT);
+				char * campo5 = dictionary_get(metrics, READ_LAT);
 				pthread_mutex_unlock(&mutexRecursosCompartidos);
 
-				printf("%s\n", campo1);
-				printf("%s\n", campo2);
-				printf("%s\n", campo3);
-				printf("%s\n", campo4);
-				printf("%s\n", campo5);
+				log_info(LOG_OUTPUT,"%s\n", campo1);
+				log_info(LOG_OUTPUT,"%s\n", campo2);
+				log_info(LOG_OUTPUT,"%s\n", campo3);
+				log_info(LOG_OUTPUT,"%s\n", campo4);
+				log_info(LOG_OUTPUT,"%s\n", campo5);
 
 				proceso->esProcesoRun=false;
 				break;
@@ -157,7 +157,7 @@ void ejecutar() {
 			default:
 				break;
 		}
-		free(proceso->instruccionAProcesar); // REVISAR: Porque sino nunca la liberamos
+		//free(proceso->instruccionAProcesar); // REVISAR: Porque sino nunca la liberamos
 		if(!proceso->esProcesoRun || proceso->instruccionAProcesar->instruccion == ERROR){
 			encolar(estadoExit, proceso);
 		}else {

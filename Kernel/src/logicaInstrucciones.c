@@ -29,7 +29,6 @@ Proceso * logicaRun(Run * run, Proceso * proceso){
 			case INSERT:;
 				Insert * insert = (Insert *) proceso->instruccionAProcesar->instruccion_a_realizar;
 				logicaInsert(insert);
-
 				fin = get_timestamp();
 				diff = difftime(fin, insert->timestamp);
 				proceso->segundosQueTardo = diff;
@@ -84,6 +83,7 @@ void logicaAdd(Add * add){
 		list_iterate(list_get(memorias, SHC), (void*)enviar_journal);
 	}
 	asignarConsistenciaAMemoria(memoria, add->consistencia);
+	free(add);
 }
 
 void enviar_journal(Memoria *memoria){
@@ -93,8 +93,7 @@ void enviar_journal(Memoria *memoria){
 	journal->timestamp = get_timestamp();
 	instruccion->instruccion_a_realizar = journal;
 	Instruccion * instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
-	free(instruccionRespuesta->instruccion_a_realizar);
-	free(instruccionRespuesta);
+	free_retorno(instruccionRespuesta);
 }
 
 void logicaSelect(Select * select){
@@ -129,10 +128,13 @@ void logicaSelect(Select * select){
 			}
 		}else{
 			log_error(LOG_ERROR, "No hay memorias asignadas para ese criterio");
-
+			free(select->nombre_tabla);
+			free(select);
 		}
 	}else{
 		log_error(LOG_ERROR, "Esa tabla no existe");
+		free(select->nombre_tabla);
+		free(select);
 	}
 }
 
@@ -156,9 +158,15 @@ void logicaInsert(Insert * insert){
 			print_instruccion_parseada(instruccionRespuesta);
 		}else{
 			log_error(LOG_OUTPUT, "No hay memorias asignadas a este criterio");
+			free(insert->value);
+			free(insert->nombre_tabla);
+			free(insert);
 		}
 	}else{
 		log_error(LOG_OUTPUT, "La tabla no existe");
+		free(insert->value);
+		free(insert->nombre_tabla);
+		free(insert);
 	}
 }
 
@@ -182,9 +190,13 @@ void logicaDrop(Drop * drop){
 			print_instruccion_parseada(instruccionRespuesta);
 		}else{
 			log_error(LOG_OUTPUT, "No hay memorias asignadas para ese criterio");
+			free(drop->nombre_tabla);
+			free(drop);
 		}
 	}else{
 		log_error(LOG_OUTPUT, "La tabla no existe");
+		free(drop->nombre_tabla);
+		free(drop);
 	}
 }
 
@@ -193,6 +205,7 @@ void logicaJournal(Journal * journal){
 	for(consistencia = EC; consistencia < DISP; consistencia++){
 		list_iterate(list_get(memorias, consistencia), (void*)enviar_journal);
 	}
+	free(journal);
 }
 
 void logicaDescribe(Describe * describe){
