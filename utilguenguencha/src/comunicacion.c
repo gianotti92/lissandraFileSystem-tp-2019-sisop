@@ -515,19 +515,47 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 int crear_conexion(char *ip, char* puerto) {
 	int* socket_cliente = dame_fd(ip, puerto);
 	if(socket_cliente == NULL){
-		struct addrinfo hints;
-		struct addrinfo *server_info;
+		int sockfd;
+	    struct sockaddr_in servaddr;
+	    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	    if(sockfd == -1){
+	        return -1;
+	    }
+	    bzero(&servaddr, sizeof(servaddr));
+
+	    servaddr.sin_family = AF_INET;
+	    servaddr.sin_addr.s_addr = inet_addr(ip);
+	    servaddr.sin_port = htons(atoi(puerto));
+
+	    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+	        return -1;
+	    }
+	    log_error(LOG_ERROR, "Acabo de crear fd %d", sockfd);
+    	return *pone_fd(ip, puerto, sockfd);
+	}else{
+		log_error(LOG_ERROR, "Estoy usando fd %d", *socket_cliente);
+		return *socket_cliente;
+	}
+	/*
+	int* socket_cliente = dame_fd(ip, puerto);
+	if(socket_cliente == NULL){
+		struct addrinfo hints, *server_info;
+		int nuevo_socket;
 
 		memset(&hints, 0, sizeof(hints));
 		hints.ai_family = AF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
-		hints.ai_flags = AI_PASSIVE;
+		//hints.ai_flags = AI_PASSIVE;
 
 		if(getaddrinfo(ip, puerto, &hints, &server_info) != 0){
 			freeaddrinfo(server_info);
 			return -1;
 		}
-		int nuevo_socket;
+		if(bind(nuevo_socket, server_info->ai_addr, server_info->ai_addrlen) == -1){
+			freeaddrinfo(server_info);
+			return -1
+		}
+
 		nuevo_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 
 		if (connect(nuevo_socket, server_info->ai_addr, server_info->ai_addrlen) == -1) {
@@ -539,6 +567,7 @@ int crear_conexion(char *ip, char* puerto) {
 	}else{
 		return *socket_cliente;
 	}
+	*/
 }
 
 bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
