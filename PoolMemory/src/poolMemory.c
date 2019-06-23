@@ -140,7 +140,7 @@ void retorno_consola(char* leido){
 void retornarControl(Instruccion *instruccion, int cliente){
 	Instruccion* respuesta = atender_consulta(instruccion);
 	responder(cliente, respuesta);
-	free_retorno(respuesta);
+	//free_retorno(respuesta);
 }
 
 void inicializar_memoria(){

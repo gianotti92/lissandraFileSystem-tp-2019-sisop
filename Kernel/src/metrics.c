@@ -16,12 +16,16 @@ void calculoMetrics(){
 					tiempoPromedioInsert += proceso->segundosQueTardo;
 					contadorInsert++;
 					contadorSelectInsert++;
+					free(((Insert*)proceso->instruccion->instruccion_a_realizar)->value);
+					free(((Insert*)proceso->instruccion->instruccion_a_realizar)->nombre_tabla);
 					free(proceso);
 					break;
 				case SELECT:;
 					tiempoPromedioSelect += proceso->segundosQueTardo;
 					contadorSelect++;
 					contadorSelectInsert++;
+					free(((Select*)proceso->instruccion->instruccion_a_realizar)->nombre_tabla);
+					free(proceso->instruccion->instruccion_a_realizar);					
 					free(proceso);
 					break;
 
@@ -96,11 +100,11 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	log_info(LOGGER_METRICS, readLatency);
 
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	dictionary_put(metrics, key1, reads);
-	dictionary_put(metrics, key2, writes);
-	dictionary_put(metrics, key3, memLoad);
-	dictionary_put(metrics, key4, writeLatency);
-	dictionary_put(metrics, key5, readLatency);
+	dictionary_put(metrics, READS, reads);
+	dictionary_put(metrics, WRITES, writes);
+	dictionary_put(metrics, MEM_LOAD, memLoad);
+	dictionary_put(metrics, WRITE_LAT, writeLatency);
+	dictionary_put(metrics, READ_LAT, readLatency);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 
 	free(rChar);
