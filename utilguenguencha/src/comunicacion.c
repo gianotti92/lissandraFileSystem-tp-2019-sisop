@@ -828,7 +828,6 @@ void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
 		memcpy(paquete->buffer->stream + paquete->buffer->size, &memoria->idMemoria, sizeof(memoria->idMemoria));
 		paquete->buffer->size += sizeof(memoria->idMemoria);
 		cantidad_memorias--;
-		free(memoria);
 	}
 	list_destroy_and_destroy_elements(gossip->lista_memorias, (void*)eliminar_memoria);
 	free(gossip);
@@ -959,7 +958,7 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 			return sender == POOLMEMORY;
 		}
 	case T_GOSSIPING:
-		return receiver == POOLMEMORY && (sender == KERNEL || sender == POOLMEMORY);
+		return ((receiver == POOLMEMORY) && (sender == KERNEL || sender == POOLMEMORY));
 	case T_VALUE:
 		return sender == POOLMEMORY && receiver == FILESYSTEM;
 	default:

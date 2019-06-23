@@ -89,6 +89,7 @@ void *TH_confMonitor(void * p);
 void marcar_ultimo_uso(int id_pagina);
 int marco_por_LRU(void);
 void eliminar_referencia(int id_pagina);
-t_list* filtrar_memorias(void);
+t_list* filtrar_memorias_gossipear(void);
+t_list *filtrar_memorias_a_enviar(void);
 
 #endif
