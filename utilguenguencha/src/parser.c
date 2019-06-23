@@ -108,7 +108,14 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 			/* INSERT */
 
 			if(string_starts_with(consulta_separada[3], "\"") & string_ends_with(consulta_separada[3], "\"") ){
-				consulta_separada[3] = string_substring(consulta_separada[3], 1, (string_length(consulta_separada[3])-2));
+
+				char* palabra = malloc(strlen(consulta_separada[3])+1);
+				strcpy(palabra, consulta_separada[3]);
+				free(consulta_separada[3]);
+
+				consulta_separada[3] = string_substring(palabra, 1, (string_length(palabra)-2));
+				free(palabra);
+
 				//saco las comillas del value
 			}
 
@@ -624,7 +631,7 @@ uintmax_t get_timestamp() {
 
 }
 void free_consulta_separada(int length,char** consulta_separada){
-	for(int i=0;i<=(length+1);i++){
+	for(int i=0;i<=length;i++){
 		free(consulta_separada[i]);
 	}
 	free(consulta_separada);
