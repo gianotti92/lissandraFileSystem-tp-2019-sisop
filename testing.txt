@@ -21,113 +21,46 @@ DROP postres
 
 POOLMEMORY
 
-==11670== Thread 4:
-==11670== Invalid read of size 4
-==11670==    at 0x80514D5: eliminar_memoria (utils.c:149)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x40553B7: list_clean_and_destroy_elements (in /usr/lib/libcommons.so)
-==11670==    by 0x4055422: list_destroy_and_destroy_elements (in /usr/lib/libcommons.so)
-==11670==    by 0x804DB96: empaquetar_gossip (comunicacion.c:833)
-==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
-==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
-==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
-==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
-==11670==    by 0x41A30AD: clone (clone.S:114)
-==11670==  Address 0x45bf8f8 is 0 bytes inside a block of size 12 free'd
-==11670==    at 0x402D358: free (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==11670==    by 0x804DB75: empaquetar_gossip (comunicacion.c:831)
-==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
-==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
-==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
-==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
-==11670==    by 0x41A30AD: clone (clone.S:114)
-==11670==  Block was alloc'd at
-==11670==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==11670==    by 0x80512E5: duplicar_memoria (utils.c:114)
-==11670==    by 0x8051411: duplicar.4362 (utils.c:136)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x805148A: list_duplicate_all (utils.c:138)
-==11670==    by 0x804B464: gossipear (poolMemory.c:748)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
-==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
-==11670==    by 0x41A30AD: clone (clone.S:114)
-==11670==
-==11670== Invalid read of size 4
-==11670==    at 0x80514E6: eliminar_memoria (utils.c:150)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x40553B7: list_clean_and_destroy_elements (in /usr/lib/libcommons.so)
-==11670==    by 0x4055422: list_destroy_and_destroy_elements (in /usr/lib/libcommons.so)
-==11670==    by 0x804DB96: empaquetar_gossip (comunicacion.c:833)
-==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
-==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
-==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
-==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
-==11670==    by 0x41A30AD: clone (clone.S:114)
-==11670==  Address 0x45bf8fc is 4 bytes inside a block of size 12 free'd
-==11670==    at 0x402D358: free (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==11670==    by 0x804DB75: empaquetar_gossip (comunicacion.c:831)
-==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
-==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
-==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
-==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
-==11670==    by 0x41A30AD: clone (clone.S:114)
-==11670==  Block was alloc'd at
-==11670==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==11670==    by 0x80512E5: duplicar_memoria (utils.c:114)
-==11670==    by 0x8051411: duplicar.4362 (utils.c:136)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x805148A: list_duplicate_all (utils.c:138)
-==11670==    by 0x804B464: gossipear (poolMemory.c:748)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
-==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
-==11670==    by 0x41A30AD: clone (clone.S:114)
-==11670==
-==11670== Invalid free() / delete / delete[] / realloc()
-==11670==    at 0x402D358: free (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==11670==    by 0x80514FF: eliminar_memoria (utils.c:151)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x40553B7: list_clean_and_destroy_elements (in /usr/lib/libcommons.so)
-==11670==    by 0x4055422: list_destroy_and_destroy_elements (in /usr/lib/libcommons.so)
-==11670==    by 0x804DB96: empaquetar_gossip (comunicacion.c:833)
-==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
-==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
-==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
-==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
-==11670==  Address 0x45bf8f8 is 0 bytes inside a block of size 12 free'd
-==11670==    at 0x402D358: free (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==11670==    by 0x804DB75: empaquetar_gossip (comunicacion.c:831)
-==11670==    by 0x804D023: crear_paquete (comunicacion.c:661)
-==11670==    by 0x804C9E0: enviar_instruccion (comunicacion.c:501)
-==11670==    by 0x804B4AE: gossipear (poolMemory.c:753)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
-==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
-==11670==    by 0x41A30AD: clone (clone.S:114)
-==11670==  Block was alloc'd at
-==11670==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==11670==    by 0x80512E5: duplicar_memoria (utils.c:114)
-==11670==    by 0x8051411: duplicar.4362 (utils.c:136)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x805148A: list_duplicate_all (utils.c:138)
-==11670==    by 0x804B464: gossipear (poolMemory.c:748)
-==11670==    by 0x4055148: list_iterate (in /usr/lib/libcommons.so)
-==11670==    by 0x804B1FE: lanzar_gossiping (poolMemory.c:715)
-==11670==    by 0x40A5294: start_thread (pthread_create.c:333)
-==11670==    by 0x41A30AD: clone (clone.S:114)
-==11670==
-
+==5303== Thread 5:
+==5303== Invalid read of size 4
+==5303==    at 0x804B6A9: existe_memoria (poolMemory.c:800)
+==5303==    by 0x804B623: add_memory_if_not_exists (poolMemory.c:788)
+==5303==    by 0x804A88A: atender_consulta (poolMemory.c:379)
+==5303==    by 0x804A08A: retornarControl (poolMemory.c:141)
+==5303==    by 0x804C476: servidor_comunicacion (comunicacion.c:320)
+==5303==    by 0x40A5294: start_thread (pthread_create.c:333)
+==5303==    by 0x41A30AD: clone (clone.S:114)
+==5303==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==5303==
+==5303==
+==5303== Process terminating with default action of signal 11 (SIGSEGV)
+==5303==  Access not within mapped region at address 0x0
+==5303==    at 0x804B6A9: existe_memoria (poolMemory.c:800)
+==5303==    by 0x804B623: add_memory_if_not_exists (poolMemory.c:788)
+==5303==    by 0x804A88A: atender_consulta (poolMemory.c:379)
+==5303==    by 0x804A08A: retornarControl (poolMemory.c:141)
+==5303==    by 0x804C476: servidor_comunicacion (comunicacion.c:320)
+==5303==    by 0x40A5294: start_thread (pthread_create.c:333)
+==5303==    by 0x41A30AD: clone (clone.S:114)
+==5303==  If you believe this happened as a result of a stack
+==5303==  overflow in your program's main thread (unlikely but
+==5303==  possible), you can try to increase the size of the
+==5303==  main thread stack using the --main-stacksize= flag.
+==5303==  The main thread stack size used in this run was 8388608.
+==5303==
+==5303== HEAP SUMMARY:
+==5303==     in use at exit: 70,657 bytes in 409 blocks
+==5303==   total heap usage: 754 allocs, 345 frees, 4,301,222 bytes allocated
+==5303==
+==5303== LEAK SUMMARY:
+==5303==    definitely lost: 32 bytes in 1 blocks
+==5303==    indirectly lost: 0 bytes in 0 blocks
+==5303==      possibly lost: 544 bytes in 4 blocks
+==5303==    still reachable: 70,081 bytes in 404 blocks
+==5303==         suppressed: 0 bytes in 0 blocks
+==5303== Rerun with --leak-check=full to see details of leaked memory
+==5303==
+==5303== For counts of detected and suppressed errors, rerun with: -v
 
 FILESYSTEM
 
