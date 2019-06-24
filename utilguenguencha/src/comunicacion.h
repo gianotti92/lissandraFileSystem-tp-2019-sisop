@@ -49,9 +49,4 @@ Instruccion *respuesta_error(Error_set error);
 * @DESC: devuelve la estructura de una instruccion con el success
 */
 Instruccion *respuesta_success(void);
-/**
-* @NAME: chequear_conexion_a()
-* @DESC: Chequea la conexion a la ip y puerto dados
-*/
-bool chequear_conexion_a(char* ip, char* puerto);
 #endif /* UTILGUENGUENCHA_COMUNICACION_H_ */

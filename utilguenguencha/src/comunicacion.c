@@ -1272,17 +1272,6 @@ void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error){
 	paquete->buffer->size += sizeof(error->error);
 }
 
-bool chequear_conexion_a(char* ip, char* puerto){
-	int fd;
-	fd = crear_conexion(ip, puerto);
-	if( fd > 0){
-		liberar_conexion(fd);
-		return true;
-	}else{
-		return false;
-	}
-}
-
 int fd_is_valid(int fd){
 	if(fd != -1){
     	return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
