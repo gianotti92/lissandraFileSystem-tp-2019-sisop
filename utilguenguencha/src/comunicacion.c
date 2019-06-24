@@ -468,7 +468,6 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 				instruccion->instruccion_a_realizar = gossip;
 				return true;
 			}
-			stream = malloc(buffer_size);
 			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
