@@ -1,7 +1,7 @@
 #include "kernel.h"
 
 Proceso * logicaRun(Proceso * proceso){
-	char * proximainstruccionChar = leer_linea(((Run*)proceso->instruccion)->path, proceso->numeroInstruccion);
+	char * proximainstruccionChar = leer_linea(((Run*)proceso->instruccion->instruccion_a_realizar)->path, proceso->numeroInstruccion);
 
 	while(proximainstruccionChar != NULL && proceso->quantumProcesado < QUANTUM){
 		proceso->instruccionAProcesar = parser_lql(proximainstruccionChar, KERNEL);
@@ -67,7 +67,7 @@ Proceso * logicaRun(Proceso * proceso){
 		proceso->quantumProcesado += 1;
 		free(proximainstruccionChar);
 
-		proximainstruccionChar = leer_linea(((Run*)proceso->instruccion)->path, proceso->numeroInstruccion);
+		proximainstruccionChar = leer_linea(((Run*)proceso->instruccion->instruccion_a_realizar)->path, proceso->numeroInstruccion);
 	}
 
 	if(esFinQuantum(proceso, proximainstruccionChar)){
@@ -88,7 +88,7 @@ void logicaCreate(Instruccion * instruccion){
 }
 
 void logicaAdd(Instruccion * instruccion){
-	Memoria *memoria = getMemoria(list_get(memorias, DISP), ((Add*)instruccion)->memoria);
+	Memoria *memoria = getMemoria(list_get(memorias, DISP), ((Add*)instruccion->instruccion_a_realizar)->memoria);
 	if(memoria == NULL){
 		log_error(LOG_OUTPUT, "No corresponde a un id de memoria válido");
 		return;
@@ -96,7 +96,7 @@ void logicaAdd(Instruccion * instruccion){
 	if(((Add*)instruccion)->consistencia == SHC){
 		list_iterate(list_get(memorias, SHC), (void*)enviar_journal);
 	}
-	asignarConsistenciaAMemoria(memoria, ((Add*)instruccion)->consistencia);
+	asignarConsistenciaAMemoria(memoria, ((Add*)instruccion->instruccion_a_realizar)->consistencia);
 }
 
 void enviar_journal(Memoria *memoria){
@@ -110,7 +110,7 @@ void enviar_journal(Memoria *memoria){
 }
 
 void logicaSelect(Instruccion * instruccion){
-	Consistencias consistencia = obtenerConsistencia(((Select*)instruccion)->nombre_tabla);
+	Consistencias consistencia = obtenerConsistencia(((Select*)instruccion->instruccion_a_realizar)->nombre_tabla);
 	t_list *memoriasAsoc = list_get(memorias, consistencia);
 	if(consistencia == SC || consistencia == EC || consistencia == SHC){
 		if(memoriasAsoc->elements_count != 0){
@@ -126,7 +126,7 @@ void logicaSelect(Instruccion * instruccion){
 					break;
 
 				default:;
-					int indexTabla = generarHash(((Select*)instruccion)->nombre_tabla, list_size(memoriasAsoc), ((Select*)instruccion)->key);
+					int indexTabla = generarHash(((Select*)instruccion->instruccion_a_realizar)->nombre_tabla, list_size(memoriasAsoc), ((Select*)instruccion)->key);
 					pthread_mutex_lock(&mutexRecursosCompartidos);
 					m = list_get(memoriasAsoc, indexTabla);
 					pthread_mutex_unlock(&mutexRecursosCompartidos);
@@ -145,7 +145,7 @@ void logicaSelect(Instruccion * instruccion){
 }
 
 void logicaInsert(Instruccion * instruccion){
-	Consistencias consistencia = obtenerConsistencia(((Insert*) instruccion)->nombre_tabla);
+	Consistencias consistencia = obtenerConsistencia(((Insert*) instruccion->instruccion_a_realizar)->nombre_tabla);
 	if(consistencia > 0){
 		t_list *memoriasAsoc = list_get(memorias, consistencia);
 		int max = list_size(memoriasAsoc);
@@ -197,9 +197,9 @@ void logicaJournal(){
 
 void logicaDescribe(Instruccion * instruccion){
 
-	if(((Describe*)instruccion)->nombre_tabla != NULL){
+	if(((Describe*)instruccion->instruccion_a_realizar)->nombre_tabla != NULL){
 
-		Consistencias consistencia = obtenerConsistencia(((Describe*)instruccion)->nombre_tabla);
+		Consistencias consistencia = obtenerConsistencia(((Describe*)instruccion->instruccion_a_realizar)->nombre_tabla);
 
 		if(consistencia > 0){
 
