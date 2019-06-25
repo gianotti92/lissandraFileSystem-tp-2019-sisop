@@ -16,7 +16,6 @@
 #include <commons/config.h>
 #include <commons/log.h>
 #include <commons/collections/list.h>
-#include <pthread.h>
 #include <commons/string.h>
 #include <math.h>
 #include <time.h>
