@@ -10,7 +10,6 @@
 #include <sys/types.h>
 #include "../../utilguenguencha/src/tipos_guenguencha.h"
 #include "../../utilguenguencha/src/comunicacion.h"
-#include "../../utilguenguencha/src/kernel_utils.h"
 #include "../../utilguenguencha/src/parser.h"
 #include "../../utilguenguencha/src/utils.h"
 
@@ -36,6 +35,7 @@ pthread_mutex_t mutexRecursosCompartidos;
 sem_t semaforoSePuedePlanificar, semaforoNewToReady;
 
 // Funciones del proceso
+void logicaMetrics();
 void configuracion_inicial(void);
 void actualizar_configuracion(t_config* conf);
 void retorno_consola(char* leido);
@@ -53,14 +53,14 @@ void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void lanzar_gossiping();
 void newToReady();
-void logicaCreate(Create * create);
-Proceso * logicaRun(Run * run, Proceso * proceso);
-void logicaDescribe(Describe * describe);
-void logicaJournal(Journal * journal);
-void logicaDrop(Drop * drop);
-void logicaSelect(Select * select);
-void logicaAdd(Add * add);
-void logicaInsert(Insert * insert);
+void logicaCreate(Instruccion * instruccion);
+Proceso * logicaRun(Proceso * proceso);
+void logicaDescribe(Instruccion * instruccion);
+void logicaJournal();
+void logicaDrop(Instruccion * instruccion);
+void logicaSelect(Instruccion * instruccion);
+void logicaAdd(Instruccion * instruccion);
+void logicaInsert(Instruccion * instruccion);
 bool esFinLectura(Proceso * p, char * instruccionALeer);
 bool esFinQuantum(Proceso * p, char * instruccionALeer);
 void calculoMetrics();
