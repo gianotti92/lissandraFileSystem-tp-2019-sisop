@@ -375,6 +375,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				Memoria * mem = list_get(lista_gossip, aux);
 				add_memory_if_not_exists(mem);
 				eliminar_memoria(mem);
+				aux++;
 			}
 			list_destroy(lista_gossip);
 			instruccion_respuesta = malloc(sizeof(Instruccion));
@@ -798,6 +799,7 @@ bool existe_memoria(t_list *lista, Memoria *mem1){
 			return true;
 		}
 		posicion_en_lista ++;
+		mem2 = list_get(lista, posicion_en_lista);
 	}
 	return false;
 }
