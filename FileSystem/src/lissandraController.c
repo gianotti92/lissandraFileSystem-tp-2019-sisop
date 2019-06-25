@@ -22,7 +22,7 @@ Instruccion* _insert(Insert* insert){
 		free(insert);
 		return respuesta_error(LARGE_VALUE);
 	}
-	struct tableRegister reg = createTableRegister(insert->key,insert->value,insert->timestamp);
+	struct tableRegister reg = createTableRegister(insert->key,insert->value,insert->timestamp_insert);
 	/* Espero posible Dump*/
 	pthread_mutex_lock(&memtableMutex);
 	/* Inserto valor en la memtable */
