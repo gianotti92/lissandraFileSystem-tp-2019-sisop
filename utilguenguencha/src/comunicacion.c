@@ -529,10 +529,8 @@ int crear_conexion(char *ip, char* puerto) {
 	    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
 	        return -1;
 	    }
-	    log_error(LOG_ERROR, "Acabo de crear fd %d", sockfd);
     	return *pone_fd(ip, puerto, sockfd);
 	}else{
-		log_error(LOG_ERROR, "Estoy usando fd %d", *socket_cliente);
 		return *socket_cliente;
 	}
 	/*

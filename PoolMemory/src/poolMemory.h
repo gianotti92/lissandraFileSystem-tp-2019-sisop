@@ -31,10 +31,8 @@ t_list* L_MEMORIAS;
 t_list* L_SEEDS;
 
 
-pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias;
+pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias, mutexListaMemorias;
 sem_t semJournal;
-
-pthread_mutex_t mutexListaMemorias;
 
 //  estructuras
 typedef struct{

@@ -17,6 +17,7 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 #include "tipos_guenguencha.h"
 
 #define EVENT_SIZE (sizeof (struct inotify_event))
@@ -37,7 +38,7 @@ char LOCAL_IP[16];
 char *get_local_ip(void);
 Memoria *duplicar_memoria(Memoria *memoria);
 Retorno_Describe *duplicar_describe(Retorno_Describe *describe);
-t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*));
+t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*), pthread_mutex_t mutex);
 /**
 * @NAME: elimina_memoria()
 * @DESC: para eliminar las memorias de una lista de gossip

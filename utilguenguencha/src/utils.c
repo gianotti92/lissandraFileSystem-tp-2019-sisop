@@ -130,12 +130,14 @@ Retorno_Describe *duplicar_describe(Retorno_Describe *describe){
 	return duplicado;
 }
 
-t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*)){
+t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*), pthread_mutex_t mutex){
 	t_list *duplicate = list_create();
 	void duplicar(Memoria *memoria){
 		list_add(duplicate, duplicador(memoria));
 	}
+	pthread_mutex_lock(&mutex);
 	list_iterate(lista, (void*)duplicar);
+	pthread_mutex_unlock(&mutex);
 	return duplicate;
 }
 
