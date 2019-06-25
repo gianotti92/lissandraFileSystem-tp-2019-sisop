@@ -837,8 +837,8 @@ void empaquetar_gossip(t_paquete * paquete, Gossip * gossip) {
 	paquete->buffer->stream = malloc(sizeof(int));
 	memcpy(paquete->buffer->stream, &cantidad_memorias, sizeof(int));
 	paquete->buffer->size += sizeof(int);
+	Memoria *memoria;
 	while(cantidad_memorias > 0){
-		Memoria *memoria = malloc(sizeof(Memoria));
 		memoria = list_get(gossip->lista_memorias, cantidad_memorias - 1);
 		size_t tamanio_ip = (strlen(memoria->ip) + 1 );
 		size_t tamanio_puerto = (strlen(memoria->puerto) + 1 );
