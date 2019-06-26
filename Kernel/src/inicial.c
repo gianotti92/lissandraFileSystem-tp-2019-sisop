@@ -8,10 +8,18 @@ void configuracion_inicial(void) {
 	}
 
 	LOGGER_METRICS = log_create("log_metrics.log", "log_metrics", 0, LOG_LEVEL_INFO);
+	
+	char * puertoEscucha = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
+	PUERTO_DE_ESCUCHA = malloc(sizeof(puertoEscucha) + 1);
+	strcpy(PUERTO_DE_ESCUCHA, puertoEscucha);
+	
+	char * ipMemoriaPrincipal = config_get_string_value(CONFIG,"IP_MEMORIA_PPAL");
+	IP_MEMORIA_PPAL = malloc(sizeof(memoriaPrincipal) + 1);
+	strcpy(IP_MEMORIA_PPAL, ipMemoriaPrincipal);
 
-	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
-	IP_MEMORIA_PPAL = config_get_string_value(CONFIG,"IP_MEMORIA_PPAL");
-	PUERTO_MEMORIA_PPAL = config_get_string_value(CONFIG,"PUERTO_MEMORIA_PPAL");
+	char * puertoMemoriaPrincipal = config_get_string_value(CONFIG,"PUERTO_MEMORIA_PPAL");
+	PUERTO_MEMORIA_PPAL = malloc(sizeof(puertoMemoriaPrincipal) + 1);
+	strcpy(PUERTO_MEMORIA_PPAL, puertoMemoriaPrincipal);
 
 	QUANTUM = config_get_int_value(CONFIG, "QUANTUM");
 	TAMANO_MAXIMO_LECTURA_ARCHIVO = config_get_int_value(CONFIG,
@@ -22,6 +30,8 @@ void configuracion_inicial(void) {
 	SEGUNDOS_METRICS = config_get_int_value(CONFIG, "TIEMPO_METRICS");
 	PREGUNTAR_POR_MEMORIAS = config_get_int_value(CONFIG, "TIEMPO_PREGUNTAR_MEMORIA");
 	TIEMPO_DESCRIBE = config_get_int_value(CONFIG, "TIEMPO_DESCRIBE");
+
+	config_destroy(CONFIG);
 }
 
 void actualizar_configuracion(t_config* conf) {
