@@ -35,7 +35,6 @@ pthread_mutex_t mutexRecursosCompartidos;
 sem_t semaforoSePuedePlanificar, semaforoNewToReady;
 
 // Funciones del proceso
-void logicaMetrics();
 void configuracion_inicial(void);
 void actualizar_configuracion(t_config* conf);
 void retorno_consola(char* leido);
@@ -45,22 +44,22 @@ void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
 Memoria * desencolarMemoria(t_list * lista, int posicion);
 void putTablaSafe(t_dictionary * dic, char* key, char * value);
-Memoria *getMemoria(t_list *lista_memorias, int idMemoria);
+Memoria *get_memoria(int idMemoria, Consistencias consistencia);
 char* getTablasSafe(t_dictionary * dic, char*key);
 void ejecutar();
 void iniciarEstructurasAsociadas();
-void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void lanzar_gossiping();
 void newToReady();
 void logicaCreate(Instruccion * instruccion);
 Proceso * logicaRun(Proceso * proceso);
 void logicaDescribe(Instruccion * instruccion);
-void logicaJournal();
+void logicaJournal(Instruccion * instruccion);
 void logicaDrop(Instruccion * instruccion);
 void logicaSelect(Instruccion * instruccion);
 void logicaAdd(Instruccion * instruccion);
 void logicaInsert(Instruccion * instruccion);
+void logicaMetrics(Instruccion * instruccion);
 bool esFinLectura(Proceso * p, char * instruccionALeer);
 bool esFinQuantum(Proceso * p, char * instruccionALeer);
 void calculoMetrics();
@@ -71,8 +70,12 @@ Consistencias obtenerConsistencia(char * nombreTabla);
 int generarHash(char * nombreTabla, int tamLista, int key);
 void mostrarId(Memoria * memoria);
 void enviar_journal(Memoria *memoria);
-int existe_memoria_en(Memoria *mem1, t_list* lista);
+bool existe_memoria_en(Memoria *mem1, t_list* lista);
 void agregarSiNoExiste(t_list * list, Memoria *m);
+t_list *dame_lista_de_consistencia(Consistencias consistencia);
+pthread_mutex_t dame_mutex_de_consistencia(Consistencias consistencia);
+void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistencia);
+
 
 // Variables del proceso
 t_list *estadoReady;
@@ -97,6 +100,16 @@ int HILOS_KERNEL;
 int SEGUNDOS_METRICS;
 int PREGUNTAR_POR_MEMORIAS;
 int TIEMPO_DESCRIBE;
+
+t_list *lista_ec;
+t_list *lista_sc;
+t_list *lista_shc;
+t_list *lista_disp;
+pthread_mutex_t mutex_disp;
+pthread_mutex_t mutex_sc;
+pthread_mutex_t mutex_ec;
+pthread_mutex_t mutex_shc;
+pthread_mutex_t mutex_memorias;
 
 /*
 	Describes

@@ -27,29 +27,22 @@ void putTablaSafe(t_dictionary * dic, char* key, char * value){
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
 
-void sacarMemoriaDeTodasLasListas(Memoria *memoria){
-	Consistencias consistencia;
-	for(consistencia = EC; consistencia < (DISP+1); consistencia++){
-		t_list * lista_consistencia = list_get(memorias, consistencia);
-		int  aux = existe_memoria_en(memoria, lista_consistencia);
-		if(aux > 0){
-			list_remove_and_destroy_element(lista_consistencia, aux, (void*)eliminar_memoria);
-		}
-	}
-}
-
-
-Memoria *getMemoria(t_list *lista_memorias, int idMemoria){
+Memoria *getMemoria(int idMemoria, Consistencias consistencia){
+	t_list * lista = dame_lista_de_consistencia(consistencia);
+	pthread_mutex_t mutex = dame_mutex_de_consistencia(consistencia);
 	int aux = 0;
-	Memoria *mem = NULL;
-	while(aux < lista_memorias->elements_count){
-		mem = list_get(lista_memorias, aux);
+	pthread_mutex_lock(&mutex);
+	Memoria *mem;
+	while((mem = list_get(lista, aux)) != NULL){
 		if(mem->idMemoria == idMemoria){
-			return mem;
+			Memoria* retorno = duplicar_memoria(mem);
+			pthread_mutex_unlock(&mutex);
+			return retorno;
 		}
 		aux++;
 	}
-	return NULL;
+	pthread_mutex_unlock(&mutex);
+	return mem;
 }
 
 char* getTablasSafe(t_dictionary * dic, char*key){
@@ -59,12 +52,24 @@ char* getTablasSafe(t_dictionary * dic, char*key){
 	return nombre;
 }
 
-void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia){
+void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistencia){
 	if(memoria != NULL){
-		if(existe_memoria_en(memoria, list_get(memorias, consistencia)) < 0 ){
-			pthread_mutex_lock(&mutexRecursosCompartidos);
-			list_add(list_get(memorias, consistencia), memoria);
-			pthread_mutex_unlock(&mutexRecursosCompartidos);
+		pthread_mutex_t mutex = dame_mutex_de_consistencia(consistencia);
+		pthread_mutex_lock(&mutex);
+		if(existe_memoria_en(memoria, lista_disp) < 0 ){
+			switch(consistencia){
+				case SC:
+					agregarSiNoExiste(lista_sc, memoria);
+					break;
+				case EC:
+					agregarSiNoExiste(lista_ec, memoria);
+					break;
+				case SHC:
+					agregarSiNoExiste(lista_shc, memoria);
+					break;
+				case DISP:
+					agregarSiNoExiste(lista_disp, memoria);
+			}
 		}
 	}
 }
@@ -76,11 +81,10 @@ void lanzar_gossiping(){
 	strcpy(memoriaPrincipal->puerto, PUERTO_MEMORIA_PPAL);
 	memoriaPrincipal->ip = malloc(strlen(IP_MEMORIA_PPAL) + 1);
 	strcpy(memoriaPrincipal->ip, IP_MEMORIA_PPAL);
-	agregarSiNoExiste(list_get(memorias, DISP), memoriaPrincipal);
+	asignar_memoria_a_consistencia(memoriaPrincipal, DISP);
 	eliminar_memoria(memoriaPrincipal);
 	while(true){
 		sleep(PREGUNTAR_POR_MEMORIAS);
-		list_iterate(list_get(memorias, DISP), (void*)mostrar_memoria);
 		Instruccion *inst = malloc(sizeof(Instruccion));
 		inst->instruccion = GOSSIP;
 		Gossip *gossip = malloc(sizeof(Gossip));
@@ -95,53 +99,28 @@ void lanzar_gossiping(){
 			Retorno_Generico *ret = resp->instruccion_a_realizar;
 			if (ret->tipo_retorno == RETORNO_GOSSIP){
 				Gossip * gossip = ret->retorno;
-				t_list * lista_memorias_retorno_gossip =  gossip->lista_memorias;
-				if(lista_memorias_retorno_gossip->elements_count == 0) {
-					break;
-				}
-				int aux = 0;
-				while(aux < lista_memorias_retorno_gossip->elements_count){
-					Memoria *mem = list_get(lista_memorias_retorno_gossip, aux);
-					agregarSiNoExiste(list_get(memorias, DISP), mem);
-					aux++;
-				}
-				aux = 0;
-				t_list * lista_disponibles = list_create();
-				t_list * lista_a_borrar = list_create();
-				while(aux < ((t_list*)list_get(memorias, DISP))->elements_count){
-					Memoria *mem = list_get(list_get(memorias, DISP), aux);
-					if(existe_memoria_en(mem, lista_memorias_retorno_gossip) != -1){
-						list_add(lista_disponibles, mem);
-					}else{
-						list_add(lista_a_borrar, mem);
-					}
-					aux++;
-				}
-				aux = 0;
-				while(aux < lista_a_borrar->elements_count){
-					Memoria *m = list_get(lista_a_borrar, aux);
-					sacarMemoriaDeTodasLasListas(m);
-				}
-				pthread_mutex_lock(&mutexRecursosCompartidos);
-				list_destroy(list_get(memorias, DISP));
-				list_add_in_index(memorias, DISP, lista_disponibles);
-				pthread_mutex_unlock(&mutexRecursosCompartidos);
+				pthread_mutex_lock(&mutex_disp);
+				t_list *lista_memorias_disponibles_vieja = lista_disp;
+				lista_disp = gossip->lista_memorias;
+				pthread_mutex_unlock(&mutex_disp);
+				list_destroy_and_destroy_elements(lista_memorias_disponibles_vieja, (void*)eliminar_memoria);
+				//FIXME: Hay que purgar las listas
+				//purgar_listas();
 			}
 		}
 	}
 }
 
-int existe_memoria_en(Memoria *mem1, t_list* lista){
-	int aux = 0;
-	while(aux < lista->elements_count){
-		Memoria * mem2 = list_get(lista, aux);
-		if(strcmp(mem1->ip, mem2->ip) == 0 &&
-		   strcmp(mem1->puerto, mem2->puerto) == 0){
-			return aux;
+bool existe_memoria_en(Memoria *mem1, t_list* lista){
+		int aux = 0;
+		Memoria * mem2;
+		while((mem2 = list_get(lista, aux)) != NULL){
+	       	if(strcmp(mem1->ip, mem2->ip) == 0 && strcmp(mem1->puerto, mem2->puerto) == 0){
+               	return true;
+	       	}
+	       	aux ++;
 		}
-		aux ++;
-	}
-	return -1;
+		return false;
 }
 
 void mostrarId(Memoria * memoria){
@@ -149,15 +128,46 @@ void mostrarId(Memoria * memoria){
 }
 
 void agregarSiNoExiste(t_list * list, Memoria *m){
-	if(existe_memoria_en(m, list) < 0){
-		Memoria * mem = malloc(sizeof(Memoria));
-		mem->idMemoria = m->idMemoria;
-		mem->ip = malloc(strlen(m->ip) +1);
-		mem->puerto = malloc(strlen(m->puerto) + 1);
-		strcpy(mem->ip, m->ip);
-		strcpy(mem->puerto, m->puerto);
-		pthread_mutex_lock(&mutexRecursosCompartidos);
-		list_add(list, mem);
-		pthread_mutex_unlock(&mutexRecursosCompartidos);
+		if(existe_memoria_en(m, list)){
+			Memoria * mem = duplicar_memoria(m);
+			list_add(list, mem);
+       }
+}
+
+t_list *dame_lista_de_consistencia(Consistencias consistencia){
+	t_list *lista;
+	switch(consistencia){
+		case SC:
+			lista = lista_sc;
+			break;
+		case EC:
+			lista = lista_ec;
+			break;
+		case SHC:
+			lista = lista_shc;
+			break;
+		case DISP:
+			lista = lista_disp;
+			break;
 	}
+	return lista;
+}
+
+pthread_mutex_t dame_mutex_de_consistencia(Consistencias consistencia){
+	pthread_mutex_t mutex;
+	switch(consistencia){
+		case SC:
+			mutex = mutex_sc;
+			break;
+		case EC:
+			mutex = mutex_ec;
+			break;
+		case SHC:
+			mutex = mutex_shc;
+			break;
+		default:
+			mutex = mutex_disp;
+			break;
+	}
+	return mutex;
 }

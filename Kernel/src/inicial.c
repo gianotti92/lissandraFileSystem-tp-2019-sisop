@@ -10,15 +10,15 @@ void configuracion_inicial(void) {
 	LOGGER_METRICS = log_create("log_metrics.log", "log_metrics", 0, LOG_LEVEL_INFO);
 	
 	char * puertoEscucha = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
-	PUERTO_DE_ESCUCHA = malloc(sizeof(puertoEscucha) + 1);
+	PUERTO_DE_ESCUCHA = malloc(strlen(puertoEscucha) + 1);
 	strcpy(PUERTO_DE_ESCUCHA, puertoEscucha);
 	
 	char * ipMemoriaPrincipal = config_get_string_value(CONFIG,"IP_MEMORIA_PPAL");
-	IP_MEMORIA_PPAL = malloc(sizeof(memoriaPrincipal) + 1);
+	IP_MEMORIA_PPAL = malloc(strlen(ipMemoriaPrincipal) + 1);
 	strcpy(IP_MEMORIA_PPAL, ipMemoriaPrincipal);
 
 	char * puertoMemoriaPrincipal = config_get_string_value(CONFIG,"PUERTO_MEMORIA_PPAL");
-	PUERTO_MEMORIA_PPAL = malloc(sizeof(puertoMemoriaPrincipal) + 1);
+	PUERTO_MEMORIA_PPAL = malloc(strlen(puertoMemoriaPrincipal) + 1);
 	strcpy(PUERTO_MEMORIA_PPAL, puertoMemoriaPrincipal);
 
 	QUANTUM = config_get_int_value(CONFIG, "QUANTUM");
@@ -50,15 +50,10 @@ void iniciarEstados() {
 }
 
 void iniciarEstructurasAsociadas(){
-	memorias = list_create();
-	t_list * listaEC = list_create();
-	t_list * listaSC = list_create();
-	t_list * listaSHC = list_create();
-	t_list * listaDISP = list_create();
-	list_add_in_index(memorias, EC, listaEC);
-	list_add_in_index(memorias, SC, listaSC);
-	list_add_in_index(memorias, SHC, listaSHC);
-	list_add_in_index(memorias, DISP, listaDISP);
+	lista_ec = list_create();
+	lista_sc = list_create();
+	lista_shc = list_create();
+	lista_disp = list_create();
 	metrics = dictionary_create();
 
 }

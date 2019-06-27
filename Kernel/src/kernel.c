@@ -27,7 +27,7 @@ int main(void) {
 	pthread_create(&T_confMonitor, NULL, TH_confMonitor, NULL);
 	pthread_detach(T_confMonitor);
 
-//	pthread_create(&memoriasDisponibles, NULL, (void*) lanzar_gossiping, NULL);
+	pthread_create(&memoriasDisponibles, NULL, (void*) lanzar_gossiping, NULL);
 	pthread_detach(memoriasDisponibles);
 
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,
@@ -51,7 +51,11 @@ int main(void) {
 }
 
 void retorno_consola(char* leido) {
-
+	if(strcmp(leido, "memorias") == 0){
+		list_iterate(list_get(memorias, DISP), (void*)mostrar_memoria);
+		free(leido);
+		return;
+	}
 	Proceso * proceso = malloc(sizeof(Proceso));
 	Instruccion * instruccion = parser_lql(leido, KERNEL);
 	if (instruccion->instruccion != ERROR) {
@@ -89,7 +93,7 @@ void ejecutar() {
 
 		case METRICS:
 			;
-			logicaMetrics();
+			logicaMetrics(proceso->instruccion);
 			proceso->esProcesoRun = false;
 			break;
 
@@ -138,7 +142,7 @@ void ejecutar() {
 
 		case JOURNAL:
 			;
-			logicaJournal();
+			logicaJournal(proceso->instruccion);
 			proceso->esProcesoRun = false;
 			break;
 
