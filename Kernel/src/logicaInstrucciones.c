@@ -282,3 +282,21 @@ int generarHash(char * nombreTabla, int tamLista, int key){
 	return hash % tamLista;
 }
 
+Memoria *get_memoria(int idMemoria, Consistencias consistencia){
+	t_list * lista = dame_lista_de_consistencia(consistencia);
+	pthread_mutex_t mutex = dame_mutex_de_consistencia(consistencia);
+	int aux = 0;
+	pthread_mutex_lock(&mutex);
+	Memoria *mem;
+	while((mem = list_get(lista, aux)) != NULL){
+		if(mem->idMemoria == idMemoria){
+			Memoria* retorno = duplicar_memoria(mem);
+			pthread_mutex_unlock(&mutex);
+			return retorno;
+		}
+		aux++;
+	}
+	pthread_mutex_unlock(&mutex);
+	return mem;
+}
+

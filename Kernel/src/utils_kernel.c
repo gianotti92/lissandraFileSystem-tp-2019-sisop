@@ -27,24 +27,6 @@ void putTablaSafe(t_dictionary * dic, char* key, char * value){
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 }
 
-Memoria *getMemoria(int idMemoria, Consistencias consistencia){
-	t_list * lista = dame_lista_de_consistencia(consistencia);
-	pthread_mutex_t mutex = dame_mutex_de_consistencia(consistencia);
-	int aux = 0;
-	pthread_mutex_lock(&mutex);
-	Memoria *mem;
-	while((mem = list_get(lista, aux)) != NULL){
-		if(mem->idMemoria == idMemoria){
-			Memoria* retorno = duplicar_memoria(mem);
-			pthread_mutex_unlock(&mutex);
-			return retorno;
-		}
-		aux++;
-	}
-	pthread_mutex_unlock(&mutex);
-	return mem;
-}
-
 char* getTablasSafe(t_dictionary * dic, char*key){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	char * nombre = (char*)dictionary_get(dic, key);
