@@ -57,7 +57,6 @@ Proceso * logicaRun(Proceso * proceso){
 		}
 		proceso->numeroInstruccion += 1;
 		proceso->quantumProcesado += 1;
-		//free(proximainstruccionChar); // Esta ya la libera el parser_lql()
 
 		proximainstruccionChar = leer_linea(((Run*)proceso->instruccion->instruccion_a_realizar)->path, proceso->numeroInstruccion);
 	}
@@ -119,7 +118,7 @@ void logicaSelect(Instruccion * instruccion){
 		Memoria *m;
 		switch(consistencia){
 			case SC || EC :;
-				int random = rand() % memorias->elements_count;
+				int random = rand() % memoriasAsoc->elements_count;
 				m = get_memoria(random, consistencia);
 				break;
 

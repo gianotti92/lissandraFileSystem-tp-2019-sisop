@@ -52,7 +52,9 @@ int main(void) {
 
 void retorno_consola(char* leido) {
 	if(strcmp(leido, "memorias") == 0){
-		list_iterate(list_get(memorias, DISP), (void*)mostrar_memoria);
+		pthread_mutex_lock(&mutex_disp);
+		list_iterate(lista_disp, (void*)mostrar_memoria);
+		pthread_mutex_unlock(&mutex_disp);
 		free(leido);
 		return;
 	}

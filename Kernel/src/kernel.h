@@ -83,7 +83,6 @@ t_list *estadoNew;
 t_list *estadoExit;
 
 // tablas del proceso
-t_list * memorias;
 
 t_dictionary * metrics;
 
@@ -105,11 +104,11 @@ t_list *lista_ec;
 t_list *lista_sc;
 t_list *lista_shc;
 t_list *lista_disp;
+
 pthread_mutex_t mutex_disp;
 pthread_mutex_t mutex_sc;
 pthread_mutex_t mutex_ec;
 pthread_mutex_t mutex_shc;
-pthread_mutex_t mutex_memorias;
 
 /*
 	Describes

@@ -16,16 +16,12 @@ void calculoMetrics(){
 					tiempoPromedioInsert += proceso->segundosQueTardo;
 					contadorInsert++;
 					contadorSelectInsert++;
-					free(((Insert*)proceso->instruccion->instruccion_a_realizar)->value);
-					free(((Insert*)proceso->instruccion->instruccion_a_realizar)->nombre_tabla);
 					free(proceso);
 					break;
 				case SELECT:;
 					tiempoPromedioSelect += proceso->segundosQueTardo;
 					contadorSelect++;
 					contadorSelectInsert++;
-					free(((Select*)proceso->instruccion->instruccion_a_realizar)->nombre_tabla);
-					free(proceso->instruccion->instruccion_a_realizar);					
 					free(proceso);
 					break;
 

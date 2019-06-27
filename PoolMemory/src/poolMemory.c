@@ -372,10 +372,11 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			t_list *lista_gossip = gossip->lista_memorias;
 			int aux = 0;
 			list_iterate(lista_gossip, (void*)mostrar_memoria);
-			while(aux < lista_gossip->elements_count){
-				Memoria * mem = list_get(lista_gossip, aux);
+			Memoria * mem = list_get(lista_gossip, aux);
+			while(mem != NULL){
 				add_memory_if_not_exists(mem);
 				aux++;
+				mem = list_get(lista_gossip, aux);
 			}
 			list_destroy_and_destroy_elements(lista_gossip, (void*)eliminar_memoria);
 			free(instruccion_parseada->instruccion_a_realizar);
@@ -777,7 +778,7 @@ void gossipear(Memoria *mem){
 			if(ret->tipo_retorno == RETORNO_GOSSIP){
 				Gossip *gossip = ret->retorno;
 				t_list *lista_retorno = gossip->lista_memorias;
-				list_iterate(lista_retorno, (void*)add_memory_if_not_exists);
+				list_iterate(lista_retorno, (void*)mostrar_memoria);
 			}
 		}
 		free_retorno(res);
@@ -798,7 +799,7 @@ bool existe_memoria(t_list *lista, Memoria *mem1){
 	pthread_mutex_lock(&mutexListaMemorias);
 	Memoria *mem2 = list_get(lista, posicion_en_lista);
 	while(mem2 != NULL){
-		if(strcmp(mem1->ip, mem2->ip) == 0 && strcmp(mem1->puerto, mem2->puerto) == 0) {
+		if(strcmp(mem1->ip, mem2->ip) == 0 && strcmp(mem1->puerto, mem2->puerto) == 0 && mem1->idMemoria == mem2->idMemoria) {
 			pthread_mutex_unlock(&mutexListaMemorias);
 			return true;
 		}
