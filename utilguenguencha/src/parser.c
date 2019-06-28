@@ -71,6 +71,8 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 					strcpy(palabra2, consulta_separada[4]);
 					free(consulta_separada[4]);
 					consulta_separada[3] = string_from_format("%s %s", palabra1, palabra2);
+					free(palabra1);
+					free(palabra2);
 					i++;
 					consulta_separada[4] = consulta_separada[4 + i];
 				}
@@ -661,10 +663,9 @@ void free_retorno(Instruccion * instruccion_parseada) {
 			default:
 				break;
 			}
+	default:
 		break;
-		default:
-			break;
-		}
+	}
 	free(instruccion_parseada->instruccion_a_realizar);
 	free(instruccion_parseada);
 }

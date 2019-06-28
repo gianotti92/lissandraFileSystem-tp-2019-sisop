@@ -12,6 +12,7 @@
 #include "../../utilguenguencha/src/comunicacion.h"
 #include "../../utilguenguencha/src/parser.h"
 #include "../../utilguenguencha/src/utils.h"
+#include "../../utilguenguencha/src/kernel_utils.h"
 
 
 #define READS "0"

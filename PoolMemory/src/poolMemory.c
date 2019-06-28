@@ -15,13 +15,13 @@ int main(void) {
 
 	pthread_mutex_init(&mutexListaMemorias, NULL);
 	L_MEMORIAS = list_create();
-	pthread_t consolaPoolMemory, gossiping, servidorPM, T_confMonitor;
+	pthread_t consolaPoolMemory, gossiping, journaling, servidorPM, T_confMonitor;
 	void *TR_confMonitor;
 
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL); 										//se encarga de mantener actualizados los valores del config
 	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);			//consola - sale por retorno_consola()
 	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);								//crea y mantiene actualizada la lista de memorias - gossiping
-
+	pthread_create(&journaling, NULL, (void*) f_journaling, NULL);								    //lanza el proceso de journal cada RETARDO_JURNAL tiempo
 
 	Comunicacion *comunicacion_instrucciones = malloc(sizeof(Comunicacion));
 	comunicacion_instrucciones->puerto_servidor = malloc(strlen(PUERTO_DE_ESCUCHA)+1);
@@ -33,6 +33,7 @@ int main(void) {
 	pthread_join(servidorPM, NULL);
 	pthread_join(consolaPoolMemory, NULL);
 	pthread_join(gossiping, NULL);
+	pthread_join(journaling, NULL);
 	pthread_join(T_confMonitor,&TR_confMonitor);
 
 	if((int)TR_confMonitor != 0) {
@@ -215,7 +216,7 @@ void inicializar_memoria(void){
 Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 
-		usleep(RETARDO_MEM);
+		usleep(RETARDO_MEM*1000);
 
 		sem_wait(&semJournal);
 
@@ -250,7 +251,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			// no tenemos la tabla-key en memoria
 
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
-					usleep(RETARDO_FS);
+					usleep(RETARDO_FS*1000);
 
 					if (instruccion_respuesta->instruccion == RETORNO){
 						Retorno_Generico* resp_retorno_generico = instruccion_respuesta->instruccion_a_realizar;
@@ -345,7 +346,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			eliminar_de_memoria(nombre_tabla_drop);
 
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
-			usleep(RETARDO_FS);
+			usleep(RETARDO_FS*1000);
 
 			free(nombre_tabla_drop);
 
@@ -393,10 +394,12 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			retorno->retorno = gossip_ret;
 			instruccion_respuesta->instruccion_a_realizar = retorno;
 			break;
-
+		case ERROR:;
+			instruccion_respuesta = instruccion_parseada;
+			break;
 		default:;
 				instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
-				usleep(RETARDO_FS);
+				usleep(RETARDO_FS*1000);
 				break;
 		}
 		sem_post(&semJournal);
@@ -713,7 +716,7 @@ void lanzar_gossiping(void){
 	list_add(L_MEMORIAS, memoria);
 	pthread_mutex_unlock(&mutexListaMemorias);
 	while(true){
-		usleep(RETARDO_GOSSIPING);
+		usleep(RETARDO_GOSSIPING*1000);
 		t_list *lista = filtrar_memorias_gossipear();
 		t_list *a_gossipear = list_duplicate_all(lista, (void*)duplicar_memoria, mutexListaMemorias);
 		list_iterate(a_gossipear, (void*)gossipear);
@@ -810,8 +813,17 @@ bool existe_memoria(t_list *lista, Memoria *mem1){
 	return false;
 }
 
+void* f_journaling (void) {
+
+	while(true){
+		usleep(RETARDO_JOURNAL*1000);
+		t_timestamp timestamp = get_timestamp();
+		lanzar_journal(timestamp);
+	}
+
+}
+
 int lanzar_journal(t_timestamp timestamp_journal){
-	usleep(RETARDO_JOURNAL);
 
 	sem_wait(&semJournal);
 
@@ -853,7 +865,7 @@ int lanzar_journal(t_timestamp timestamp_journal){
 				strcpy(instruccion_insert->value, value);
 				instruccion_insert->timestamp = timestamp_journal;
 				Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION);
-				usleep(RETARDO_FS);
+				usleep(RETARDO_FS*1000);
 				free_retorno(instruccion_respuesta);
 				marco = list_get(L_MARCOS, id_pagina);
 				marco->en_uso = false;
