@@ -72,6 +72,7 @@ void set_modificado_pagina( void*, t_flag);
 void print_lista_paginas();
 void print_pagina(void*);
 void lanzar_gossiping(void);
+void* f_journaling(void);
 int lanzar_journal(t_timestamp);
 void* pedir_pagina(void);
 int seleccionar_marco(void);
