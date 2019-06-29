@@ -143,7 +143,7 @@ void TH_consola(char* leido){
 						list_destroy_and_destroy_elements(((Describes*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->lista_describes,(void*)deleteDescribeList);
 					break;
 					case VALOR:
-						log_info(LOG_OUTPUT,"Valor: %s - Timestamp: %u",((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->value,((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->timestamp);
+						log_info(LOG_OUTPUT,"Value: %s TS: %u",((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->value,((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->timestamp);
 						free(((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->value);
 					break;
 					default:

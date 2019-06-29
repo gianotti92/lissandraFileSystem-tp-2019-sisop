@@ -411,7 +411,7 @@ bool es_numero(char* palabra) {
 
 void show_describes(Retorno_Describe *describe){
 	char*consistencia=consistencia2string(describe->consistencia);
-	log_info(LOG_OUTPUT,"Nombre tabla: %s\nConsistencia: %s\nParticiones: %d\nTiempo compactacion: %d\n\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
+	log_info(LOG_OUTPUT,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
 	free(consistencia);
 }
 

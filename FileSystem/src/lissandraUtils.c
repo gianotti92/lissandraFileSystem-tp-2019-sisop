@@ -197,7 +197,7 @@ Retorno_Describe* pack_describe(char *nombre_tabla,Consistencias consistencia,ui
 }
 void showDescribeList(Retorno_Describe* describe){
 	char* consistencia=consistencia2string(describe->consistencia);
-	log_info(LOG_OUTPUT,"Tabla: %s - Consistencia: %s - Particiones: %d - Tiempo de Compactacion: %d\n",describe->nombre_tabla,consistencia,describe->particiones,describe->compactation_time);
+	log_info(LOG_OUTPUT,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d\n",describe->nombre_tabla,consistencia,describe->particiones,describe->compactation_time);
 	free(consistencia);
 }
 
