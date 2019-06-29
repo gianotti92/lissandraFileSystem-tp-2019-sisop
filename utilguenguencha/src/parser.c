@@ -413,13 +413,13 @@ bool es_numero(char* palabra) {
 
 void show_describes(Retorno_Describe *describe){
 	char*consistencia=consistencia2string(describe->consistencia);
-	log_info(LOG_OUTPUT,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
+	log_info(LOG_OUTPUT,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
 	free(consistencia);
 }
 
 void log_describes(Retorno_Describe *describe){
 	char*consistencia=consistencia2string(describe->consistencia);
-	log_info(LOG_OUTPUT_SV,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
+	log_info(LOG_OUTPUT_SV,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
 	free(consistencia);
 }
 
@@ -553,14 +553,14 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 			switch(retorno_generico->tipo_retorno){
 			case VALOR:;
 				Retorno_Value* retorno_value = retorno_generico->retorno;
-				log_info(LOG_OUTPUT,"Value: %s TS: %zu \n", retorno_value->value, retorno_value->timestamp);
+				log_info(LOG_OUTPUT,"Value: %s TS: %zu", retorno_value->value, retorno_value->timestamp);
 				free(retorno_value->value);
 				free(retorno_value);
 				free(retorno_generico);
 				free(instruccion_parseada);
 				break;
 			case SUCCESS:;
-				log_info(LOG_OUTPUT,"Operacion completada correctamente");
+				log_info(LOG_OUTPUT,"Operacion completada correctamente.");
 				free(retorno_generico);
 				free(instruccion_parseada);
 				break;
