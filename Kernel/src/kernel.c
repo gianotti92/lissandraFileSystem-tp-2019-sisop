@@ -17,18 +17,20 @@ int main(void) {
 	configuracion_inicial();
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
-
+	
+	fd_disponibles = dictionary_create();
+	
 	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady,
 			calcularMetrics, T_confMonitor, T_describe;
+
+	pthread_create(&memoriasDisponibles, NULL, (void*) lanzar_gossiping, NULL);
+	pthread_detach(memoriasDisponibles);
 
 	pthread_create(&T_describe, NULL, TH_describe, NULL);
 	pthread_detach(T_describe);
 
 	pthread_create(&T_confMonitor, NULL, TH_confMonitor, NULL);
 	pthread_detach(T_confMonitor);
-
-	pthread_create(&memoriasDisponibles, NULL, (void*) lanzar_gossiping, NULL);
-	pthread_detach(memoriasDisponibles);
 
 	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,
 			retorno_consola);

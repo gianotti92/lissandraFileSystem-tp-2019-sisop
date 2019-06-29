@@ -14,7 +14,7 @@ int main(void) {
 	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump;
 
 	configure_logger();
-
+	fd_disponibles = dictionary_create();
 	pthread_mutex_init(&memtableMutex,NULL);
 	pthread_mutex_init(&tableMetadataMutex,NULL);
 
@@ -103,20 +103,22 @@ void *TH_server(void * p){
 void retornarControl(Instruccion *instruccion, int socket_cliente){
 	Instruccion *resController = controller(instruccion);
 	//FIXME :: hay que liberar instruccion dependiendo de donde caigamos en controller
+	log_instruccion_parseada(resController);
 	Instruccion *res = responder(socket_cliente, resController);
+
 	switch(res->instruccion){
 		case RETORNO:
 			//log_info(LOG_DEBUG, "Lo respondi bien");
 		break;
 		case ERROR:
-			log_error(LOG_ERROR, "Error al responder");
+			log_error(LOG_ERROR_SV, "Error al responder");
 		break;
 		default:
-			log_error(LOG_ERROR, "Error desconocido al responder");
+			log_error(LOG_ERROR_SV, "Error desconocido al responder");
 		break;
 	}
-	free(res->instruccion_a_realizar);
-	free(res);
+
+	free_retorno(res);
 }
 /*
 	Manejo Consola
@@ -132,31 +134,9 @@ void TH_consola(char* leido){
 		
 		Instruccion*res=controller(instruccion_parseada);
 
-		switch(res->instruccion){
-			case RETORNO:
-				switch(((Retorno_Generico*)res->instruccion_a_realizar)->tipo_retorno){
-					case SUCCESS:
-						log_info(LOG_OUTPUT, "Realizado");
-					break;
-					case DATOS_DESCRIBE:
-						list_iterate(((Describes*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->lista_describes,(void*)showDescribeList);
-						list_destroy_and_destroy_elements(((Describes*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->lista_describes,(void*)deleteDescribeList);
-					break;
-					case VALOR:
-						log_info(LOG_OUTPUT,"Value: %s TS: %u",((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->value,((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->timestamp);
-						free(((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->value);
-					break;
-					default:
-						log_error(LOG_ERROR, "Error procesar la consulta desde consola");
-					break;
-					free(((Retorno_Generico*)res->instruccion_a_realizar)->retorno);
-				}
-			break;
-			default:
-			break;
-		}
-		free(res->instruccion_a_realizar);
-		free(res);
+		log_instruccion_parseada(res);
+		print_instruccion_parseada(res);
+
 	}
 }
 /*

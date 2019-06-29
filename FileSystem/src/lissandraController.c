@@ -9,14 +9,14 @@ Instruccion* _drop(Drop* drop);
 Instruccion* _insert(Insert* insert){
 	usleep(global_conf.retardo*1000);
 	if(!tableExists(insert->nombre_tabla)) {
-		log_error(LOG_ERROR,"INSERT: no existe la tabla '%s'",insert->nombre_tabla);
+		//log_error(LOG_ERROR,"INSERT: no existe la tabla '%s'",insert->nombre_tabla);
 		free(insert->nombre_tabla);
 		free(insert->value);
 		free(insert);
 		return respuesta_error(MISSING_TABLE);
 	}
 	if(strlen(insert->value)>global_conf.max_value_size) {
-		log_error(LOG_ERROR,"INSERT: value demasiado largo: '%d', maximo: '%d'",strlen(insert->value),global_conf.max_value_size);
+		//log_error(LOG_ERROR,"INSERT: value demasiado largo: '%d', maximo: '%d'",strlen(insert->value),global_conf.max_value_size);
 		free(insert->nombre_tabla);
 		free(insert->value);
 		free(insert);
@@ -37,14 +37,14 @@ Instruccion* _insert(Insert* insert){
 Instruccion* _select(Select* select){
 	usleep(global_conf.retardo*1000);
 	if(!tableExists(select->nombre_tabla)) {
-		log_error(LOG_ERROR,"SELECT: no existe la tabla '%s'",select->nombre_tabla);
+		log_error(LOG_ERROR_SV,"SELECT: no existe la tabla '%s'",select->nombre_tabla);
 		free(select->nombre_tabla);
 		free(select);
 		return respuesta_error(MISSING_TABLE);
 	}
 	struct tableMetadataItem* found = get_table_metadata(select->nombre_tabla);
 	if(found == NULL) {
-		log_error(LOG_ERROR,"SELECT: No se encontro la metadata de la tabla '%s'",select->nombre_tabla);
+		log_error(LOG_ERROR_SV,"SELECT: No se encontro la metadata de la tabla '%s'",select->nombre_tabla);
 		free(select->nombre_tabla);
 		free(select);
 		return respuesta_error(UNKNOWN);
@@ -113,7 +113,7 @@ Instruccion* _select(Select* select){
 	list_iterate(listaRegistros,(void*)lastest);
 
 	if(max.value==NULL){
-		log_error(LOG_ERROR,"SELECT: No existe la key %d en la tabla '%s'",select->key,select->nombre_tabla);
+		log_error(LOG_ERROR_SV,"SELECT: No existe la key %d en la tabla '%s'",select->key,select->nombre_tabla);
 		clean_registers_list(listaRegistros);
 		list_destroy(listaRegistros);
 		free(max.value);
@@ -172,14 +172,14 @@ Instruccion* _describe(Describe * describe){
 		return armarRetornoDescribe(lista_describes);
 	}
 	if(!tableExists(describe->nombre_tabla)) {
-		log_error(LOG_ERROR,"DESCRIBE: no existe la tabla '%s'",describe->nombre_tabla);
+		log_error(LOG_ERROR_SV,"DESCRIBE: no existe la tabla '%s'",describe->nombre_tabla);
 		free(describe->nombre_tabla);
 		free(describe);
 		return respuesta_error(MISSING_TABLE);
 	}
 	struct tableMetadataItem* found = get_table_metadata(describe->nombre_tabla);
 	if(found==NULL){
-		log_error(LOG_ERROR,"DESCRIBE: No se encontro la metadata de la tabla %s",describe->nombre_tabla);
+		log_error(LOG_ERROR_SV,"DESCRIBE: No se encontro la metadata de la tabla %s",describe->nombre_tabla);
 		free(describe->nombre_tabla);
 		free(describe);
 		return respuesta_error(UNKNOWN);
@@ -194,7 +194,7 @@ Instruccion* _describe(Describe * describe){
 Instruccion* _drop(Drop* drop){
 	usleep(global_conf.retardo*1000);
 	if(!tableExists(drop->nombre_tabla)) {
-		log_error(LOG_ERROR,"DROP: no existe la tabla '%s'",drop->nombre_tabla);
+		log_error(LOG_ERROR_SV,"DROP: no existe la tabla '%s'",drop->nombre_tabla);
 		free(drop->nombre_tabla);
 		free(drop);
 		return respuesta_error(MISSING_TABLE);

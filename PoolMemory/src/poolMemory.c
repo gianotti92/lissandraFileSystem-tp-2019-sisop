@@ -105,7 +105,7 @@ void configuracion_inicial(void){
 	config_destroy(CONFIG);
 	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
 	instruccion_maxValue->instruccion = MAX_VALUE;
-
+	fd_disponibles = dictionary_create();
 	Instruccion* respuesta = enviar_instruccion(IP_FS,PUERTO_FS, instruccion_maxValue, POOLMEMORY, T_VALUE);
 
 	if (respuesta->instruccion == RETORNO) {
@@ -118,28 +118,41 @@ void configuracion_inicial(void){
 			log_info(LOG_INFO, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
 
 		} else {
-			print_instruccion_parseada(respuesta);
+			log_instruccion_parseada(respuesta);
+			free_retorno(respuesta);
 			log_error(LOG_ERROR, "Memoria: No se obtuvo un MAX_VALUE al pedir el MAX_VALUE al FileSystem.");
 			exit_gracefully(EXIT_FAILURE);
 		}
 
 	} else {
-		print_instruccion_parseada(respuesta);
+		log_instruccion_parseada(respuesta);
+		free_retorno(respuesta);
 		log_error(LOG_ERROR, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
 		exit_gracefully(EXIT_FAILURE);
 	}
-
+	
 
 }
 
 void retorno_consola(char* leido){
+	if(strcmp(leido, "memorias") == 0){
+		pthread_mutex_lock(&mutexListaMemorias);
+		list_iterate(L_MEMORIAS, (void*)mostrar_memoria);
+		pthread_mutex_unlock(&mutexListaMemorias);
+		free(leido);
+		return;
+	}
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	Instruccion* respuesta = atender_consulta(instruccion_parseada);
+
+	log_instruccion_parseada(respuesta);
 	print_instruccion_parseada(respuesta);
+
 }
 
 void retornarControl(Instruccion *instruccion, int cliente){
 	Instruccion* respuesta = atender_consulta(instruccion);
+	log_instruccion_parseada(respuesta);
 	Instruccion * resultado = responder(cliente, respuesta);
 	free_retorno(resultado);
 }
@@ -372,7 +385,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
 			t_list *lista_gossip = gossip->lista_memorias;
 			int aux = 0;
-			list_iterate(lista_gossip, (void*)mostrar_memoria);
 			Memoria * mem = list_get(lista_gossip, aux);
 			while(mem != NULL){
 				add_memory_if_not_exists(mem);

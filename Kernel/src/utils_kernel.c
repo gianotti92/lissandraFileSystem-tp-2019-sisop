@@ -38,21 +38,20 @@ void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistenci
 	if(memoria != NULL){
 		pthread_mutex_t mutex = dame_mutex_de_consistencia(consistencia);
 		pthread_mutex_lock(&mutex);
-		if(existe_memoria_en(memoria, lista_disp) < 0 ){
-			switch(consistencia){
-				case SC:
-					agregarSiNoExiste(lista_sc, memoria);
-					break;
-				case EC:
-					agregarSiNoExiste(lista_ec, memoria);
-					break;
-				case SHC:
-					agregarSiNoExiste(lista_shc, memoria);
-					break;
-				case DISP:
-					agregarSiNoExiste(lista_disp, memoria);
-			}
+		switch(consistencia){
+			case SC:
+				agregarSiNoExiste(lista_sc, memoria);
+				break;
+			case EC:
+				agregarSiNoExiste(lista_ec, memoria);
+				break;
+			case SHC:
+				agregarSiNoExiste(lista_shc, memoria);
+				break;
+			case DISP:
+				agregarSiNoExiste(lista_disp, memoria);
 		}
+		pthread_mutex_unlock(&mutex);
 	}
 }
 
@@ -93,6 +92,24 @@ void lanzar_gossiping(){
 	}
 }
 
+Memoria *get_memoria(int idMemoria, Consistencias consistencia){
+	pthread_mutex_t mutex = dame_mutex_de_consistencia(consistencia);
+	pthread_mutex_lock(&mutex);
+	t_list * lista = dame_lista_de_consistencia(consistencia);
+	int aux = 0;
+	Memoria *mem;
+	while((mem = list_get(lista, aux)) != NULL){
+		if(mem->idMemoria == idMemoria){
+			Memoria* retorno = duplicar_memoria(mem);
+			pthread_mutex_unlock(&mutex);
+			return retorno;
+		}
+		aux++;
+	}
+	pthread_mutex_unlock(&mutex);
+	return mem;
+}
+
 bool existe_memoria_en(Memoria *mem1, t_list* lista){
 		int aux = 0;
 		Memoria * mem2;
@@ -120,16 +137,16 @@ t_list *dame_lista_de_consistencia(Consistencias consistencia){
 	t_list *lista;
 	switch(consistencia){
 		case SC:
-			lista = lista_sc;
+			lista = list_duplicate_all(lista_sc, (void*)duplicar_memoria, mutex_sc);
 			break;
 		case EC:
-			lista = lista_ec;
+			lista = list_duplicate_all(lista_ec, (void*)duplicar_memoria, mutex_ec);
 			break;
 		case SHC:
-			lista = lista_shc;
+			lista = list_duplicate_all(lista_shc, (void*)duplicar_memoria, mutex_shc);
 			break;
 		case DISP:
-			lista = lista_disp;
+			lista = list_duplicate_all(lista_disp, (void*)duplicar_memoria, mutex_disp);
 			break;
 	}
 	return lista;

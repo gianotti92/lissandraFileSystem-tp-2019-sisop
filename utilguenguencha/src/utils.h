@@ -26,6 +26,8 @@ t_log * LOG_INFO;
 t_log * LOG_ERROR;
 t_log * LOG_DEBUG;
 t_log * LOG_OUTPUT;
+t_log * LOG_ERROR_SV;
+t_log * LOG_OUTPUT_SV;
 t_dictionary *fd_disponibles;
 void configure_logger(void);
 void exit_gracefully(int error);

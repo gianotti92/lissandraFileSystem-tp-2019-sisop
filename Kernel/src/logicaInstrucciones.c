@@ -118,7 +118,7 @@ void logicaSelect(Instruccion * instruccion){
 		Memoria *m;
 		switch(consistencia){
 			case SC || EC :;
-				int random = rand() % memoriasAsoc->elements_count;
+				int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
 				m = get_memoria(random, consistencia);
 				break;
 
@@ -127,6 +127,7 @@ void logicaSelect(Instruccion * instruccion){
 				m = get_memoria(indexTabla, consistencia);
 				break;
 		}
+		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(m != NULL){
 			Instruccion *instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, instruccion, KERNEL, T_INSTRUCCION);
 			print_instruccion_parseada(instruccionRespuesta);
@@ -150,8 +151,9 @@ void logicaInsert(Instruccion * instruccion){
 	Consistencias consistencia = obtenerConsistencia(((Insert*) instruccion->instruccion_a_realizar)->nombre_tabla);
 	if(consistencia > 0){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-		int random = rand() % memoriasAsoc->elements_count;
+		int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
 		Memoria * mem = get_memoria(random, consistencia);
+		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(mem != NULL){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
 			print_instruccion_parseada(instruccionRespuesta);
@@ -174,8 +176,9 @@ void logicaDrop(Instruccion * instruccion){
 	Consistencias consistencia = obtenerConsistencia(((Drop*)instruccion->instruccion_a_realizar)->nombre_tabla);
 	if(consistencia > 0){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-		int random = rand() % memoriasAsoc->elements_count;
+		int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
 		Memoria * mem = get_memoria(random, consistencia);
+		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(mem != NULL){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
 			print_instruccion_parseada(instruccionRespuesta);
@@ -213,9 +216,9 @@ void logicaDescribe(Instruccion * instruccion){
 
 		if(consistencia > 0){
 			t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-			int random = rand() % memoriasAsoc->elements_count;
+			int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
 			Memoria * mem = get_memoria(random, consistencia);
-
+			list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 			if(mem != NULL){
 				Instruccion * intstruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
 				print_instruccion_parseada(intstruccionRespuesta);
@@ -279,23 +282,5 @@ int generarHash(char * nombreTabla, int tamLista, int key){
 	hash += key;
 
 	return hash % tamLista;
-}
-
-Memoria *get_memoria(int idMemoria, Consistencias consistencia){
-	t_list * lista = dame_lista_de_consistencia(consistencia);
-	pthread_mutex_t mutex = dame_mutex_de_consistencia(consistencia);
-	int aux = 0;
-	pthread_mutex_lock(&mutex);
-	Memoria *mem;
-	while((mem = list_get(lista, aux)) != NULL){
-		if(mem->idMemoria == idMemoria){
-			Memoria* retorno = duplicar_memoria(mem);
-			pthread_mutex_unlock(&mutex);
-			return retorno;
-		}
-		aux++;
-	}
-	pthread_mutex_unlock(&mutex);
-	return mem;
 }
 
