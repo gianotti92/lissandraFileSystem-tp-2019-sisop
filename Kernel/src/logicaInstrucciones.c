@@ -151,8 +151,19 @@ void logicaInsert(Instruccion * instruccion){
 	Consistencias consistencia = obtenerConsistencia(((Insert*) instruccion->instruccion_a_realizar)->nombre_tabla);
 	if(consistencia > 0){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-		int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
-		Memoria * mem = get_memoria(random, consistencia);
+		Memoria * mem = NULL;
+		if(consistencia == SC){
+			//SC siempre tiene una sola memoria
+			mem = get_memoria(1, consistencia);
+		}else if(consistencia == SHC){
+			//entrar por hash
+			int key = ((Insert*) instruccion->instruccion_a_realizar)->key;
+
+		}else if(consistencia == EC){
+			//una random
+			int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
+		}
+
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(mem != NULL){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);

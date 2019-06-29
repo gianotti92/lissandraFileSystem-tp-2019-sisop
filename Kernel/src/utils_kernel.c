@@ -96,17 +96,19 @@ Memoria *get_memoria(int idMemoria, Consistencias consistencia){
 	pthread_mutex_t mutex = dame_mutex_de_consistencia(consistencia);
 	pthread_mutex_lock(&mutex);
 	t_list * lista = dame_lista_de_consistencia(consistencia);
+	pthread_mutex_unlock(&mutex);
 	int aux = 0;
 	Memoria *mem;
 	while((mem = list_get(lista, aux)) != NULL){
 		if(mem->idMemoria == idMemoria){
 			Memoria* retorno = duplicar_memoria(mem);
-			pthread_mutex_unlock(&mutex);
+			list_destroy(lista);
 			return retorno;
 		}
 		aux++;
 	}
 	pthread_mutex_unlock(&mutex);
+	list_destroy(lista);
 	return mem;
 }
 
@@ -127,7 +129,7 @@ void mostrarId(Memoria * memoria){
 }
 
 void agregarSiNoExiste(t_list * list, Memoria *m){
-		if(existe_memoria_en(m, list)){
+		if(!existe_memoria_en(m, list)){
 			Memoria * mem = duplicar_memoria(m);
 			list_add(list, mem);
        }
