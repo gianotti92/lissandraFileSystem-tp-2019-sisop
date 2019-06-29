@@ -76,6 +76,7 @@ Proceso * logicaRun(Proceso * proceso){
 void logicaCreate(Instruccion * instruccion){
 	//FIXME: Hay que seleccionar una aleatoriamente, no la MEMORIA_PPAL
 	Instruccion * instruccionRespuestaCreate = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion, KERNEL, T_INSTRUCCION);
+	log_instruccion_parseada(instruccionRespuestaCreate);
 	print_instruccion_parseada(instruccionRespuestaCreate);
 }
 
@@ -130,6 +131,7 @@ void logicaSelect(Instruccion * instruccion){
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(m != NULL){
 			Instruccion *instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, instruccion, KERNEL, T_INSTRUCCION);
+			log_instruccion_parseada(instruccionRespuesta);
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(m);
 			return;
@@ -221,6 +223,7 @@ void logicaDescribe(Instruccion * instruccion){
 			list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 			if(mem != NULL){
 				Instruccion * intstruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
+				log_instruccion_parseada(intstruccionRespuesta);
 				print_instruccion_parseada(intstruccionRespuesta);
 				eliminar_memoria(mem);
 				return;
@@ -232,6 +235,7 @@ void logicaDescribe(Instruccion * instruccion){
 		}
 	}else{
 		Instruccion * intstruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion, KERNEL, T_INSTRUCCION);
+		log_instruccion_parseada(intstruccionRespuesta);
 		print_instruccion_parseada(intstruccionRespuesta);
 		return;
 	}
