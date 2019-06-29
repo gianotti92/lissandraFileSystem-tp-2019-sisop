@@ -132,6 +132,13 @@ void configuracion_inicial(void){
 }
 
 void retorno_consola(char* leido){
+	if(strcmp(leido, "memorias") == 0){
+		pthread_mutex_lock(&mutexListaMemorias);
+		list_iterate(L_MEMORIAS, (void*)mostrar_memoria);
+		pthread_mutex_unlock(&mutexListaMemorias);
+		free(leido);
+		return;
+	}
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	Instruccion* respuesta = atender_consulta(instruccion_parseada);
 	print_instruccion_parseada(respuesta);
@@ -371,7 +378,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
 			t_list *lista_gossip = gossip->lista_memorias;
 			int aux = 0;
-			list_iterate(lista_gossip, (void*)mostrar_memoria);
 			Memoria * mem = list_get(lista_gossip, aux);
 			while(mem != NULL){
 				add_memory_if_not_exists(mem);

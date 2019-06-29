@@ -1,7 +1,12 @@
 #include "comunicacion.h"
 #include<pthread.h>
 
-pthread_mutex_t lock; // Lock para estructura de diccionario
+pthread_mutex_t mutex_diccionario_fd; // Lock para estructura de diccionario
+
+typedef struct {
+	int fd;
+	pthread_mutex_t mutex;
+}Connection;
 
 /**
 * @NAME: iniciar_servidor
@@ -219,9 +224,9 @@ int *dame_fd(char *ip, char *puerto){
 		char *key = string_new();
 		string_append(&key, ip);
 		string_append(&key, puerto);
-		pthread_mutex_lock(&lock);
+		pthread_mutex_lock(&mutex_diccionario_fd);
 		int *fd_ret = dictionary_get(fd_disponibles, key);
-		pthread_mutex_unlock(&lock);
+		pthread_mutex_unlock(&mutex_diccionario_fd);
 		free(key);
 		return fd_ret;
 	}else{
@@ -238,10 +243,10 @@ int *pone_fd(char *ip, char *puerto, int fd){
 		if(viejo_fd == NULL){
 			int *fd_guardar = malloc(sizeof(int));
 			memcpy(fd_guardar, &fd, sizeof(fd));
-			pthread_mutex_lock(&lock);
+			pthread_mutex_lock(&mutex_diccionario_fd);
 			dictionary_put(fd_disponibles, key, fd_guardar);
 			free(key);
-			pthread_mutex_unlock(&lock);
+			pthread_mutex_unlock(&mutex_diccionario_fd);
 			return fd_guardar;
 		}else{
 			memcpy(viejo_fd, &fd, sizeof(fd));
@@ -259,9 +264,9 @@ void quita_fd(char *ip, char *puerto){
 		string_append(&key, puerto);
 		int *viejo_fd = dame_fd(ip, puerto);
 		if(viejo_fd != NULL){
-			pthread_mutex_lock(&lock);
+			pthread_mutex_lock(&mutex_diccionario_fd);
 			dictionary_remove_and_destroy(fd_disponibles, key, (void*)free);
-			pthread_mutex_unlock(&lock);
+			pthread_mutex_unlock(&mutex_diccionario_fd);
 		}
 		free(key);
 	}
@@ -490,7 +495,9 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 	default:
 		break;
 	}
-	free(stream);
+	if (buffer_size > 0){
+		free(stream);
+	}
 	return false;
 }
 
