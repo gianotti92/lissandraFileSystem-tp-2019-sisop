@@ -102,13 +102,13 @@ Memoria *get_memoria(int idMemoria, Consistencias consistencia){
 	while((mem = list_get(lista, aux)) != NULL){
 		if(mem->idMemoria == idMemoria){
 			Memoria* retorno = duplicar_memoria(mem);
-			list_destroy(lista);
+			list_destroy_and_destroy_elements(lista, (void*)eliminar_memoria);
 			return retorno;
 		}
 		aux++;
 	}
 	pthread_mutex_unlock(&mutex);
-	list_destroy(lista);
+	list_destroy_and_destroy_elements(lista, (void*)eliminar_memoria);
 	return mem;
 }
 

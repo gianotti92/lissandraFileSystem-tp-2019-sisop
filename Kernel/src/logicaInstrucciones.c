@@ -74,9 +74,13 @@ Proceso * logicaRun(Proceso * proceso){
 }
 
 void logicaCreate(Instruccion * instruccion){
-	//FIXME: Hay que seleccionar una aleatoriamente, no la MEMORIA_PPAL
-	Instruccion * instruccionRespuestaCreate = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion, KERNEL, T_INSTRUCCION);
+	t_list * memoriasAsoc = list_duplicate_all(lista_disp, (void*)duplicar_memoria, mutex_disp);
+	int random = (rand() % (memoriasAsoc->elements_count - 1));
+	Memoria * mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+	Instruccion * instruccionRespuestaCreate = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
 	print_instruccion_parseada(instruccionRespuestaCreate);
+	list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
+	eliminar_memoria(mem);
 }
 
 void logicaAdd(Instruccion * instruccion){
@@ -115,23 +119,25 @@ void logicaSelect(Instruccion * instruccion){
 	Consistencias consistencia = obtenerConsistencia(((Select*)instruccion->instruccion_a_realizar)->nombre_tabla);
 	if(consistencia > 0){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-		Memoria *m;
-		switch(consistencia){
-			case SC || EC :;
-				int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
-				m = get_memoria(random, consistencia);
-				break;
+		Memoria * mem = NULL;
+		if(memoriasAsoc->elements_count > 0){
+			switch(consistencia){
+				case SC || EC :;
+					int random = (rand() % (memoriasAsoc->elements_count -1));
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					break;
 
-			default:;
-				int indexTabla = generarHash(((Select*)instruccion->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count, ((Select*)instruccion)->key);
-				m = get_memoria(indexTabla, consistencia);
-				break;
+				default:;
+					int indexTabla = generarHash(((Select*)instruccion->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count, ((Select*)instruccion)->key);
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc, indexTabla));
+					break;
+			}
 		}
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
-		if(m != NULL){
-			Instruccion *instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, instruccion, KERNEL, T_INSTRUCCION);
+		if(mem != NULL){
+			Instruccion *instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
 			print_instruccion_parseada(instruccionRespuesta);
-			eliminar_memoria(m);
+			eliminar_memoria(mem);
 			return;
 		}
 		else{
@@ -152,18 +158,19 @@ void logicaInsert(Instruccion * instruccion){
 	if(consistencia > 0){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
 		Memoria * mem = NULL;
-		if(consistencia == SC){
-			//SC siempre tiene una sola memoria
-			mem = get_memoria(1, consistencia);
-		}else if(consistencia == SHC){
-			//entrar por hash
-			int key = ((Insert*) instruccion->instruccion_a_realizar)->key;
+		if(memoriasAsoc->elements_count > 0){
+			switch(consistencia){
+				case SC || EC :;
+					int random = (rand() % (memoriasAsoc->elements_count -1));
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					break;
 
-		}else if(consistencia == EC){
-			//una random
-			int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
+				default:;
+					int indexTabla = generarHash(((Select*)instruccion->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count, ((Select*)instruccion)->key);
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc, indexTabla));
+					break;
+			}
 		}
-
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(mem != NULL){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
@@ -187,8 +194,20 @@ void logicaDrop(Instruccion * instruccion){
 	Consistencias consistencia = obtenerConsistencia(((Drop*)instruccion->instruccion_a_realizar)->nombre_tabla);
 	if(consistencia > 0){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-		int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
-		Memoria * mem = get_memoria(random, consistencia);
+		Memoria * mem = NULL;
+		if(memoriasAsoc->elements_count > 0){
+			switch(consistencia){
+				case SC || EC :;
+					int random = (rand() % (memoriasAsoc->elements_count -1));
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					break;
+
+				default:;
+					int indexTabla = generarHash(((Select*)instruccion->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count, ((Select*)instruccion)->key);
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc, indexTabla));
+					break;
+			}
+		}
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(mem != NULL){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
@@ -222,13 +241,23 @@ void logicaJournal(Instruccion * instruccion){
 void logicaDescribe(Instruccion * instruccion){
 
 	if(((Describe*)instruccion->instruccion_a_realizar)->nombre_tabla != NULL){
-
 		Consistencias consistencia = obtenerConsistencia(((Describe*)instruccion->instruccion_a_realizar)->nombre_tabla);
-
+		Memoria * mem = NULL;
 		if(consistencia > 0){
 			t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-			int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
-			Memoria * mem = get_memoria(random, consistencia);
+			if(memoriasAsoc->elements_count > 0){
+				switch(consistencia){
+					case SC || EC :;
+						int random = (rand() % (memoriasAsoc->elements_count -1));
+						mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+						break;
+
+					default:;
+						int indexTabla = generarHash(((Select*)instruccion->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count, ((Select*)instruccion)->key);
+						mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc, indexTabla));
+						break;
+				}
+			}
 			list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 			if(mem != NULL){
 				Instruccion * intstruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
