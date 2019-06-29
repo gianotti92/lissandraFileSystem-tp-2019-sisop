@@ -271,7 +271,12 @@ void quita_fd(char *ip, char *puerto){
 		free(key);
 	}
 }
-
+/*
+void close_connection(Connection * conn){
+	close(conn->fd);
+	free(conn);
+}
+*/
 void servidor_comunicacion(Comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
 	int aux1, bytes_recibidos, fd_max, server_socket;

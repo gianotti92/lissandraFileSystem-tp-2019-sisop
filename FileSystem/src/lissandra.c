@@ -14,7 +14,7 @@ int main(void) {
 	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump;
 
 	configure_logger();
-
+	fd_disponibles = dictionary_create();
 	pthread_mutex_init(&memtableMutex,NULL);
 	pthread_mutex_init(&tableMetadataMutex,NULL);
 

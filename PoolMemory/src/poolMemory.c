@@ -105,7 +105,7 @@ void configuracion_inicial(void){
 	config_destroy(CONFIG);
 	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
 	instruccion_maxValue->instruccion = MAX_VALUE;
-
+	fd_disponibles = dictionary_create();
 	Instruccion* respuesta = enviar_instruccion(IP_FS,PUERTO_FS, instruccion_maxValue, POOLMEMORY, T_VALUE);
 
 	if (respuesta->instruccion == RETORNO) {
@@ -128,7 +128,7 @@ void configuracion_inicial(void){
 		log_error(LOG_ERROR, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
 		exit_gracefully(EXIT_FAILURE);
 	}
-
+	
 
 }
 
