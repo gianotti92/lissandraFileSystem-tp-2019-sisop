@@ -118,13 +118,15 @@ void configuracion_inicial(void){
 			log_info(LOG_INFO, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
 
 		} else {
-			print_instruccion_parseada(respuesta);
+			log_instruccion_parseada(respuesta);
+			free_retorno(respuesta);
 			log_error(LOG_ERROR, "Memoria: No se obtuvo un MAX_VALUE al pedir el MAX_VALUE al FileSystem.");
 			exit_gracefully(EXIT_FAILURE);
 		}
 
 	} else {
-		print_instruccion_parseada(respuesta);
+		log_instruccion_parseada(respuesta);
+		free_retorno(respuesta);
 		log_error(LOG_ERROR, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
 		exit_gracefully(EXIT_FAILURE);
 	}
@@ -142,11 +144,15 @@ void retorno_consola(char* leido){
 	}
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	Instruccion* respuesta = atender_consulta(instruccion_parseada);
+
+	log_instruccion_parseada(respuesta);
 	print_instruccion_parseada(respuesta);
+
 }
 
 void retornarControl(Instruccion *instruccion, int cliente){
 	Instruccion* respuesta = atender_consulta(instruccion);
+	log_instruccion_parseada(respuesta);
 	Instruccion * resultado = responder(cliente, respuesta);
 	free_retorno(resultado);
 }

@@ -78,6 +78,7 @@ void logicaCreate(Instruccion * instruccion){
 	int random = (rand() % (memoriasAsoc->elements_count - 1));
 	Memoria * mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 	Instruccion * instruccionRespuestaCreate = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
+	log_instruccion_parseada(instruccionRespuestaCreate);
 	print_instruccion_parseada(instruccionRespuestaCreate);
 	list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 	eliminar_memoria(mem);
@@ -136,6 +137,7 @@ void logicaSelect(Instruccion * instruccion){
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(mem != NULL){
 			Instruccion *instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
+			log_instruccion_parseada(instruccionRespuesta);
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(mem);
 			return;
@@ -261,6 +263,7 @@ void logicaDescribe(Instruccion * instruccion){
 			list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 			if(mem != NULL){
 				Instruccion * intstruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
+				log_instruccion_parseada(intstruccionRespuesta);
 				print_instruccion_parseada(intstruccionRespuesta);
 				eliminar_memoria(mem);
 				return;
@@ -272,6 +275,7 @@ void logicaDescribe(Instruccion * instruccion){
 		}
 	}else{
 		Instruccion * intstruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, instruccion, KERNEL, T_INSTRUCCION);
+		log_instruccion_parseada(intstruccionRespuesta);
 		print_instruccion_parseada(intstruccionRespuesta);
 		return;
 	}

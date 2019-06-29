@@ -1,5 +1,7 @@
 #include "parser.h"
 void free_consulta_separada(int length,char** consulta_separada);
+void log_describes(Retorno_Describe *describe);
+void show_describes(Retorno_Describe *describe);
 
 Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
@@ -411,8 +413,137 @@ bool es_numero(char* palabra) {
 
 void show_describes(Retorno_Describe *describe){
 	char*consistencia=consistencia2string(describe->consistencia);
-	log_info(LOG_OUTPUT,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d\n", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
+	log_info(LOG_OUTPUT,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
 	free(consistencia);
+}
+
+void log_describes(Retorno_Describe *describe){
+	char*consistencia=consistencia2string(describe->consistencia);
+	log_info(LOG_OUTPUT_SV,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d", describe->nombre_tabla, consistencia, describe->particiones, describe->compactation_time);
+	free(consistencia);
+}
+
+void log_instruccion_parseada(Instruccion * instruccion_parseada) {
+	switch (instruccion_parseada->instruccion) {
+		case RETORNO:;
+		Retorno_Generico * retorno_generico = instruccion_parseada->instruccion_a_realizar;
+			switch(retorno_generico->tipo_retorno){
+			case VALOR:;
+				Retorno_Value* retorno_value = retorno_generico->retorno;
+				log_info(LOG_OUTPUT_SV,"Value: %s TS: %zu \n", retorno_value->value, retorno_value->timestamp);
+				break;
+			case SUCCESS:;
+				log_info(LOG_OUTPUT_SV,"Operacion completada correctamente");
+				break;
+			case DATOS_DESCRIBE:
+				list_iterate(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes, (void*)log_describes);
+				break;
+			default:
+				break;
+			}
+		break;
+		case ERROR:;
+			Error* error = instruccion_parseada->instruccion_a_realizar;
+			switch (error->error) {
+				case BAD_COMPACTATION:;
+					log_error(LOG_ERROR_SV,"EL TIEMPO DE COMPACTACION DEBE SER UN NUMERO");
+					break;
+
+				case BAD_CONSISTENCY:;
+					log_error(LOG_ERROR_SV,"TIPO DE CONSISTENCIA INCORRECTO [SC, SHC, EC]");
+					break;
+
+				case BAD_KEY:;
+					log_error(LOG_ERROR_SV,"ERROR - NO EXISTE ESA KEY");
+					break;
+
+				case BAD_MEMORY:;
+					log_error(LOG_ERROR_SV,"LA MEMORIA DEBE SER UN NUMERO");
+					break;
+
+				case BAD_OPERATION:;
+					log_error(LOG_ERROR_SV,"OPERACION INVALIDA");
+					break;
+
+				case BAD_PARTITION:;
+					log_error(LOG_ERROR_SV,"LA PARTICION DEBE SER UN NUMERO");
+					break;
+
+				case BAD_REQUEST:;
+					log_error(LOG_ERROR_SV,"SINTAXIS INCORRECTA");
+					break;
+
+				case CONNECTION_ERROR:;
+					log_error(LOG_ERROR_SV,"ERROR DE CONEXION");
+					break;
+
+				case JOURNAL_FAILURE:;
+					log_error(LOG_ERROR_SV,"ERROR AL EJECUTAR JOURNAL");
+					break;
+
+				case MISSING_TABLE:;
+					log_error(LOG_ERROR_SV,"LA TABLA NO EXISTE");
+					break;
+
+				case LARGE_VALUE:;
+					log_error(LOG_ERROR_SV,"EL VALOR ES DEMASIADO LARGO");
+				break;
+
+				case TABLE_EXIST:;
+					log_error(LOG_ERROR_SV,"LA TABLA YA EXISTE");
+				break;
+
+				case UNKNOWN:;
+					log_error(LOG_ERROR_SV,"ERROR DESCONOCIDO");
+				break;
+
+				case MISSING_FILE:;
+					log_error(LOG_ERROR_SV,"NO EXISTE EL ARCHIVO");
+				break;
+
+				case FILE_DELETE_ERROR:;
+					log_error(LOG_ERROR_SV,"NO SE PUDO ELIMINAR EL ARCHIVO");
+				break;
+
+				case FILE_OPEN_ERROR:;
+					log_error(LOG_ERROR_SV,"NO SE PUDO ABRIR EL ARCHIVO");
+				break;
+
+				case DIR_OPEN_ERROR:;
+					log_error(LOG_ERROR_SV,"NO SE PUDO ABRIR EL DIRECTORIO");
+				break;
+
+				case DIR_DELETE_ERROR:;
+					log_error(LOG_ERROR_SV,"NO SE PUDO ELIMINAR EL DIRECTORIO");
+				break;
+
+				case DIR_CREATE_ERROR:;
+					log_error(LOG_ERROR_SV,"NO SE PUDO CREAR EL DIRECTORIO");
+				break;
+
+				case BLOCK_ASSIGN_ERROR:;
+					log_error(LOG_ERROR_SV,"NO SE PUDIERON ASIGNAR LOS BLOQUES");
+				break;
+				case BLOCK_MAX_REACHED:;
+					log_error(LOG_ERROR_SV,"NO SE PUDIERON ASIGNAR LOS BLOQUES - MAXIMO ALCANZADO");
+				break;
+
+				case NULL_REQUEST:;
+					log_error(LOG_ERROR_SV,"REQUEST NO VALIDO");
+				break;
+
+				case DIV_BY_ZERO:;
+					log_error(LOG_ERROR_SV,"SE INTENTO DIVIDIR POR 0");
+					break;
+
+				default:
+					break;
+			}
+			break;
+
+		default:
+			break;
+		}
 }
 
 void print_instruccion_parseada(Instruccion * instruccion_parseada) {
@@ -422,14 +553,14 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 			switch(retorno_generico->tipo_retorno){
 			case VALOR:;
 				Retorno_Value* retorno_value = retorno_generico->retorno;
-				log_info(LOG_OUTPUT,"Value: %s TS: %zu \n", retorno_value->value, retorno_value->timestamp);
+				log_info(LOG_OUTPUT,"Value: %s TS: %zu", retorno_value->value, retorno_value->timestamp);
 				free(retorno_value->value);
 				free(retorno_value);
 				free(retorno_generico);
 				free(instruccion_parseada);
 				break;
 			case SUCCESS:;
-				log_info(LOG_OUTPUT,"Operacion completada correctamente");
+				log_info(LOG_OUTPUT,"Operacion completada correctamente.");
 				free(retorno_generico);
 				free(instruccion_parseada);
 				break;
@@ -624,7 +755,7 @@ uintmax_t get_timestamp() {
 	echo_time = time(NULL);
 
 	if (echo_time == ((time_t) -1)) {
-		log_error(LOG_ERROR, "Parser: Fallo al obtener la hora.");
+		log_error(LOG_ERROR_SV, "Fallo al obtener la hora en parser.c:get_timestamp().");
 
 		return -1;
 	}

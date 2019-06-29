@@ -45,9 +45,15 @@ bool es_numero(char*);
 
 /**
 * @NAME: print_instruccion_parseada
-* @DESC: Imprime por pantalla la instruccion pasada como parametro.
+* @DESC: Imprime por pantalla la instruccion pasada como parametro, no libera la memoria.
 */
 void print_instruccion_parseada(Instruccion*);
+
+/**
+* @NAME: log_instruccion_parseada
+* @DESC: Loguea sin visualizacion la instruccion pasada como parametro y libera la memoria.
+*/
+void log_instruccion_parseada(Instruccion *);
 
 /**
 * @NAME: crear_instruccion
