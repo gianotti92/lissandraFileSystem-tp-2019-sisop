@@ -12,6 +12,7 @@ int main(void) {
 	pthread_mutex_init(&lista_de_tablas_mx, NULL);
 	sem_init(&semaforoSePuedePlanificar, 0, 0);
 	sem_init(&semaforoNewToReady, 0, 0);
+	sem_init(&semaforoFinalizar, 0, 0);
 
 	configure_logger();
 	configuracion_inicial();
@@ -20,8 +21,10 @@ int main(void) {
 	
 	fd_disponibles = dictionary_create();
 	
-	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady,
-			calcularMetrics, T_confMonitor, T_describe;
+	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, finalizarProceso, calcularMetrics, T_confMonitor, T_describe;
+
+	pthread_create(&finalizarProceso, NULL, (void*) finalizar_procesos, NULL);
+	pthread_detach(finalizarProceso);
 
 	pthread_create(&memoriasDisponibles, NULL, (void*) lanzar_gossiping, NULL);
 	pthread_detach(memoriasDisponibles);
@@ -32,8 +35,8 @@ int main(void) {
 	pthread_create(&T_confMonitor, NULL, TH_confMonitor, NULL);
 	pthread_detach(T_confMonitor);
 
-	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola,
-			retorno_consola);
+	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
+	pthread_detach(consolaKernel);
 
 	pthread_create(&pasarNewToReady, NULL, (void*) newToReady, NULL);
 	pthread_detach(pasarNewToReady);
@@ -49,7 +52,7 @@ int main(void) {
 		pthread_detach(multiProcesamientoKernell);
 		cantMultiprocesamiento++;
 	}
-	pthread_join(consolaKernel, NULL);
+	for(;;);
 }
 
 void retorno_consola(char* leido) {
@@ -82,85 +85,65 @@ void newToReady() {
 }
 
 void ejecutar() {
-	while (1) {
+	while (true) {
 		sem_wait(&semaforoSePuedePlanificar);
 		Proceso * proceso = desencolar(estadoReady);
-		time_t fin;
-		int diff;
 		switch (((Instruccion*) proceso->instruccion)->instruccion) {
-		case RUN:
-			;
-			proceso = logicaRun(proceso);
-			proceso->esProcesoRun = true;
-			proceso->quantumProcesado = 0;
-			break;
+			case RUN:;
+				proceso->fin_proceso = true;
+				while(proceso->quantumProcesado <= QUANTUM){
+					usleep(RETARDO*1000);
+					logicaRun(proceso);
+				}
+				if(!proceso->fin_proceso){
+					proceso->quantumProcesado = 0;
+					encolar(estadoReady, proceso);
+					sem_post(&semaforoSePuedePlanificar);
+				}else{
+					encolar(estadoExit, proceso);
+					sem_post(&semaforoFinalizar);
+				}
+				break;
 
-		case METRICS:
-			;
-			logicaMetrics(proceso->instruccion);
-			proceso->esProcesoRun = false;
-			break;
+			case METRICS:;
+				usleep(RETARDO*1000);
+				logicaMetrics(proceso);
+				break;
 
-		case SELECT:
-			;
-			logicaSelect(proceso->instruccion);
+			case SELECT:;
+				usleep(RETARDO*1000);
+				logicaSelect(proceso);
+				break;
 
-			fin = get_timestamp();
-			diff = difftime(fin, ((Select*) proceso->instruccion)->timestamp);
-			proceso->segundosQueTardo = diff;
-			proceso->esProcesoRun = false;
-			break;
+			case INSERT:;
+				usleep(RETARDO*1000);
+				logicaInsert(proceso);
+				break;
 
-		case INSERT:
-			;
-			logicaInsert(proceso->instruccion);
+			case CREATE:;
+				usleep(RETARDO*1000);
+				logicaCreate(proceso);
+				break;
 
-			fin = get_timestamp();
-			diff = difftime(fin, ((Insert*) proceso->instruccion)->timestamp);
-			proceso->segundosQueTardo = diff;
-			proceso->esProcesoRun = false;
-			break;
+			case DROP:;
+				usleep(RETARDO*1000);
+				logicaDrop(proceso);
+				break;
 
-		case CREATE:
-			;
-			logicaCreate(proceso->instruccion);
-			proceso->esProcesoRun = false;
-			break;
+			case ADD:;
+				usleep(RETARDO*1000);
+				logicaAdd(proceso);
+				break;
 
-		case DROP:
-			;
-			logicaDrop(proceso->instruccion);
-			proceso->esProcesoRun = false;
-			break;
+			case DESCRIBE:;
+				usleep(RETARDO*1000);
+				logicaDescribe(proceso);
+				break;
 
-		case ADD:
-			;
-			logicaAdd(proceso->instruccion);
-			proceso->esProcesoRun = false;
-			break;
-
-		case DESCRIBE:
-			logicaDescribe(proceso->instruccion);
-			proceso->esProcesoRun = false;
-			break;
-
-		case JOURNAL:
-			;
-			logicaJournal(proceso->instruccion);
-			proceso->esProcesoRun = false;
-			break;
-
-		default:
-			;
-			break;
-
-			//free(proceso->instruccionAProcesar); // REVISAR: Porque sino nunca la liberamos
-			if (!proceso->esProcesoRun
-					|| proceso->instruccionAProcesar->instruccion == ERROR) {
-				encolar(estadoExit, proceso);
-			} else {
-				sem_post(&semaforoSePuedePlanificar);
-			}
+			default:;
+				usleep(RETARDO*1000);
+				logicaJournal(proceso);
+				break;
 		}
 	}
 }
@@ -173,8 +156,7 @@ void *TH_confMonitor(void * p) {
 	int confMonitor_cb(void) {
 		t_config* conf = config_create("config.cfg");
 		if (conf == NULL) {
-			log_error(LOG_ERROR,
-					"Archivo de configuracion: config.cfg no encontrado");
+			log_error(LOG_ERROR, "Archivo de configuracion: config.cfg no encontrado");
 			return 1;
 		}
 		actualizar_configuracion(conf);
@@ -200,4 +182,15 @@ void *TH_describe(void *p) {
 	}
 	list_destroy(lista_de_tablas);
 	pthread_mutex_destroy(&lista_de_tablas_mx);
+}
+
+void finalizar_procesos(void){
+	while(true){
+		sem_wait(&semaforoFinalizar);
+		Proceso * proceso = desencolar(estadoExit);
+		if(proceso != NULL){
+			free(proceso);
+			//CARGAR METRICS
+		}
+	}
 }

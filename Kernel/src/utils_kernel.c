@@ -1,13 +1,5 @@
 #include "kernel.h"
 
-bool esFinQuantum(Proceso * p, char * instruccionALeer){
-	return instruccionALeer != NULL && p->quantumProcesado == 2;
-}
-
-bool esFinLectura(Proceso * p, char * instruccionALeer){
-	return instruccionALeer == NULL;
-}
-
 void encolar(t_list * cola, Proceso * proceso) {
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	list_add(cola, proceso);

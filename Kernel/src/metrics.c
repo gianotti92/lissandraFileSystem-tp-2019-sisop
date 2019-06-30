@@ -7,13 +7,7 @@ void calculoMetrics(){
 	int operacionesTotales = 0;
 	int tiempoPromedioSelect = 0;
 	int tiempoPromedioInsert = 0;
-	while(1){
-		Proceso * proceso = desencolar(estadoExit);
-		while(proceso != NULL){ //esto queda porque libera los procesos, pero habria que ponerlo en otro lugar
-			free(proceso);
-			proceso = desencolar(estadoExit);
-		}
-
+	while(true){
 		pthread_mutex_lock(&mutex_metrics);
 
 		int elemento = (acum30sMetrics->elements_count -1);

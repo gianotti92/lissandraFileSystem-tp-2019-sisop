@@ -26,12 +26,12 @@ typedef struct{
 	Instruccion* instruccionAProcesar;
 	int quantumProcesado;
 	int numeroInstruccion;
-	int segundosQueTardo;
-	bool esProcesoRun;
+	t_list *metricas;
+	bool fin_proceso;
 }Proceso;
 
 pthread_mutex_t mutexRecursosCompartidos;
-sem_t semaforoSePuedePlanificar, semaforoNewToReady;
+sem_t semaforoSePuedePlanificar, semaforoNewToReady, semaforoFinalizar;
 
 // Funciones del proceso
 void configuracion_inicial(void);
@@ -50,17 +50,15 @@ void iniciarEstructurasAsociadas();
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
 void lanzar_gossiping();
 void newToReady();
-void logicaCreate(Instruccion * instruccion);
-Proceso * logicaRun(Proceso * proceso);
-void logicaDescribe(Instruccion * instruccion);
-void logicaJournal(Instruccion * instruccion);
-void logicaDrop(Instruccion * instruccion);
-void logicaSelect(Instruccion * instruccion);
-void logicaAdd(Instruccion * instruccion);
-void logicaInsert(Instruccion * instruccion);
-void logicaMetrics(Instruccion * instruccion);
-bool esFinLectura(Proceso * p, char * instruccionALeer);
-bool esFinQuantum(Proceso * p, char * instruccionALeer);
+void logicaCreate(Proceso * proceso);
+void logicaRun(Proceso * proceso);
+void logicaDescribe(Proceso * proceso);
+void logicaJournal(Proceso * proceso);
+void logicaDrop(Proceso * proceso);
+void logicaSelect(Proceso * proceso);
+void logicaAdd(Proceso * proceso);
+void logicaInsert(Proceso * proceso);
+void logicaMetrics(Proceso * proceso);
 void calculoMetrics();
 void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
@@ -74,6 +72,7 @@ void agregarSiNoExiste(t_list * list, Memoria *m);
 t_list *dame_lista_de_consistencia(Consistencias consistencia);
 pthread_mutex_t dame_mutex_de_consistencia(Consistencias consistencia);
 void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistencia);
+void finalizar_procesos(void);
 
 
 // Variables del proceso
