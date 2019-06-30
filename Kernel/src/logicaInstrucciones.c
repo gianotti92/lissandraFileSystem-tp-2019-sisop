@@ -1,5 +1,7 @@
 #include "kernel.h"
 
+void acumularMetrics(int id_memoria, Instruction_set instruccion, t_timestamp tiempo);
+
 Proceso * logicaRun(Proceso * proceso){
 	char * proximainstruccionChar = leer_linea(((Run*)proceso->instruccion->instruccion_a_realizar)->path, proceso->numeroInstruccion);
 
@@ -131,9 +133,19 @@ void logicaSelect(Instruccion * instruccion){
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(m != NULL){
 			Instruccion *instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, instruccion, KERNEL, T_INSTRUCCION);
+
+
+			int metrics_id_memoria = m->idMemoria;
+			t_timestamp timestamps = get_timestamp();
+			t_timestamp metrics_tiempo = difftime(timestamps, ((Select*) instruccion)->timestamp);
+
 			log_instruccion_parseada(instruccionRespuesta);
 			print_instruccion_parseada(instruccionRespuesta);
+
 			eliminar_memoria(m);
+
+			acumularMetrics(metrics_id_memoria, SELECT, metrics_tiempo);
+
 			return;
 		}
 		else{
@@ -158,8 +170,20 @@ void logicaInsert(Instruccion * instruccion){
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(mem != NULL){
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, instruccion, KERNEL, T_INSTRUCCION);
+
 			print_instruccion_parseada(instruccionRespuesta);
+
+			int metrics_id_memoria = mem->idMemoria;
+			t_timestamp timestamps = get_timestamp();
+			t_timestamp metrics_tiempo = difftime(timestamps, ((Insert*) instruccion)->timestamp);
+
 			eliminar_memoria(mem);
+
+			log_instruccion_parseada(instruccionRespuesta);
+			print_instruccion_parseada(instruccionRespuesta);
+
+			acumularMetrics(metrics_id_memoria, INSERT, metrics_tiempo);
+
 			return;
 		}else{
 			log_error(LOG_OUTPUT, "No hay memorias asignadas a este criterio");
@@ -246,11 +270,11 @@ void logicaDescribe(Instruccion * instruccion){
 
 void logicaMetrics(Instruccion * instruccion){
 	pthread_mutex_lock(&mutexRecursosCompartidos);
-	char * campo1 = dictionary_get(metrics, READS);
-	char * campo2 = dictionary_get(metrics, WRITES);
-	char * campo3 = dictionary_get(metrics, MEM_LOAD);
-	char * campo4 = dictionary_get(metrics, WRITE_LAT);
-	char * campo5 = dictionary_get(metrics, READ_LAT);
+	char * campo1 = dictionary_get(metrics, READ_LAT);
+	char * campo2 = dictionary_get(metrics, WRITE_LAT);
+	char * campo3 = dictionary_get(metrics, READS);
+	char * campo4 = dictionary_get(metrics, WRITES);
+	char * campo5 = dictionary_get(metrics, MEM_LOAD);
 	pthread_mutex_unlock(&mutexRecursosCompartidos);
 
 	log_info(LOG_OUTPUT,"%s\n", campo1);
@@ -288,3 +312,14 @@ int generarHash(char * nombreTabla, int tamLista, int key){
 	return hash % tamLista;
 }
 
+void acumularMetrics(int id_memoria, Instruction_set instruccion, t_timestamp tiempo){
+
+	AcumMetrics nuevoAcum = malloc(sizeof(AcumMetrics));
+	nuevoAcum->id_memoria = id_memoria;
+	nuevoAcum->instruccion = instruccion;
+	nuevoAcum->tiempo = tiempo;
+
+	pthread_mutex_lock(&mutex_metrics);
+	list_add(acum30sMetrics, nuevoAcum);
+	pthread_mutex_unlock(&mutex_metrics);
+}

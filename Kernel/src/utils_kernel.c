@@ -170,3 +170,5 @@ pthread_mutex_t dame_mutex_de_consistencia(Consistencias consistencia){
 	}
 	return mutex;
 }
+
+

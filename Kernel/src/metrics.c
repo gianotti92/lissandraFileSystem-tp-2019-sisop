@@ -9,43 +9,55 @@ void calculoMetrics(){
 	int tiempoPromedioInsert = 0;
 	while(1){
 		Proceso * proceso = desencolar(estadoExit);
-		while(proceso != NULL){
-			operacionesTotales++;
-			switch(proceso->instruccion->instruccion){
-				case INSERT:;
-					tiempoPromedioInsert += proceso->segundosQueTardo;
-					contadorInsert++;
-					contadorSelectInsert++;
-					free(proceso);
-					break;
-				case SELECT:;
-					tiempoPromedioSelect += proceso->segundosQueTardo;
-					contadorSelect++;
-					contadorSelectInsert++;
-					free(proceso);
-					break;
-
-				default:
-					free(proceso);
-					break;
-			}
+		while(proceso != NULL){ //esto queda porque libera los procesos, pero habria que ponerlo en otro lugar
+			free(proceso);
 			proceso = desencolar(estadoExit);
 		}
-		if(contadorInsert == 0){
-			contadorInsert = 1;
+
+		pthread_mutex_lock(&mutex_metrics);
+
+		int elemento = (acum30sMetrics->elements_count -1);
+		while (elemento >= 0){
+			AcumMetrics acumMetrics = list_remove(acum30sMetrics, elemento);
+			switch(acumMetrics->instruccion){
+			case SELECT:;
+				contadorSelect ++;
+				tiempoPromedioSelect += acumMetrics->tiempo;
+				contadorSelectInsert++;
+				break;
+			case INSERT:;
+				contadorInsert++;
+				tiempoPromedioInsert += acumMetrics->tiempo;
+				contadorSelectInsert++;
+				break;
+			default:;
+				break;
+			}
+
+
+			//acum por memoria
+
+
 		}
 
-		if(contadorSelect == 0){
-			contadorSelect = 1;
+		READS = contadorSelect;
+		if(contadorSelect>0){
+			READ_LAT = tiempoPromedioSelect/contadorSelect;
+		} else {
+			READ_LAT = 0;
 		}
-		tiempoPromedioInsert = tiempoPromedioInsert / contadorInsert;
-		tiempoPromedioSelect = tiempoPromedioSelect / contadorSelect;
+
+		WRITES = contadorInsert;
+		if(contadorInsert>0){
+			WRITE_LAT = tiempoPromedioInsert/contadorInsert;
+		} else {
+			WRITE_LAT = 0;
+		}
+
+		pthread_mutex_unlock(&mutex_metrics);
 
 		graficar(contadorInsert, contadorSelect, contadorSelectInsert, operacionesTotales,
 				tiempoPromedioInsert, tiempoPromedioSelect);
-		contadorInsert = 0;
-		contadorSelect = 0;
-		contadorSelectInsert = 0;
 
 		sleep(SEGUNDOS_METRICS);
 	}
@@ -58,18 +70,37 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	char * memLoad = string_new();
 	char * readLatency = string_new();
 	char * writeLatency = string_new();
-	//FIXME: fijarse porque al principio me devuelve un cantidad read 0.003333 ya que deberia estar vacia lista exit
+
+	string_append(&readLatency, "Read latency: ");
+	string_append(&writeLatency, "Write Latency: ");
 	string_append(&reads, "Cantidad de reads: ");
 	string_append(&writes, "Cantidad de writres: ");
 	string_append(&memLoad, "Memory load: ");
-	string_append(&readLatency, "Read latency: ");
-	string_append(&writeLatency, "Write Latency: ");
 
 	double r = (double)contadorSelect / 30;
 	double w = (double)contadorInsert / 30;
-	double ml = (double)contadorSelectInsert / operacionesTotales;
-	double rl = (double)tiempoPromedioSelect / contadorSelect;
-	double wl = (double)tiempoPromedioInsert / contadorSelectInsert;
+
+	double ml;
+
+	if (operacionesTotales>0) {
+		ml = (double)contadorSelectInsert / operacionesTotales;
+	} else {
+		ml = (double) 0;
+	}
+
+	double rl;
+	if (contadorSelectInsert>0) {
+		rl = (double)tiempoPromedioSelect / contadorSelectInsert;
+	} else {
+		rl = (double) 0;
+	}
+
+	double wl;
+	if (contadorSelectInsert>0) {
+		wl = (double)tiempoPromedioInsert / contadorSelectInsert;
+	} else {
+		wl = (double) 0;
+	}
 
 	char * rChar = malloc(sizeof(char) * 21);
 	char * wChar = malloc(sizeof(char) * 21);
@@ -89,11 +120,11 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	string_append(&readLatency, rlChar);
 	string_append(&writeLatency,wlChar);
 
+	log_info(LOGGER_METRICS, readLatency);
+	log_info(LOGGER_METRICS, writeLatency);
 	log_info(LOGGER_METRICS, reads);
 	log_info(LOGGER_METRICS, writes);
 	log_info(LOGGER_METRICS, memLoad);
-	log_info(LOGGER_METRICS, writeLatency);
-	log_info(LOGGER_METRICS, readLatency);
 
 	pthread_mutex_lock(&mutexRecursosCompartidos);
 	dictionary_put(metrics, READS, reads);
@@ -108,4 +139,10 @@ void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert,
 	free(mlChar);
 	free(rlChar);
 	free(wlChar);
+
+	free(reads);
+	free(writes);
+	free(memLoad);
+	free(writeLatency);
+	free(readLatency);
 }

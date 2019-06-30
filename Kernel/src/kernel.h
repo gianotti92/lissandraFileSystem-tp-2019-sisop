@@ -15,11 +15,9 @@
 #include "../../utilguenguencha/src/kernel_utils.h"
 
 
-#define READS "0"
-#define WRITES "1"
-#define MEM_LOAD "2"
-#define WRITE_LAT "3"
-#define READ_LAT "4"
+int READS, WRITES;
+double WRITE_LAT, READ_LAT;
+t_list* MEM_LOAD;
 
 t_log * LOGGER_METRICS;
 
@@ -84,7 +82,7 @@ t_list *estadoNew;
 t_list *estadoExit;
 
 // tablas del proceso
-
+t_list *acum30sMetrics;
 t_dictionary * metrics;
 
 char* PUERTO_DE_ESCUCHA;
@@ -111,6 +109,8 @@ pthread_mutex_t mutex_sc;
 pthread_mutex_t mutex_ec;
 pthread_mutex_t mutex_shc;
 
+pthread_mutex_t mutex_metrics;
+
 /*
 	Describes
 */
@@ -118,6 +118,12 @@ typedef struct {
 	char * tablename;
 	Consistencias consistencia;
 }Table_Metadata;
+
+typedef struct {
+	int id_memoria;
+	Instruction_set instruccion;
+	t_timestamp tiempo;
+}AcumMetrics;
 
 t_list * lista_de_tablas;
 pthread_mutex_t lista_de_tablas_mx;

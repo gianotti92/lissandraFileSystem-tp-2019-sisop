@@ -32,6 +32,8 @@ void configuracion_inicial(void) {
 	TIEMPO_DESCRIBE = config_get_int_value(CONFIG, "TIEMPO_DESCRIBE");
 
 	config_destroy(CONFIG);
+
+	acum30sMetrics = list_create();
 }
 
 void actualizar_configuracion(t_config* conf) {
