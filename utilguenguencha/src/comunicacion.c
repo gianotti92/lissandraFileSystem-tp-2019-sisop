@@ -246,7 +246,7 @@ Connection *update_conn(char *ip, char *puerto, Connection *new_conn){
 		old_conn->fd = new_conn->fd;
 		old_conn->mutex = new_conn->mutex;
 	}
-	pthread_mutex_lock(&mutex_diccionario_fd);
+	pthread_mutex_unlock(&mutex_diccionario_fd);
 	free(key);
 	return new_conn;
 }
@@ -481,14 +481,13 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 }
 
 Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
-	Instruccion *respuesta;
 	Connection *conn = crear_conexion(ip, puerto, false);
 	if(conn != NULL){
 		t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
 		pthread_mutex_lock(&conn->mutex);
 		if (enviar_paquete(paquete, conn->fd)) {
 			eliminar_paquete(paquete);
-			respuesta = recibir_respuesta(conn->fd);
+			Instruccion *respuesta = recibir_respuesta(conn->fd);
 			pthread_mutex_unlock(&conn->mutex);
 			free(conn);
 			return respuesta;
@@ -508,31 +507,32 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 
 Connection *crear_conexion(char *ip, char* puerto, bool reconnect) {
 	Connection *conn = get_conn(ip, puerto);
-	if(conn == NULL || !fd_is_valid(conn->fd) || reconnect){
+	if(conn == NULL || reconnect){
 		if(conn == NULL){
 			conn = malloc(sizeof(Connection));
+			conn->fd = -1;
 			pthread_mutex_init(&conn->mutex, NULL);
 		}
-		int sockfd;
-	    struct sockaddr_in servaddr;
-	    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	    if(sockfd == -1){
-	        return NULL;
-	    }
-	    bzero(&servaddr, sizeof(servaddr));
+		if(!fd_is_valid(conn->fd) || reconnect){
+			int sockfd;
+		    struct sockaddr_in servaddr;
+		    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+		        return NULL;
+		    }
+		    bzero(&servaddr, sizeof(servaddr));
 
-	    servaddr.sin_family = AF_INET;
-	    servaddr.sin_addr.s_addr = inet_addr(ip);
-	    servaddr.sin_port = htons(atoi(puerto));
+		    servaddr.sin_family = AF_INET;
+		    servaddr.sin_addr.s_addr = inet_addr(ip);
+		    servaddr.sin_port = htons(atoi(puerto));
 
-	    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
-	        return NULL;
+		    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+		        return NULL;
+		    }
+		    conn->fd = sockfd;
+	    	return update_conn(ip, puerto, conn);
 	    }
-	    conn->fd = sockfd;
-    	return update_conn(ip, puerto, conn);
-	}else{
-		return conn;
 	}
+	return conn;
 }
 
 bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
