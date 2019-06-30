@@ -70,6 +70,7 @@ void retorno_consola(char* leido) {
 		proceso->instruccionAProcesar = NULL;
 		proceso->numeroInstruccion = 0;
 		proceso->quantumProcesado = 0;
+		proceso->metricas = list_create();
 		encolar(estadoNew, proceso);
 		sem_post(&semaforoNewToReady);
 	}
@@ -88,10 +89,9 @@ void ejecutar() {
 	while (true) {
 		sem_wait(&semaforoSePuedePlanificar);
 		Proceso * proceso = desencolar(estadoReady);
-		switch (((Instruccion*) proceso->instruccion)->instruccion) {
+		switch (proceso->instruccion->instruccion) {
 			case RUN:;
-				proceso->fin_proceso = true;
-				while(proceso->quantumProcesado <= QUANTUM){
+				while(proceso->quantumProcesado <= QUANTUM || proceso->fin_proceso){
 					usleep(RETARDO*1000);
 					logicaRun(proceso);
 				}
@@ -107,42 +107,66 @@ void ejecutar() {
 
 			case METRICS:;
 				usleep(RETARDO*1000);
+				proceso->instruccionAProcesar = proceso->instruccion;
 				logicaMetrics(proceso);
+				encolar(estadoExit, proceso);
+				sem_post(&semaforoFinalizar);
 				break;
 
 			case SELECT:;
 				usleep(RETARDO*1000);
+				proceso->instruccionAProcesar = proceso->instruccion;
 				logicaSelect(proceso);
+				encolar(estadoExit, proceso);
+				sem_post(&semaforoFinalizar);
 				break;
 
 			case INSERT:;
 				usleep(RETARDO*1000);
+				proceso->instruccionAProcesar = proceso->instruccion;
 				logicaInsert(proceso);
+				encolar(estadoExit, proceso);
+				sem_post(&semaforoFinalizar);
 				break;
 
 			case CREATE:;
 				usleep(RETARDO*1000);
+				proceso->instruccionAProcesar = proceso->instruccion;
 				logicaCreate(proceso);
+				encolar(estadoExit, proceso);
+				sem_post(&semaforoFinalizar);
 				break;
 
 			case DROP:;
 				usleep(RETARDO*1000);
+				proceso->instruccionAProcesar = proceso->instruccion;
 				logicaDrop(proceso);
+				encolar(estadoExit, proceso);
+				sem_post(&semaforoFinalizar);
 				break;
 
 			case ADD:;
 				usleep(RETARDO*1000);
+				proceso->instruccionAProcesar = proceso->instruccion;
 				logicaAdd(proceso);
+				encolar(estadoExit, proceso);
+				sem_post(&semaforoFinalizar);
 				break;
 
 			case DESCRIBE:;
 				usleep(RETARDO*1000);
+				proceso->instruccionAProcesar = proceso->instruccion;
 				logicaDescribe(proceso);
+				encolar(estadoExit, proceso);
+				sem_post(&semaforoFinalizar);
 				break;
 
 			default:;
 				usleep(RETARDO*1000);
+				proceso->instruccionAProcesar = proceso->instruccion;
 				logicaJournal(proceso);
+				encolar(estadoExit, proceso);
+				sem_post(&semaforoFinalizar);
 				break;
 		}
 	}
@@ -189,8 +213,15 @@ void finalizar_procesos(void){
 		sem_wait(&semaforoFinalizar);
 		Proceso * proceso = desencolar(estadoExit);
 		if(proceso != NULL){
+			void agregar_metrics(AcumMetrics *metrics){
+				pthread_mutex_lock(&mutex_metrics);
+				list_add(acum30sMetrics, metrics);
+				pthread_mutex_unlock(&mutex_metrics);
+			}
+			list_iterate(proceso->metricas, (void*)agregar_metrics);
+			list_destroy(proceso->metricas);
+			free(proceso->instruccion);
 			free(proceso);
-			//CARGAR METRICS
 		}
 	}
 }

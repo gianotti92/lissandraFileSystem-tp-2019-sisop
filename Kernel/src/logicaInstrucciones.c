@@ -1,7 +1,5 @@
 #include "kernel.h"
 
-void acumularMetrics(int id_memoria, Instruction_set instruccion, t_timestamp tiempo);
-
 void logicaRun(Proceso * proceso){
 	char * proximainstruccionChar = leer_linea(((Run*)proceso->instruccion->instruccion_a_realizar)->path, proceso->numeroInstruccion);
 
@@ -56,16 +54,24 @@ void logicaRun(Proceso * proceso){
 	}
 }
 
+
 void logicaCreate(Proceso * proceso){
-	AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
-	nuevoAcum->instruccion = proceso->instruccionAProcesar->instruccion;
-	t_timestamp metrics_tiempo = ((Select*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
-	Instruccion * instruccionRespuestaCreate = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
-	print_instruccion_parseada(instruccionRespuestaCreate);
-	t_timestamp timestamps = get_timestamp();
-	nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
-	nuevoAcum->id_memoria = 1;
-	list_add(proceso->metricas, nuevoAcum);
+	Instruction_set inst = proceso->instruccionAProcesar->instruccion;
+	t_timestamp metrics_tiempo = ((Create*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
+	t_list * memoriasAsoc = list_duplicate_all(lista_disp, (void*)duplicar_memoria, mutex_disp);
+	int random = (rand() % (memoriasAsoc->elements_count - 1));
+	Memoria * mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+	Instruccion * instruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
+	if(instruccionRespuesta->instruccion != ERROR){
+		AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
+		nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
+		nuevoAcum->instruccion = inst;
+		nuevoAcum->id_memoria = mem->idMemoria;
+		list_add(proceso->metricas, nuevoAcum);
+	}
+	print_instruccion_parseada(instruccionRespuesta);
+	list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
+	eliminar_memoria(mem);
 }
 
 void logicaAdd(Proceso * proceso){
@@ -81,7 +87,29 @@ void logicaAdd(Proceso * proceso){
 	}
 	if(((Add*)proceso->instruccionAProcesar->instruccion_a_realizar)->consistencia == SHC){
 		pthread_mutex_lock(&mutex_shc);
-		list_iterate(lista_shc, (void*)enviar_journal);
+		Memoria * memoria = NULL;
+		int aux = 0;
+		memoria = list_get(lista_shc, aux);
+		t_timestamp initial_time;
+		Instruccion * instruccionRespuesta;
+		while(memoria != NULL){
+			Instruccion * instruccion = malloc(sizeof(Instruccion));
+			instruccion->instruccion = JOURNAL;
+			Journal * journal = malloc(sizeof(Journal));
+			journal->timestamp = get_timestamp();
+			instruccion->instruccion_a_realizar = journal;
+			initial_time = get_timestamp();
+			instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
+			if(instruccionRespuesta->instruccion != ERROR){
+				AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
+				nuevoAcum->tiempo = difftime(get_timestamp(), initial_time);
+				nuevoAcum->instruccion = JOURNAL;
+				nuevoAcum->id_memoria = memoria->idMemoria;
+				list_add(proceso->metricas, nuevoAcum);
+			}
+			free_retorno(instruccionRespuesta);
+			aux++;
+		}
 		pthread_mutex_unlock(&mutex_shc);
 	}
 	asignar_memoria_a_consistencia(memoria, ((Add*)proceso->instruccionAProcesar->instruccion_a_realizar)->consistencia);
@@ -90,36 +118,38 @@ void logicaAdd(Proceso * proceso){
 	free(proceso->instruccionAProcesar);
 }
 
-void enviar_journal(Memoria *memoria){
-	Instruccion * instruccion = malloc(sizeof(Instruccion));
-	instruccion->instruccion = JOURNAL;
-	Journal * journal = malloc(sizeof(Journal));
-	journal->timestamp = get_timestamp();
-	instruccion->instruccion_a_realizar = journal;
-	Instruccion * instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
-	free_retorno(instruccionRespuesta);
-}
-
 void logicaSelect(Proceso * proceso){
 	Consistencias consistencia = obtenerConsistencia(((Select*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 	if(consistencia > 0){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-		Memoria *m;
-		switch(consistencia){
-			case SC || EC :;
-				int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
-				m = get_memoria(random, consistencia);
-				break;
-			default:;
-				int indexTabla = generarHash(((Select*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count, ((Select*)proceso->instruccionAProcesar->instruccion_a_realizar)->key);
-				m = get_memoria(indexTabla, consistencia);
-				break;
+		Memoria * mem = NULL;
+		if(memoriasAsoc->elements_count > 0){
+			switch(consistencia){
+				case SC || EC :;
+					int random = (rand() % (memoriasAsoc->elements_count -1));
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					break;
+
+				default:;
+					int indexTabla = generarHash(((Select*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count);
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc, indexTabla));
+					break;
+			}
 		}
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
-		if(m != NULL){
-			Instruccion *instruccionRespuesta = enviar_instruccion(m->ip, m->puerto, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
+		if(mem != NULL){
+			Instruction_set inst = proceso->instruccionAProcesar->instruccion;
+			t_timestamp metrics_tiempo = ((Select*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
+			Instruccion *instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
+			if(instruccionRespuesta->instruccion != ERROR){
+				AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
+				nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
+				nuevoAcum->instruccion = inst;
+				nuevoAcum->id_memoria = mem->idMemoria;
+				list_add(proceso->metricas, nuevoAcum);
+			}
 			print_instruccion_parseada(instruccionRespuesta);
-			eliminar_memoria(m);
+			eliminar_memoria(mem);
 			return;
 		}
 		else{
@@ -138,11 +168,32 @@ void logicaInsert(Proceso *proceso){
 	Consistencias consistencia = obtenerConsistencia(((Insert*) proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 	if(consistencia > 0){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-		int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
-		Memoria * mem = get_memoria(random, consistencia);
+		Memoria * mem = NULL;
+		if(memoriasAsoc->elements_count > 0){
+			switch(consistencia){
+				case SC || EC :;
+					int random = (rand() % (memoriasAsoc->elements_count -1));
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					break;
+
+				default:;
+					int indexTabla = generarHash(((Insert*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count);
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc, indexTabla));
+					break;
+			}
+		}
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(mem != NULL){
+			Instruction_set inst = proceso->instruccionAProcesar->instruccion;
+			t_timestamp metrics_tiempo = ((Insert*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
+			if(instruccionRespuesta->instruccion != ERROR){
+				AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
+				nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
+				nuevoAcum->instruccion = inst;
+				nuevoAcum->id_memoria = mem->idMemoria;
+				list_add(proceso->metricas, nuevoAcum);
+			}
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(mem);
 			return;
@@ -163,11 +214,32 @@ void logicaDrop(Proceso *proceso){
 	Consistencias consistencia = obtenerConsistencia(((Drop*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 	if(consistencia > 0){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-		int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
-		Memoria * mem = get_memoria(random, consistencia);
+		Memoria * mem = NULL;
+		if(memoriasAsoc->elements_count > 0){
+			switch(consistencia){
+				case SC || EC :;
+					int random = (rand() % (memoriasAsoc->elements_count -1));
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					break;
+
+				default:;
+					int indexTabla = generarHash(((Drop*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count);
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc, indexTabla));
+					break;
+			}
+		}
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		if(mem != NULL){
+			Instruction_set inst = proceso->instruccionAProcesar->instruccion;
+			t_timestamp metrics_tiempo = ((Drop*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
 			Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
+			if(instruccionRespuesta->instruccion != ERROR){
+				AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
+				nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
+				nuevoAcum->instruccion = inst;
+				nuevoAcum->id_memoria = mem->idMemoria;
+				list_add(proceso->metricas, nuevoAcum);
+			}
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(mem);
 			return;
@@ -183,32 +255,77 @@ void logicaDrop(Proceso *proceso){
 }
 
 void logicaJournal(Proceso *proceso){
+	Memoria *memoria = NULL;
+	int aux = 0;
 	Consistencias consistencia;
-	for(consistencia = EC; consistencia < DISP; consistencia++){
-		pthread_mutex_t mutex = dame_mutex_de_consistencia(consistencia);
+	t_list * lista;
+	pthread_mutex_t mutex;
+	t_timestamp initial_time;
+	Instruccion * instruccionRespuesta;
+	for(consistencia = EC; consistencia < DISP; consistencia ++){
+		mutex = dame_mutex_de_consistencia(consistencia);
 		pthread_mutex_lock(&mutex);
-		t_list *lista = dame_lista_de_consistencia(consistencia);
-		list_iterate(lista, (void*)enviar_journal);
+		lista = dame_lista_de_consistencia(consistencia);
+		memoria = list_get(lista, aux);
+		while(memoria != NULL){
+			Instruccion * instruccion = malloc(sizeof(Instruccion));
+			instruccion->instruccion = JOURNAL;
+			Journal * journal = malloc(sizeof(Journal));
+			journal->timestamp = get_timestamp();
+			instruccion->instruccion_a_realizar = journal;
+			initial_time = get_timestamp();
+			instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
+			if(instruccionRespuesta->instruccion != ERROR){
+				AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
+				nuevoAcum->tiempo = difftime(get_timestamp(), initial_time);
+				nuevoAcum->instruccion = proceso->instruccionAProcesar->instruccion;
+				nuevoAcum->id_memoria = memoria->idMemoria;
+				list_add(proceso->metricas, nuevoAcum);
+			}
+			free_retorno(instruccionRespuesta);
+			aux++;
+		}
 		pthread_mutex_unlock(&mutex);
+		list_destroy_and_destroy_elements(lista, (void*)eliminar_memoria);
+		aux = 0;
 	}
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
 	free(proceso->instruccionAProcesar);
 }
 
 void logicaDescribe(Proceso *proceso){
-
 	if(((Describe*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla != NULL){
-
 		Consistencias consistencia = obtenerConsistencia(((Describe*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
+		Memoria * mem = NULL;
 
 		if(consistencia > 0){
 			t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
-			int random = (rand() % (memoriasAsoc->elements_count + 1) - 1);
-			Memoria * mem = get_memoria(random, consistencia);
+			if(memoriasAsoc->elements_count > 0){
+				switch(consistencia){
+					case SC || EC :;
+						int random = (rand() % (memoriasAsoc->elements_count -1));
+						mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+						break;
+
+					default:;
+						int indexTabla = generarHash(((Select*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla, memoriasAsoc->elements_count);
+						mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc, indexTabla));
+						break;
+				}
+			}
 			list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 			if(mem != NULL){
-				Instruccion * intstruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
-				print_instruccion_parseada(intstruccionRespuesta);
+				Instruction_set inst = proceso->instruccionAProcesar->instruccion;
+				t_timestamp metrics_tiempo = ((Describe*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
+				Instruccion * instruccionRespuesta = enviar_instruccion(mem->ip, mem->puerto, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
+				if(instruccionRespuesta->instruccion != ERROR){
+					AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
+					nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
+					nuevoAcum->instruccion = inst;
+					nuevoAcum->id_memoria = mem->idMemoria;
+					list_add(proceso->metricas, nuevoAcum);
+				}
+				print_instruccion_parseada(instruccionRespuesta);
 				eliminar_memoria(mem);
 				return;
 			}else{
@@ -218,8 +335,17 @@ void logicaDescribe(Proceso *proceso){
 			log_error(LOG_OUTPUT, "La tabla no existe");
 		}
 	}else{
-		Instruccion * intstruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
-		print_instruccion_parseada(intstruccionRespuesta);
+		Instruction_set inst = proceso->instruccionAProcesar->instruccion;
+		t_timestamp metrics_tiempo = ((Describe*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
+		Instruccion * instruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
+		if(instruccionRespuesta->instruccion != ERROR){
+			AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
+			nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
+			nuevoAcum->instruccion = inst;
+			nuevoAcum->id_memoria = 1;
+			list_add(proceso->metricas, nuevoAcum);
+		}
+		print_instruccion_parseada(instruccionRespuesta);
 		return;
 	}
 	free(((Describe*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
@@ -250,26 +376,11 @@ Consistencias obtenerConsistencia(char * nombreTabla){
 	}
 }
 
-int generarHash(char * nombreTabla, int tamLista, int key){
+int generarHash(char * nombreTabla, int tamLista){
 	int hash = 0;
 	int i;
 	for(i = 0; i < strlen(nombreTabla); i++){
 		hash += nombreTabla[i];
 	}
-
-	hash += key;
-
 	return hash % tamLista;
-}
-
-void acumularMetrics(int id_memoria, Instruction_set instruccion, t_timestamp tiempo){
-
-	AcumMetrics* nuevoAcum = malloc(sizeof(AcumMetrics));
-	nuevoAcum->id_memoria = id_memoria;
-	nuevoAcum->instruccion = instruccion;
-	nuevoAcum->tiempo = tiempo;
-
-	pthread_mutex_lock(&mutex_metrics);
-	list_add(acum30sMetrics, nuevoAcum);
-	pthread_mutex_unlock(&mutex_metrics);
 }
