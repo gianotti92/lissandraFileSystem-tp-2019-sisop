@@ -30,6 +30,18 @@ typedef struct{
 	bool esProcesoRun;
 }Proceso;
 
+typedef struct {
+	int id_memoria;
+	Instruction_set instruccion;
+	t_timestamp tiempo;
+}AcumMetrics;
+
+typedef struct {
+	int id_memoria;
+	int cantidad_ins_sel;
+	int cantidad_instrucciones;
+}AcumuladorMemoria;
+
 pthread_mutex_t mutexRecursosCompartidos;
 sem_t semaforoSePuedePlanificar, semaforoNewToReady;
 
@@ -63,7 +75,8 @@ bool esFinLectura(Proceso * p, char * instruccionALeer);
 bool esFinQuantum(Proceso * p, char * instruccionALeer);
 void calculoMetrics();
 void inicializarValoresMetrics();
-void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
+void loguear_metrics();
+void print_metrics();
 void *TH_confMonitor(void * p);
 Consistencias obtenerConsistencia(char * nombreTabla);
 int generarHash(char * nombreTabla, int tamLista, int key);
@@ -74,6 +87,7 @@ void agregarSiNoExiste(t_list * list, Memoria *m);
 t_list *dame_lista_de_consistencia(Consistencias consistencia);
 pthread_mutex_t dame_mutex_de_consistencia(Consistencias consistencia);
 void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistencia);
+AcumuladorMemoria* dameAcumulador(int id_memoria, t_list* lista_acumuladores);
 
 
 // Variables del proceso
@@ -119,11 +133,7 @@ typedef struct {
 	Consistencias consistencia;
 }Table_Metadata;
 
-typedef struct {
-	int id_memoria;
-	Instruction_set instruccion;
-	t_timestamp tiempo;
-}AcumMetrics;
+
 
 t_list * lista_de_tablas;
 pthread_mutex_t lista_de_tablas_mx;

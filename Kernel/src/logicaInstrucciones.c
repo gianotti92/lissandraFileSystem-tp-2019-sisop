@@ -269,19 +269,10 @@ void logicaDescribe(Instruccion * instruccion){
 }
 
 void logicaMetrics(Instruccion * instruccion){
-	pthread_mutex_lock(&mutexRecursosCompartidos);
-	char * campo1 = dictionary_get(metrics, READ_LAT);
-	char * campo2 = dictionary_get(metrics, WRITE_LAT);
-	char * campo3 = dictionary_get(metrics, READS);
-	char * campo4 = dictionary_get(metrics, WRITES);
-	char * campo5 = dictionary_get(metrics, MEM_LOAD);
-	pthread_mutex_unlock(&mutexRecursosCompartidos);
+	pthread_mutex_lock(&mutex_metrics);
+	print_metrics();
+	pthread_mutex_unlock(&mutex_metrics);
 
-	log_info(LOG_OUTPUT,"%s\n", campo1);
-	log_info(LOG_OUTPUT,"%s\n", campo2);
-	log_info(LOG_OUTPUT,"%s\n", campo3);
-	log_info(LOG_OUTPUT,"%s\n", campo4);
-	log_info(LOG_OUTPUT,"%s\n", campo5);
 	free(instruccion->instruccion_a_realizar);
 	free(instruccion);
 }
@@ -314,7 +305,7 @@ int generarHash(char * nombreTabla, int tamLista, int key){
 
 void acumularMetrics(int id_memoria, Instruction_set instruccion, t_timestamp tiempo){
 
-	AcumMetrics nuevoAcum = malloc(sizeof(AcumMetrics));
+	AcumMetrics* nuevoAcum = malloc(sizeof(AcumMetrics));
 	nuevoAcum->id_memoria = id_memoria;
 	nuevoAcum->instruccion = instruccion;
 	nuevoAcum->tiempo = tiempo;
