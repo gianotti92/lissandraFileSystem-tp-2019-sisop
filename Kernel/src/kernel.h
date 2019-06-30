@@ -64,7 +64,7 @@ void inicializarValoresMetrics();
 void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
 void *TH_confMonitor(void * p);
 Consistencias obtenerConsistencia(char * nombreTabla);
-int generarHash(char * nombreTabla, int tamLista, int key);
+int generarHash(char * nombreTabla, int tamLista);
 void mostrarId(Memoria * memoria);
 void enviar_journal(Memoria *memoria);
 bool existe_memoria_en(Memoria *mem1, t_list* lista);
