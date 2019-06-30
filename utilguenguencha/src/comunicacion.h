@@ -17,7 +17,9 @@
 #include <commons/collections/dictionary.h>
 #include <commons/collections/list.h>
 
+//FIXME: Podría ser un parametro tomado por config
 #define BACKLOG 10     // Cuántas conexiones pendientes se mantienen en cola
+#define OUTGOING 2     // Cuántas conexiones simultaneas con fd puede haber
 
 /**
 * @NAME: retornarControl
