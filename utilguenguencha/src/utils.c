@@ -74,7 +74,7 @@ int monitorNode(char * node,int mode,int(*callback)(void)){
 		return 1;
 	}
 	int wfd = inotify_add_watch(infd,node,mode);
-	while(1){
+	while(true){
 		int length = read(infd,buffer,EVENT_BUF_LEN);
 		if (length < 0) {
 			log_error(LOG_ERROR,"Problemas al leer el inotify de %s, %s",node,strerror(errno));

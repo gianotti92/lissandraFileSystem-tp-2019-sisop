@@ -56,7 +56,7 @@ int main(void) {
 void configuracion_inicial(void){
 	t_config* CONFIG;
 	CONFIG = config_create("config.cfg");
-
+	usleep(10*1000);
 	if (!CONFIG) {
 		printf("Memoria: Archivo de configuracion no encontrado. \n");
 		exit_gracefully(EXIT_FAILURE);

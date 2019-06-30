@@ -6,8 +6,8 @@ pthread_mutex_t mutex_diccionario_fd; // Lock para estructura de diccionario
 int closed = -1;
 
 typedef struct {
-	t_list *lista_fd;
-	t_list *lista_mutex;
+	int fd;
+	pthread_mutex_t mutex;
 }Connection;
 
 /**
@@ -19,7 +19,7 @@ int iniciar_servidor(char* puerto);
 * @NAME: crear_conexion
 * @DESC: Funcion que crea una conexion con la IP y Puerto y devuelve fd asociado
 */
-int crear_conexion(char* ip, char* puerto);
+Connection *crear_conexion(char *ip, char* puerto, bool reconnect);
 /**
 * @NAME: crear_paquete
 * @DESC: Funcion que crea un paquete con los datos suministrados
@@ -134,12 +134,12 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 * @NAME: recibir_respuesta
 * @DESC: Se bloquea (Temporalmente) esperando respuesta de a quien le envie
 */
-Instruccion *recibir_respuesta(int fd_a_escuchar, char* ip, char* puerto);
+Instruccion *recibir_respuesta(int fd_a_escuchar);
 /**
 * @NAME: recibir_retorno
 * @DESC: Recibe Retorno y devuelve el la instruccion
 */
-Instruccion *recibir_retorno(int fd_a_escuchar, char *ip, char *puerto);
+Instruccion *recibir_retorno(int fd_a_escuchar);
 /**
 * @NAME: armar_retorno_value
 * @DESC: Devuelve la instruccion correspondiente a Retorno con value
@@ -149,7 +149,7 @@ Instruccion *armar_retorno_value(void *chunk);
 * @NAME: recibir_error
 * @DESC: Recibe el error correspondiente en el fd que le enviamos por parametro
 */
-Instruccion *recibir_error(int fd_a_escuchar, char *ip, char *puerto);
+Instruccion *recibir_error(int fd_a_escuchar);
 /**
 * @NAME: armar_retorno_gossip()
 * @DESC: Arma el retorno para el gossip
@@ -201,64 +201,58 @@ void empaquetar_retorno_gossip(t_paquete_retorno *paquete, Gossip *ret_gos);
 */
 void empaquetar_retorno_success(t_paquete_retorno *paquete);
 /**
-* @NAME: dame_fd()
+* @NAME: get_conn()
 * @DESC: busca el fd correspondiente a ip y puerto dados si no esta da NULL
 */
-int dame_fd(char* ip, char* puerto);
+Connection *get_conn(char* ip, char* puerto);
 /**
-* @NAME: pone_fd()
+* @NAME: update_conn()
 * @DESC: pone el fd en el diccionario y devuelve un puntero al mismo
 */
-int pone_fd(char *ip, char *puerto, int fd);
+Connection *update_conn(char *ip, char *puerto, Connection *conn);
 /**
 * @NAME: fd_is_valid()
 * @DESC: chequea que el fd sea aun valido
 */
 int fd_is_valid(int fd);
 
-int dame_fd(char *ip, char *puerto){
-	if( ip != NULL && puerto != NULL){
-		char *key = string_new();
-		string_append(&key, ip);
-		string_append(&key, puerto);
-		pthread_mutex_lock(&mutex_diccionario_fd);
-		Connection *conn = dictionary_get(fd_disponibles, key);
-		int fd_ret = *list_get(conn->lista_fd, tipo_comu);
-		pthread_mutex_unlock(&mutex_diccionario_fd);
-		free(key);
-		return fd_ret;
-	}else{
-		return -1;
+
+Connection *get_conn(char *ip, char *puerto){
+	char *key = string_new();
+	string_append(&key, ip);
+	string_append(&key, puerto);
+	Connection *result = NULL;
+	pthread_mutex_lock(&mutex_diccionario_fd);
+	Connection *conn = dictionary_get(fd_disponibles, key);
+	if(conn != NULL){
+		result = malloc(sizeof(Connection));
+		result->fd = conn->fd;
+		result->mutex = conn->mutex;
 	}
+	pthread_mutex_unlock(&mutex_diccionario_fd);
+	free(key);
+	return result;
 }
 
-int pone_fd(char *ip, char *puerto, int fd){
-	if( ip != NULL && puerto != NULL){
-		char *key = string_new();
-		string_append(&key, ip);
-		string_append(&key, puerto);
-		pthread_mutex_lock(&mutex_diccionario_fd);
-		Connection *conn =dictionary_get(fd_disponibles, key);
-		if(conn == NULL){
-			conn = malloc(sizeof(Connection));
-			conn->lista_fd = list_create();
-			conn->lista_mutex = list_create();
-		}
-		if(viejo_fd == -1){
-			int *fd_guardar = malloc(sizeof(int));
-			memcpy(fd_guardar, &fd, sizeof(fd));
-			
-			dictionary_put(fd_disponibles, key, fd_guardar);
-			free(key);
-			pthread_mutex_unlock(&mutex_diccionario_fd);
-			return fd_guardar;
-		}else{
-			memcpy(viejo_fd, &fd, sizeof(fd));
-			return viejo_fd;
-		}
-		free(key);
+
+Connection *update_conn(char *ip, char *puerto, Connection *new_conn){
+	char *key = string_new();
+	string_append(&key, ip);
+	string_append(&key, puerto);
+	pthread_mutex_lock(&mutex_diccionario_fd);
+	Connection *old_conn =dictionary_get(fd_disponibles, key);
+	if(old_conn == NULL){
+		Connection *to_save = malloc(sizeof(Connection));
+		to_save->fd = new_conn->fd;
+		to_save->mutex = new_conn->mutex;
+		dictionary_put(fd_disponibles, key, to_save);
+	}else{
+		old_conn->fd = new_conn->fd;
+		old_conn->mutex = new_conn->mutex;
 	}
-	return NULL;
+	pthread_mutex_unlock(&mutex_diccionario_fd);
+	free(key);
+	return new_conn;
 }
 
 void servidor_comunicacion(Comunicacion *comunicacion){
@@ -491,76 +485,60 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 }
 
 Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
-
-	int server_fd = crear_conexion(ip, puerto);
-	t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
-	if (enviar_paquete(paquete, server_fd)) {
-		eliminar_paquete(paquete);
-		return recibir_respuesta(server_fd, ip, puerto);
-	}else{
-		eliminar_paquete(paquete);
-		if(!fd_is_valid(server_fd)){
+	Connection *conn = crear_conexion(ip, puerto, false);
+	if(conn != NULL){
+		t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
+		pthread_mutex_lock(&conn->mutex);
+		if (enviar_paquete(paquete, conn->fd)) {
+			eliminar_paquete(paquete);
+			Instruccion *respuesta = recibir_respuesta(conn->fd);
+			pthread_mutex_unlock(&conn->mutex);
+			free(conn);
+			return respuesta;
+		}else{
+			pthread_mutex_unlock(&conn->mutex);
+			free(conn);
+			eliminar_paquete(paquete);
+			if(!fd_is_valid(conn->fd)){
+				conn = crear_conexion(ip, puerto, true);
+				free(conn);
+			}
+			return respuesta_error(CONNECTION_ERROR);
 
 		}
-		return respuesta_error(CONNECTION_ERROR);
 	}
-	
+	return respuesta_error(CONNECTION_ERROR);
 }
 
-int crear_conexion(char *ip, char* puerto) {
-	int socket_cliente = dame_fd(ip, puerto);
-	if(socket_cliente == -1){
-		int sockfd;
-	    struct sockaddr_in servaddr;
-	    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	    if(sockfd == -1){
-	        return -1;
+
+Connection *crear_conexion(char *ip, char* puerto, bool reconnect) {
+	Connection *conn = get_conn(ip, puerto);
+	if(conn == NULL || reconnect){
+		if(conn == NULL){
+			conn = malloc(sizeof(Connection));
+			conn->fd = -1;
+			pthread_mutex_init(&conn->mutex, NULL);
+		}
+		if(!fd_is_valid(conn->fd) || reconnect){
+			int sockfd;
+		    struct sockaddr_in servaddr;
+		    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+		        return NULL;
+		    }
+		    bzero(&servaddr, sizeof(servaddr));
+
+		    servaddr.sin_family = AF_INET;
+		    servaddr.sin_addr.s_addr = inet_addr(ip);
+		    servaddr.sin_port = htons(atoi(puerto));
+
+		    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+		        return NULL;
+		    }
+		    conn->fd = sockfd;
+	    	return update_conn(ip, puerto, conn);
 	    }
-	    bzero(&servaddr, sizeof(servaddr));
-
-	    servaddr.sin_family = AF_INET;
-	    servaddr.sin_addr.s_addr = inet_addr(ip);
-	    servaddr.sin_port = htons(atoi(puerto));
-
-	    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
-	        return -1;
-	    }
-    	return pone_fd(ip, puerto, sockfd);
-	}else{
-		return socket_cliente;
 	}
-	/*
-	int* socket_cliente = dame_fd(ip, puerto);
-	if(socket_cliente == NULL){
-		struct addrinfo hints, *server_info;
-		int nuevo_socket;
-
-		memset(&hints, 0, sizeof(hints));
-		hints.ai_family = AF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-		//hints.ai_flags = AI_PASSIVE;
-
-		if(getaddrinfo(ip, puerto, &hints, &server_info) != 0){
-			freeaddrinfo(server_info);
-			return -1;
-		}
-		if(bind(nuevo_socket, server_info->ai_addr, server_info->ai_addrlen) == -1){
-			freeaddrinfo(server_info);
-			return -1
-		}
-
-		nuevo_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
-
-		if (connect(nuevo_socket, server_info->ai_addr, server_info->ai_addrlen) == -1) {
-			freeaddrinfo(server_info);
-			return -1;
-		}
-		freeaddrinfo(server_info);
-		return *pone_fd(ip, puerto, nuevo_socket);
-	}else{
-		return *socket_cliente;
-	}
-	*/
+	return conn;
 }
 
 bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
@@ -1000,7 +978,7 @@ Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 	}
 }
 
-Instruccion *recibir_respuesta(int fd_a_escuchar, char *ip, char *puerto){
+Instruccion *recibir_respuesta(int fd_a_escuchar){
 	int bytes_recibidos;
 	Instruction_set retorno;
 	if((bytes_recibidos = recv(fd_a_escuchar, &retorno, sizeof(Instruction_set), MSG_WAITALL)) <= 0){
@@ -1009,13 +987,13 @@ Instruccion *recibir_respuesta(int fd_a_escuchar, char *ip, char *puerto){
 	}
 	switch(retorno){
 		case RETORNO:
-			return recibir_retorno(fd_a_escuchar, ip, puerto);
+			return recibir_retorno(fd_a_escuchar);
 		default:
-			return recibir_error(fd_a_escuchar, ip, puerto);
+			return recibir_error(fd_a_escuchar);
 	}
 }
 
-Instruccion *recibir_error(int fd_a_escuchar, char *ip, char *puerto){
+Instruccion *recibir_error(int fd_a_escuchar){
 	int bytes_recibidos;
 	Error_set tipo_error;
 	size_t buffer_size;
@@ -1032,11 +1010,11 @@ Instruccion *recibir_error(int fd_a_escuchar, char *ip, char *puerto){
 }
 
 
-Instruccion *recibir_retorno(int fd_a_escuchar, char *ip, char *puerto){
+Instruccion *recibir_retorno(int fd_a_escuchar){
 	int bytes_recibidos;
 	size_t buffer_size;
 	if ((bytes_recibidos = recv(fd_a_escuchar, &buffer_size, sizeof(buffer_size), MSG_WAITALL)) <= 0){
-				return respuesta_error(CONNECTION_ERROR);
+		return respuesta_error(CONNECTION_ERROR);
 	}
 	void *stream = malloc(buffer_size);
 	if ((bytes_recibidos = recv(fd_a_escuchar, stream, buffer_size, MSG_WAITALL)) <= 0){
