@@ -34,6 +34,11 @@ void configuracion_inicial(void) {
 	config_destroy(CONFIG);
 
 	acum30sMetrics = list_create();
+	MEM_LOAD = list_create();
+	READS = 0;
+	WRITES =0;
+	WRITE_LAT =0;
+	READ_LAT =0;
 }
 
 void actualizar_configuracion(t_config* conf) {

@@ -57,8 +57,7 @@ void logicaRun(Proceso * proceso){
 }
 
 void logicaCreate(Proceso * proceso){
-	//FIXME: Hay que seleccionar una aleatoriamente, no la MEMORIA_PPAL
-	AcumMetrics nuevoAcum = malloc(sizeof(AcumMetrics));
+	AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
 	nuevoAcum->instruccion = proceso->instruccionAProcesar->instruccion;
 	t_timestamp metrics_tiempo = ((Select*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
 	Instruccion * instruccionRespuestaCreate = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
@@ -66,7 +65,7 @@ void logicaCreate(Proceso * proceso){
 	t_timestamp timestamps = get_timestamp();
 	nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 	nuevoAcum->id_memoria = 1;
-	list_add(proceso->metrics, nuevoAcum);
+	list_add(proceso->metricas, nuevoAcum);
 }
 
 void logicaAdd(Proceso * proceso){
@@ -228,22 +227,13 @@ void logicaDescribe(Proceso *proceso){
 	free(proceso->instruccionAProcesar);
 }
 
-void logicaMetrics(Proceso *proceso){
-	pthread_mutex_lock(&mutexRecursosCompartidos);
-	char * campo1 = dictionary_get(metrics, READ_LAT);
-	char * campo2 = dictionary_get(metrics, WRITE_LAT);
-	char * campo3 = dictionary_get(metrics, READS);
-	char * campo4 = dictionary_get(metrics, WRITES);
-	char * campo5 = dictionary_get(metrics, MEM_LOAD);
-	pthread_mutex_unlock(&mutexRecursosCompartidos);
-
-	log_info(LOG_OUTPUT,"%s\n", campo1);
-	log_info(LOG_OUTPUT,"%s\n", campo2);
-	log_info(LOG_OUTPUT,"%s\n", campo3);
-	log_info(LOG_OUTPUT,"%s\n", campo4);
-	log_info(LOG_OUTPUT,"%s\n", campo5);
+void logicaMetrics(Proceso * proceso){
+	pthread_mutex_lock(&mutex_metrics);
+	print_metrics();
+	pthread_mutex_unlock(&mutex_metrics);
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
 	free(proceso->instruccionAProcesar);
+
 }
 
 Consistencias obtenerConsistencia(char * nombreTabla){
@@ -274,7 +264,7 @@ int generarHash(char * nombreTabla, int tamLista, int key){
 
 void acumularMetrics(int id_memoria, Instruction_set instruccion, t_timestamp tiempo){
 
-	AcumMetrics nuevoAcum = malloc(sizeof(AcumMetrics));
+	AcumMetrics* nuevoAcum = malloc(sizeof(AcumMetrics));
 	nuevoAcum->id_memoria = id_memoria;
 	nuevoAcum->instruccion = instruccion;
 	nuevoAcum->tiempo = tiempo;
