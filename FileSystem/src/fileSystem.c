@@ -6,8 +6,8 @@ struct file_mdata{
 };
 
 struct filesystem_conf{
-	long BLOCK_SIZE;
-	long BLOCKS;
+	int BLOCK_SIZE;
+	int BLOCKS;
 	char*MAGIC_NUMBER;
 };
 
@@ -36,7 +36,7 @@ int fs_read_get_mdata(char* filename,struct file_mdata* mdata);
 
 /* Bitarray */
 void bitarray_init(void);
-long bitarray_size(void);
+int bitarray_size(void);
 void bitarray_to_file(char *bitarray);
 t_bitarray* bitarray_get(void);
 void bitarray_show(t_bitarray* bitarray);
@@ -65,23 +65,24 @@ void fs_destroy(void){
 }
 int fs_read(char* filename, t_list* registros){
 	struct file_mdata mdata;
-	if(fs_read_get_mdata(filename,&mdata)!=0){
-		return 1;
+	int retval=fs_read_get_mdata(filename,&mdata);
+	if(retval != 0){
+		return retval;
 	}
 	if(mdata.size == 0){
 		return 0;
 	}
 	char *bufferData=malloc(mdata.size+1);
-	if(fs_read_blocks_to_buffer(bufferData,&mdata)!=0){
+	retval=fs_read_blocks_to_buffer(bufferData,&mdata);
+	if(retval != 0){
 		free(bufferData);
-		list_destroy(mdata.blocks);
-		return 1;
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
+		return retval;
 	}
-
 	fs_read_buffer_to_registers(bufferData,mdata.size,registros);
 	free(bufferData);
 	if(mdata.blocks!=NULL){
-		list_destroy(mdata.blocks);
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 	}
 	return 0;
 }
@@ -97,25 +98,26 @@ int fs_write(char* filename, t_list* registros){
 		cant_blocks++;
 
 	mdata.blocks = list_create();
-	if(fs_write_get_free_blocks(mdata.blocks,cant_blocks)){
-		list_destroy(mdata.blocks);
+	int retval = fs_write_get_free_blocks(mdata.blocks,cant_blocks);
+	if(retval != 0){
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 		free(buffer);
-		return -1;
+		return retval;
+	}
+	retval = fs_write_buffer_to_blocks(buffer,&mdata);
+	if(retval != 0){
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
+		free(buffer);
+		return retval;
+	}
+	retval = fs_write_set_mdata(filename,&mdata);
+	if(retval != 0){
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
+		free(buffer);
+		return retval;
 	}
 
-	if(fs_write_buffer_to_blocks(buffer,&mdata)){
-		list_destroy(mdata.blocks);
-		free(buffer);
-		return -1;
-	}
-
-	if(fs_write_set_mdata(filename,&mdata)!=0){
-		list_destroy(mdata.blocks);
-		free(buffer);
-		return -1;
-	}
-
-	list_destroy(mdata.blocks);
+	list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 	free(buffer);
 	return 0;
 }
@@ -124,28 +126,30 @@ int fs_create(char* filename){
 }
 int fs_delete(char* filename){
 	struct file_mdata mdata;
-	if(fs_read_get_mdata(filename,&mdata)!=0){
-		return 1;
+	int retval = fs_read_get_mdata(filename,&mdata);
+	if(retval != 0){
+		return retval;
 	}
 	if(mdata.size==0) {
 		if(remove(filename)){
-			log_error(LOGGER,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
-			return 1;
+			log_error(LOG_ERROR,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
+			return FILE_DELETE_ERROR;
 		}
 		return 0;
 	}
-	if(fs_delete_set_free_blocks(mdata.blocks)!=0){
-		list_destroy(mdata.blocks);
-		return 1;
+	retval = fs_delete_set_free_blocks(mdata.blocks);
+	if(retval != 0){
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
+		return retval;
 	}
 	
 	if(remove(filename)){
-		log_error(LOGGER,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
-		list_destroy(mdata.blocks);
-		return 1;
+		log_error(LOG_ERROR,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
+		list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
+		return FILE_DELETE_ERROR;
 	}
 
-	list_destroy(mdata.blocks);
+	list_destroy_and_destroy_elements(mdata.blocks, (void*)free);
 	return 0;
 }
 
@@ -156,27 +160,32 @@ char* fs_write_registers_to_buffer(t_list *registros,int* buffer_size){
 	char* buffer = malloc(fs_get_reg_size()*list_size(registros));
 	*buffer_size=0;
 	void addToBuffer(struct tableRegister* reg){
-		char key[5+2], value[global_conf.max_value_size+2], timestamp[19+2];
-		sprintf(key,"%hu;",reg->key);
+		char* key = malloc(digitos(reg->key)+2);
+		char* value = malloc(global_conf.max_value_size+2);
+		char* timestamp = malloc(digitos_long((long)reg->timestamp)+2);
+		sprintf(key,"%d;",reg->key);
 		sprintf(value,"%s;",reg->value);
-		sprintf(timestamp,"%lu\n",reg->timestamp);
+		sprintf(timestamp,"%d\n",reg->timestamp);
 		int wsize = strlen(key)+strlen(value)+strlen(timestamp)+1;
 		char wstring[wsize];
 		sprintf(wstring,"%s%s%s",key,value,timestamp);
 		memcpy(buffer+*buffer_size,wstring,wsize-1);
 		*buffer_size+=wsize-1;
+		free(key);
+		free(value);
+		free(timestamp);
 	}
 	list_iterate(registros,(void*)addToBuffer);
 	return buffer;
 }
 int fs_write_get_free_blocks(t_list* blocks,int cant_blocks){
 	if(cant_blocks>global_fs_conf.BLOCKS){
-		log_error(LOGGER,"Error al asignar %d bloques, pasa el maximo de %lu",cant_blocks,global_fs_conf.BLOCKS);
-		return 1;
+		log_error(LOG_ERROR,"Error al asignar %d bloques, pasa el maximo de %d",cant_blocks,global_fs_conf.BLOCKS);
+		return BLOCK_MAX_REACHED;
 	}
 	t_bitarray* bitarray = bitarray_get();
 	if(bitarray==NULL){
-		return 1;
+		return MISSING_FILE;
 	}
 	int cantAsign=0;
 	for(int i=0; i<global_fs_conf.BLOCKS && cantAsign<cant_blocks;i++){
@@ -189,11 +198,13 @@ int fs_write_get_free_blocks(t_list* blocks,int cant_blocks){
 		}
 	}
 	if(cant_blocks != cantAsign){
+		free(bitarray->bitarray);
 		bitarray_destroy(bitarray);
-		log_error(LOGGER,"Error al asignar %i bloques, se asignaron %d",cant_blocks,cantAsign);
-		return 1;
+		log_error(LOG_ERROR,"Error al asignar %i bloques, se asignaron %d",cant_blocks,cantAsign);
+		return BLOCK_ASSIGN_ERROR;
 	}
 	bitarray_to_file(bitarray->bitarray);
+	free(bitarray->bitarray);
 	bitarray_destroy(bitarray);
 	return 0;
 }
@@ -207,8 +218,8 @@ int fs_write_buffer_to_blocks(char* buffer,struct file_mdata* mdata) {
 
 		FILE * FileBlock = fopen(path, "wb");
 		if(FileBlock==NULL){
-			log_error(LOGGER,"Error al abrir el archivo '%s', %s",path,strerror(errno));
-			error=-1;
+			log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",path,strerror(errno));
+			error=FILE_OPEN_ERROR;
 			free(path);
 			return;
 		}
@@ -234,8 +245,8 @@ int fs_write_buffer_to_blocks(char* buffer,struct file_mdata* mdata) {
 int fs_write_set_mdata(char* filename,struct file_mdata* mdata){
 	FILE* f=fopen(filename,"w");
 	if(f==NULL){
-		log_error(LOGGER,"Error al crear el archivo '%s', %s",filename,strerror(errno));
-		return 1;
+		log_error(LOG_ERROR,"Error al crear el archivo '%s', %s",filename,strerror(errno));
+		return FILE_OPEN_ERROR;
 	}
 	int lengthBlocks=0;
 	void sumLengthBlocks(int* block){
@@ -270,12 +281,12 @@ int fs_write_set_mdata(char* filename,struct file_mdata* mdata){
 int fs_create_set_mdata(char* filename){
 	FILE* f=fopen(filename,"w");
 	if(f==NULL){
-		log_error(LOGGER,"Error al crear el archivo '%s', %s",filename,strerror(errno));
-		return 1;
+		log_error(LOG_ERROR,"Error al crear el archivo '%s', %s",filename,strerror(errno));
+		return FILE_OPEN_ERROR;
 	}
 	char buff[17];
 	strcpy(buff,"SIZE=0\nBLOCKS=[]");
-	fwrite(buff,strlen(buff),1,f);
+	fwrite(buff,strlen(buff)+1,1,f);
 	fclose(f);
 	return 0;
 }
@@ -286,15 +297,15 @@ int fs_create_set_mdata(char* filename){
 int fs_delete_set_free_blocks(t_list* blocks){
 	t_bitarray* bitarray = bitarray_get();
 	if(bitarray==NULL){
-		return 1;
+		return MISSING_FILE;
 	}
 	int error=0;
 	void limpiar(int *block){
 		char*filename=malloc(strlen(global_conf.directorio_bloques)+digitos(*block)+5);
 		sprintf(filename,"%s%d.bin",global_conf.directorio_bloques,*block);		
 		if(remove(filename)) {
-			log_error(LOGGER,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
-			error=1;
+			log_error(LOG_ERROR,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
+			error=FILE_DELETE_ERROR;
 		}
 		free(filename);
 		bitarray_clean_bit(bitarray,*block);
@@ -302,6 +313,7 @@ int fs_delete_set_free_blocks(t_list* blocks){
 	list_iterate(blocks,(void*)limpiar);
 
 	bitarray_to_file(bitarray->bitarray);
+	free(bitarray->bitarray);
 	bitarray_destroy(bitarray);
 	return error;
 }
@@ -318,8 +330,8 @@ int fs_read_blocks_to_buffer(char*buffer,struct file_mdata* mdata){
 
 		FILE * FileBlock = fopen(path, "rb");
 		if(FileBlock==NULL){
-			log_error(LOGGER,"Error al abrir el archivo '%s', %s",path,strerror(errno));
-			error=1;
+			log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",path,strerror(errno));
+			error=FILE_OPEN_ERROR;
 			free(path);
 			return;
 		}
@@ -358,7 +370,7 @@ void fs_read_buffer_to_registers(char* buffParam,long bufferSize,t_list* registr
 		reg->value=malloc(strlen(value)+1);
 		strcpy(reg->value,value);
 		char*timestampstr=strtok_r(NULL,";",&itemSave);
-		sscanf(timestampstr,"%lu",&reg->timestamp);
+		sscanf(timestampstr,"%d",&reg->timestamp);
 		list_add(registros,(void*)reg);
 		line = strtok_r(NULL,"\n",&lineSave);
 	}
@@ -366,23 +378,25 @@ void fs_read_buffer_to_registers(char* buffParam,long bufferSize,t_list* registr
 int fs_read_get_mdata(char* filename,struct file_mdata* mdata){
 	t_config* conf=config_create(filename);
 	if(conf==NULL){
-		log_error(LOGGER,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
-		return 1;
+		log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
+		return FILE_OPEN_ERROR;
 	}
 	mdata->size = config_get_long_value(conf,"SIZE");
 	if(mdata->size==0) {
 		config_destroy(conf);
 		return 0;
 	}
-	char**blocks = config_get_array_value(conf,"BLOCKS");
+	char**blocks = config_get_array_value(conf,"BLOCKS"); // Aca valgind se queja, posible memory leak
 	mdata->blocks = list_create();
 	char**p=blocks;
 	while(p!=NULL && *p!=NULL){
-		int * block=malloc(sizeof(int));
+		int * block=malloc(sizeof(int)); // Aca valgind se queja, posible memory leak
 		sscanf(*p,"%d",block);
 		list_add(mdata->blocks,(void*)block);
+		free(*p);
 		p++;
 	}
+	free(blocks);
 	config_destroy(conf);
 	return 0;
 }
@@ -421,13 +435,13 @@ int fs_get_conf(void){
 	sprintf(filename,"%sMetadata.bin",global_conf.directorio_metadata);
 	t_config* conf = config_create(filename);
 	if(conf==NULL){
-		log_error(LOGGER,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
 		free(filename);
-		return 1;
+		return FILE_OPEN_ERROR;
 	}
 	free(filename);
-	global_fs_conf.BLOCK_SIZE = config_get_long_value(conf,"BLOCK_SIZE");
-	global_fs_conf.BLOCKS = config_get_long_value(conf,"BLOCKS");
+	global_fs_conf.BLOCK_SIZE = config_get_int_value(conf,"BLOCK_SIZE");
+	global_fs_conf.BLOCKS = config_get_int_value(conf,"BLOCKS");
 	global_fs_conf.MAGIC_NUMBER=malloc(strlen(config_get_string_value(conf,"MAGIC_NUMBER"))+1);
 	strcpy(global_fs_conf.MAGIC_NUMBER,config_get_string_value(conf,"MAGIC_NUMBER"));
 	config_destroy(conf);
@@ -453,15 +467,15 @@ void bitarray_to_file(char *bitarray){
 	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
 	FILE * fd = fopen(filename, "wb");
 	if(fd==NULL){
-		log_error(LOGGER,"Error al abrir el archivo %s, %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el archivo %s, %s",filename,strerror(errno));
 		free(filename);
 		return;
 	}
-	free(filename);
 	fwrite(bitarray,bitarray_size(),1,fd);
 	fclose(fd);
+	free(filename);
 }
-long bitarray_size(void){
+int bitarray_size(void){
 	int CANTIDAD = global_fs_conf.BLOCKS;
 	int size = CANTIDAD/8;
 	if(CANTIDAD > 8*size)
@@ -473,7 +487,7 @@ t_bitarray* bitarray_get(void){
 	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
 	FILE * fd = fopen(filename, "rb");
 	if(fd==NULL){
-		log_error(LOGGER,"Error al abrir el archivo %s, %s",filename,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el archivo %s, %s",filename,strerror(errno));
 		free(filename);
 		return NULL;
 	}
@@ -485,7 +499,7 @@ t_bitarray* bitarray_get(void){
 }
 void bitarray_show(t_bitarray* bitarray){
 	printf("Imprimo bitarray: ");
-	for (long i = 0; i < global_fs_conf.BLOCKS; i++){
+	for (int i = 0; i < global_fs_conf.BLOCKS; i++){
 		printf("%d",bitarray_test_bit(bitarray,i));
 	}
 	printf("\n");

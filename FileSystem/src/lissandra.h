@@ -20,13 +20,10 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
-#include <sys/inotify.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 
-#define EVENT_SIZE (sizeof (struct inotify_event))
-#define EVENT_BUF_LEN (1024*(EVENT_SIZE + 16))
 
 
 /*
@@ -58,7 +55,7 @@ struct TableMetadata{
 
 struct tableMetadataItem {
 	struct TableMetadata metadata;
-	char tableName[100];
+	char* tableName;
 	pthread_rwlock_t lock;
 	pthread_t thread;
 	int endFlag;
@@ -72,17 +69,17 @@ struct FileSystemMetadata{
 
 /* Tables */
 struct tableRegister{
-	uint16_t key;
+	t_key key;
 	char* value;
-	long timestamp;
+	t_timestamp timestamp;
 };
 struct memtableItem{
 	struct tableRegister reg;
-	char tableName[100];
+	char* tableName;
 };
 /* Dump Memtable Struct*/
 struct dumpTableList{
-	char tableName[100];
+	char* tableName;
 	t_list* registros;
 };
 
@@ -115,13 +112,12 @@ void loadCurrentTableMetadata(void);
 void loadDescribesTableMetadata(t_list*lista_describes);
 
 /* Registros */
-long getTimestamp(void);
-struct tableRegister createTableRegister(uint16_t key,char* value,long timestamp);
+t_timestamp getTimestamp(void);
+struct tableRegister createTableRegister(t_key key,char* value,t_timestamp timestamp);
 
 /* Utils */
 int tableExists(char * table);
 int getNumLastFile(char* prefix,char* extension,char* path);
-int monitorNode(char * node,int mode, int(*callback)(void));
 struct tableMetadataItem* get_table_metadata(char* tabla);
 int deleteTable(char* tabla);
 void clean_registers_list(t_list*registers);
@@ -129,6 +125,12 @@ int read_temp_files(char* tabla,t_list* listaRegistros);
 char* getTablePath(char*tabla);
 int digitos(int num);
 int digitos_long(long num);
+void deleteDescribeList(Retorno_Describe* describe);
+
+/* Armar Instruccion */
+Instruccion* armarRetornoValue(char *value,t_timestamp timestamp);
+Instruccion *armarRetornoDescribe(t_list* lista_describes);
+Instruccion* armarRetornoMaxValue(void);
 
 /* Describe */
 Retorno_Describe* pack_describe(char *nombre_tabla,Consistencias consistencia,uint8_t particiones,t_timestamp compactation_time);

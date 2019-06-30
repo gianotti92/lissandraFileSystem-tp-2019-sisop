@@ -1,6 +1,6 @@
 #include "lissandra.h"
 
-struct tableRegister createTableRegister(uint16_t key,char* value,long timestamp) {
+struct tableRegister createTableRegister(t_key key,char* value,t_timestamp timestamp) {
 	struct tableRegister reg;
 	reg.key=key;
 	reg.value=malloc(global_conf.max_value_size);
@@ -43,7 +43,7 @@ void global_conf_destroy(void){
 	free(global_conf.puerto);
 }
 
-long getTimestamp(void) {
+t_timestamp getTimestamp(void) {
 	struct timeval t;
 	gettimeofday(&t,NULL);
 	return t.tv_sec*1000+t.tv_usec/1000;
@@ -80,34 +80,6 @@ int getNumLastFile(char* prefix,char* extension,char* path) {
 	return retnum;
 }
 
-int monitorNode(char * node,int mode,int(*callback)(void)){
-	char buffer[EVENT_BUF_LEN];
-	int infd = inotify_init();
-	if (infd < 0) {
-		log_error(LOGGER,"Problemas al crear el inotify para %s, %s",node,strerror(errno));
-		return 1;
-	}
-	int wfd = inotify_add_watch(infd,node,mode);
-	while(1){
-		int length = read(infd,buffer,EVENT_BUF_LEN);
-		if (length < 0) {
-			log_error(LOGGER,"Problemas al leer el inotify de %s, %s",node,strerror(errno));
-			inotify_rm_watch(infd,wfd);
-			close(infd);
-			return 1;
-		}
-		if((*callback)()!=0){
-			inotify_rm_watch(infd,wfd);
-			close(infd);
-			return 1;
-		}
-		inotify_rm_watch(infd,wfd);
-		wfd = inotify_add_watch(infd,node,mode);
-	}
-	inotify_rm_watch(infd,wfd);
-	close(infd);
-	return 0;
-}
 struct tableMetadataItem* get_table_metadata(char* tabla){
 	bool criterioTablename(struct tableMetadataItem* t){
 		return !strcmp(tabla,t->tableName);
@@ -128,18 +100,19 @@ int deleteTable(char* tabla){
 				sprintf(filename,"%s/%s",path,dir->d_name);
 				if(strcmp(dir->d_name,"Metadata.txt")==0){
 					if(remove(filename)){
-						log_error(LOGGER,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
+						log_error(LOG_ERROR,"Error al eliminar el archivo '%s', %s",filename,strerror(errno));
 						closedir(d);
 						free(path);
 						free(filename);
-						return 1;
+						return FILE_DELETE_ERROR;
 					}
 				} else {
-					if(fs_delete(filename)!=0){
+					int retval = fs_delete(filename);
+					if(retval != 0){
 						closedir(d);
 						free(path);
 						free(filename);
-						return 1;
+						return retval;
 					}
 				}
 				free(filename);
@@ -147,14 +120,14 @@ int deleteTable(char* tabla){
 		}
 		closedir(d);
 	} else {
-		log_error(LOGGER,"Error al abrir el directorio %s, %s",path, strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el directorio %s, %s",path, strerror(errno));
 		free(path);
-		return 1;
+		return DIR_OPEN_ERROR;
 	}
 	if(remove(path)){
-		log_error(LOGGER,"Error al eliminar el directorio '%s', %s",path,strerror(errno));
+		log_error(LOG_ERROR,"Error al eliminar el directorio '%s', %s",path,strerror(errno));
 		free(path);
-		return 1;
+		return DIR_DELETE_ERROR;
 	}
 	free(path);
 	return 0;
@@ -162,6 +135,7 @@ int deleteTable(char* tabla){
 void clean_registers_list(t_list*registers){
 	void cleanValue(struct tableRegister* reg){
 		free(reg->value);
+		free(reg);
 	}
 	list_iterate(registers,(void*)cleanValue);
 }
@@ -176,11 +150,12 @@ int read_temp_files(char* tabla,t_list* listaRegistros){
 				if(strstr(dir->d_name,".tmp") == dir->d_name+(strlen(dir->d_name)-strlen(".tmp")) || strstr(dir->d_name,".tmpc") == dir->d_name+(strlen(dir->d_name)-strlen(".tmpc"))){
 					char*filename=malloc(strlen(path)+strlen(dir->d_name)+2);
 					sprintf(filename,"%s/%s",path,dir->d_name);
-					if(fs_read(filename,listaRegistros)!=0){
+					int retval = fs_read(filename,listaRegistros);
+					if(retval != 0){
 						closedir(d);
 						free(path);
 						free(filename);
-						return 1;
+						return retval;
 					}
 					free(filename);
 				}
@@ -188,9 +163,9 @@ int read_temp_files(char* tabla,t_list* listaRegistros){
 		}
 		closedir(d);
 	} else {
-		log_error(LOGGER,"Error al abrir el directorio %s, %s",path,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el directorio %s, %s",path,strerror(errno));
 		free(path);
-		return 1;
+		return DIR_OPEN_ERROR;
 	}
 	free(path);
 	return 0;
@@ -213,7 +188,8 @@ int digitos_long(long num){
 /* Describe */
 Retorno_Describe* pack_describe(char *nombre_tabla,Consistencias consistencia,uint8_t particiones,t_timestamp compactation_time){
 	Retorno_Describe* respuesta = malloc(sizeof(Retorno_Describe));
-	respuesta->nombre_tabla=nombre_tabla;
+	respuesta->nombre_tabla=malloc(strlen(nombre_tabla)+1);
+	strcpy(respuesta->nombre_tabla,nombre_tabla);
 	respuesta->consistencia=consistencia;
 	respuesta->particiones=particiones;
 	respuesta->compactation_time=compactation_time;
@@ -221,6 +197,47 @@ Retorno_Describe* pack_describe(char *nombre_tabla,Consistencias consistencia,ui
 }
 void showDescribeList(Retorno_Describe* describe){
 	char* consistencia=consistencia2string(describe->consistencia);
-	printf("Tabla: %s - Consistencia: %s - Particiones: %d - Tiempo de Compactacion: %d\n",describe->nombre_tabla,consistencia,describe->particiones,describe->compactation_time);
+	log_info(LOG_OUTPUT,"Nombre tabla: %s Consistencia: %s Particiones: %d Tiempo de compactacion: %d\n",describe->nombre_tabla,consistencia,describe->particiones,describe->compactation_time);
 	free(consistencia);
+}
+
+/* Armar Instruccion */
+Instruccion* armarRetornoValue(char *value,t_timestamp timestamp){
+	Instruccion* instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion=RETORNO;
+	Retorno_Generico * retorno = malloc(sizeof(Retorno_Generico));
+	retorno->tipo_retorno=VALOR;
+	Retorno_Value * retval = malloc(sizeof(Retorno_Value));
+	retval->value = malloc(strlen(value)+1);
+	strcpy(retval->value,value);
+	retval->timestamp=timestamp;
+	retorno->retorno=retval;
+	instruccion->instruccion_a_realizar=retorno;
+	return instruccion;
+}
+Instruccion* armarRetornoDescribe(t_list* lista_describes){
+	Instruccion* instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion=RETORNO;
+	Retorno_Generico* retorno = malloc(sizeof(Retorno_Generico));
+	retorno->tipo_retorno=DATOS_DESCRIBE;
+	Describes* describes = malloc(sizeof(Describes));
+	describes->lista_describes = lista_describes;
+	retorno->retorno=describes;
+	instruccion->instruccion_a_realizar=retorno;
+	return instruccion;
+}
+Instruccion* armarRetornoMaxValue(void){
+	Instruccion* instruccion = malloc(sizeof(Instruccion));
+	instruccion->instruccion=RETORNO;
+	Retorno_Generico* retorno = malloc(sizeof(Retorno_Generico));
+	retorno->tipo_retorno=TAMANIO_VALOR_MAXIMO;
+	Retorno_Max_Value* max_value = malloc(sizeof(Retorno_Max_Value));
+	max_value->value_size = global_conf.max_value_size;
+	retorno->retorno=max_value;
+	instruccion->instruccion_a_realizar=retorno;
+	return instruccion;
+}
+void deleteDescribeList(Retorno_Describe* describe){
+	free(describe->nombre_tabla);
+	free(describe);
 }

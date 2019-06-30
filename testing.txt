@@ -1,0 +1,109 @@
+CREATE frutas SC 10 100
+INSERT frutas 1 "manzana"
+INSERT frutas 2 "pera"
+INSERT frutas 3 "banana"
+CREATE postres SHC 20 100
+INSERT postres 1 "flan"
+INSERT postres 2 "torta"
+INSERT postres 3 "sufle"
+JOURNAL
+DESCRIBE
+DESCRIBE frutas
+DESCRIBE postres
+SELECT frutas 1
+SELECT frutas 2
+SELECT frutas 3
+SELECT postres 1
+SELECT postres 2
+SELECT postres 3
+DROP frutas
+DROP postres
+
+POOLMEMORY
+
+==5303== Thread 5:
+==5303== Invalid read of size 4
+==5303==    at 0x804B6A9: existe_memoria (poolMemory.c:800)
+==5303==    by 0x804B623: add_memory_if_not_exists (poolMemory.c:788)
+==5303==    by 0x804A88A: atender_consulta (poolMemory.c:379)
+==5303==    by 0x804A08A: retornarControl (poolMemory.c:141)
+==5303==    by 0x804C476: servidor_comunicacion (comunicacion.c:320)
+==5303==    by 0x40A5294: start_thread (pthread_create.c:333)
+==5303==    by 0x41A30AD: clone (clone.S:114)
+==5303==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==5303==
+==5303==
+==5303== Process terminating with default action of signal 11 (SIGSEGV)
+==5303==  Access not within mapped region at address 0x0
+==5303==    at 0x804B6A9: existe_memoria (poolMemory.c:800)
+==5303==    by 0x804B623: add_memory_if_not_exists (poolMemory.c:788)
+==5303==    by 0x804A88A: atender_consulta (poolMemory.c:379)
+==5303==    by 0x804A08A: retornarControl (poolMemory.c:141)
+==5303==    by 0x804C476: servidor_comunicacion (comunicacion.c:320)
+==5303==    by 0x40A5294: start_thread (pthread_create.c:333)
+==5303==    by 0x41A30AD: clone (clone.S:114)
+==5303==  If you believe this happened as a result of a stack
+==5303==  overflow in your program's main thread (unlikely but
+==5303==  possible), you can try to increase the size of the
+==5303==  main thread stack using the --main-stacksize= flag.
+==5303==  The main thread stack size used in this run was 8388608.
+==5303==
+==5303== HEAP SUMMARY:
+==5303==     in use at exit: 70,657 bytes in 409 blocks
+==5303==   total heap usage: 754 allocs, 345 frees, 4,301,222 bytes allocated
+==5303==
+==5303== LEAK SUMMARY:
+==5303==    definitely lost: 32 bytes in 1 blocks
+==5303==    indirectly lost: 0 bytes in 0 blocks
+==5303==      possibly lost: 544 bytes in 4 blocks
+==5303==    still reachable: 70,081 bytes in 404 blocks
+==5303==         suppressed: 0 bytes in 0 blocks
+==5303== Rerun with --leak-check=full to see details of leaked memory
+==5303==
+==5303== For counts of detected and suppressed errors, rerun with: -v
+
+FILESYSTEM
+
+
+==28111== 49 bytes in 6 blocks are definitely lost in loss record 30 of 67
+==28111==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==28111==    by 0x41242C5: strdup (strdup.c:42)
+==28111==    by 0x404709A: string_duplicate (in /usr/lib/libcommons.so)
+==28111==    by 0x4047B44: _string_split (in /usr/lib/libcommons.so)
+==28111==    by 0x40475F3: string_split (in /usr/lib/libcommons.so)
+==28111==    by 0x805319A: parser_lql (parser.c:16)
+==28111==    by 0x804CC70: TH_consola (lissandra.c:124)
+==28111==    by 0x805493F: leer_por_consola (parser.c:613)
+==28111==    by 0x4098294: start_thread (pthread_create.c:333)
+==28111==    by 0x41960AD: clone (clone.S:114)
+
+
+==28111== 48 bytes in 6 blocks are definitely lost in loss record 29 of 67
+==28111==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==28111==    by 0x804F075: armarRetornoValue (lissandraUtils.c:210)
+==28111==    by 0x804DE1E: _select (lissandraController.c:129)
+==28111==    by 0x804E394: controller (lissandraController.c:219)
+==28111==    by 0x804CCC7: TH_consola (lissandra.c:132)
+==28111==    by 0x805493F: leer_por_consola (parser.c:613)
+==28111==    by 0x4098294: start_thread (pthread_create.c:333)
+==28111==    by 0x41960AD: clone (clone.S:114)
+
+==28111== 8 bytes in 2 blocks are definitely lost in loss record 11 of 67
+==28111==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==28111==    by 0x804F115: armarRetornoDescribe (lissandraUtils.c:223)
+==28111==    by 0x804E240: _describe (lissandraController.c:192)
+==28111==    by 0x804E3DC: controller (lissandraController.c:228)
+==28111==    by 0x804CCC7: TH_consola (lissandra.c:132)
+==28111==    by 0x805493F: leer_por_consola (parser.c:613)
+==28111==    by 0x4098294: start_thread (pthread_create.c:333)
+==28111==    by 0x41960AD: clone (clone.S:114)
+
+==28111== 4 bytes in 1 blocks are definitely lost in loss record 4 of 67
+==28111==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==28111==    by 0x804F115: armarRetornoDescribe (lissandraUtils.c:223)
+==28111==    by 0x804E104: _describe (lissandraController.c:172)
+==28111==    by 0x804E3DC: controller (lissandraController.c:228)
+==28111==    by 0x804CCC7: TH_consola (lissandra.c:132)
+==28111==    by 0x805493F: leer_por_consola (parser.c:613)
+==28111==    by 0x4098294: start_thread (pthread_create.c:333)
+==28111==    by 0x41960AD: clone (clone.S:114)

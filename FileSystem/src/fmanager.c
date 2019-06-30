@@ -18,14 +18,14 @@ int crearDirectorio(char* source,char* name){
 			free(PATH);
 			return 0;
 		} else {
-			log_error(LOGGER,"Error al crear el directorio '%s', %s",PATH,strerror(errno));
+			log_error(LOG_ERROR,"Error al crear el directorio '%s', %s",PATH,strerror(errno));
 			free(PATH);
-			return 1;
+			return DIR_CREATE_ERROR;
 		}
 	}
-	log_error(LOGGER,"Tabla '%s' existente",name);
+	log_error(LOG_ERROR,"Tabla '%s' existente",name);
 	free(PATH);
-    return 1;
+    return TABLE_EXIST;
 }
 
 int mkdirRecursivo(char*pathSrc) { //Creados con 755
@@ -41,10 +41,10 @@ int mkdirRecursivo(char*pathSrc) { //Creados con 755
 		strcat(create,find);
 		if(!existeDirectorio(create)) {
 			if(mkdir(create,S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)!=0){
-				log_error(LOGGER,"Error al crear el directorio '%s', %s",create,strerror(errno));
+				log_error(LOG_ERROR,"Error al crear el directorio '%s', %s",create,strerror(errno));
 				free(create);
 				free(path);
-				return 1;
+				return DIR_CREATE_ERROR;
 			}
 		}
 		strcat(create,"/");
@@ -67,8 +67,8 @@ int crearMetadataTableFile(char*directorio,struct TableMetadata tableMeta){
 	FILE *pf = txt_open_for_append(PATH);
 	free(PATH);
 	if (pf == NULL){
-		log_error(LOGGER,"Error al abrir el archivo '%s', %s",PATH,strerror(errno));
-		return 1;
+		log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",PATH,strerror(errno));
+		return FILE_OPEN_ERROR;
 	}
 	char * data = makeMetadataTableString(tableMeta);
 	txt_write_in_file(pf, data);
@@ -82,9 +82,9 @@ int crearBinarios(char*directorio,int numero_particiones){
 		char*filename=malloc(strlen(directorio)+1+digitos(numero_particiones)+5);
 		sprintf(filename,"%s/%d.bin",directorio,n);
 		if(fs_create(filename)!=0){
-			log_error(LOGGER,"Error al crear el archivo '%s', %s",filename,strerror(errno));
+			log_error(LOG_ERROR,"Error al crear el archivo '%s', %s",filename,strerror(errno));
 			free(filename);
-			return 1;
+			return FILE_OPEN_ERROR;
 		}
 		free(filename);
 		n++;

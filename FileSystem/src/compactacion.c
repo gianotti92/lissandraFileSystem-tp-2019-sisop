@@ -14,7 +14,7 @@ int compac_search_tmp_files(t_list* tmpc_files, char* tableName){
 					char*oldfilename = malloc(strlen(path)+1+strlen(dir->d_name)+1);
 					sprintf(oldfilename,"%s/%s",path,dir->d_name);
 					if (rename(oldfilename,newfilename)!=0){
-						log_error(LOGGER,"Error al renombrar el archivo %s a %s, %s",dir->d_name,newfilename,strerror(errno));
+						log_error(LOG_ERROR,"Error al renombrar el archivo %s a %s, %s",dir->d_name,newfilename,strerror(errno));
 						free(newfilename);
 						free(oldfilename);
 						free(path);
@@ -27,7 +27,7 @@ int compac_search_tmp_files(t_list* tmpc_files, char* tableName){
 		}
 		closedir(d);
 	} else{
-		log_error(LOGGER,"Error al abrir el directorio %s, %s",path,strerror(errno));
+		log_error(LOG_ERROR,"Error al abrir el directorio %s, %s",path,strerror(errno));
 		free(path);
 		return 1;
 	}
@@ -63,6 +63,10 @@ int compac_get_partition_registers(t_list*registrosParticiones,char*tableName,in
 void compac_match_registers(t_list*registrosParticiones,t_list*registrosTemporales){
 	int cantParticiones = list_size(registrosParticiones);
 	void iterateRegistersTmp(struct tableRegister* tempReg){
+		if(cantParticiones == 0){
+			log_error(LOG_ERROR,"SE INTENTO DIVIDIR POR 0");
+			return;
+		}
 		int partNum = tempReg->key%cantParticiones;
 		t_list* partRegisters = (t_list*)list_get(registrosParticiones,partNum);
 		if(partRegisters==NULL){
@@ -82,6 +86,7 @@ void compac_match_registers(t_list*registrosParticiones,t_list*registrosTemporal
 		} else { // me fijo cual es mas reciente (timestamp) y me quedo con ese
 			if(found->timestamp<tempReg->timestamp) {
 				struct tableRegister* removed = list_remove_by_condition(partRegisters,(void*)sameKey);
+				free(removed->value);
 				free(removed);
 				struct tableRegister* newReg = malloc(sizeof(struct tableRegister));
 				*newReg=createTableRegister(tempReg->key,tempReg->value,tempReg->timestamp);
@@ -129,6 +134,7 @@ void compac_clean_partition_registers(t_list*registrosParticiones){
 	void limpiar(t_list * particion){
 		void cleanValue(struct tableRegister* reg){
 			free(reg->value);
+			free(reg);
 		}
 		list_iterate(particion,(void*)cleanValue);
 		list_destroy(particion);
@@ -138,6 +144,7 @@ void compac_clean_partition_registers(t_list*registrosParticiones){
 void compac_clean_temp_registers(t_list*registrosTemporales){
 	void cleanValue(struct tableRegister* reg){
 		free(reg->value);
+		free(reg);
 	}
 	list_iterate(registrosTemporales,(void*)cleanValue);
 }

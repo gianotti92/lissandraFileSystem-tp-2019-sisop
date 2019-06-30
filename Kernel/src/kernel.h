@@ -2,66 +2,92 @@
 #define KERNEL_H_
 
 
-#include "../../utilguenguencha/src/comunicacion.h"
-#include "../../utilguenguencha/src/kernel_utils.h"
-#include "../../utilguenguencha/src/parser.h"
-#include "../../utilguenguencha/src/utils.h"
 #include <commons/collections/dictionary.h>
 #include <commons/collections/list.h>
 #include <semaphore.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
+#include "../../utilguenguencha/src/tipos_guenguencha.h"
+#include "../../utilguenguencha/src/comunicacion.h"
+#include "../../utilguenguencha/src/parser.h"
+#include "../../utilguenguencha/src/utils.h"
+#include "../../utilguenguencha/src/kernel_utils.h"
+
+
+int READS, WRITES;
+double WRITE_LAT, READ_LAT;
+t_list* MEM_LOAD;
+
+t_log * LOGGER_METRICS;
 
 typedef struct{
 	Instruccion* instruccion;
 	Instruccion* instruccionAProcesar;
-	int file_descriptor;
 	int quantumProcesado;
 	int numeroInstruccion;
-	int segundosQueTardo;
-	bool esProcesoRun;
+	t_list *metricas;
+	bool fin_proceso;
 }Proceso;
 
+typedef struct {
+	int id_memoria;
+	Instruction_set instruccion;
+	t_timestamp tiempo;
+}AcumMetrics;
+
+typedef struct {
+	int id_memoria;
+	int cantidad_ins_sel;
+	int cantidad_instrucciones;
+}AcumuladorMemoria;
+
 pthread_mutex_t mutexRecursosCompartidos;
-sem_t semaforoSePuedePlanificar, semaforoNewToReady;
+sem_t semaforoSePuedePlanificar, semaforoNewToReady, semaforoFinalizar;
 
 // Funciones del proceso
 void configuracion_inicial(void);
+void actualizar_configuracion(t_config* conf);
 void retorno_consola(char* leido);
 void iniciarEstados();
 void leerArchivo(char * path);
 void encolar(t_list * cola, Proceso * proceso);
 Proceso* desencolar(t_list * cola);
-Memoria * desencolarMemoria(t_list * lista);
-void putMemorySafe(t_dictionary * dic, char* key, Memoria * value);
-void putMemoryListSafe(t_dictionary * dic, char* key, t_list * value);
-t_list * getMemoriasAsociadasSafe(t_dictionary * dic, char*key);
+Memoria * desencolarMemoria(t_list * lista, int posicion);
 void putTablaSafe(t_dictionary * dic, char* key, char * value);
-Memoria* getMemoriaSafe(t_dictionary * dic, char*key);
+Memoria *get_memoria(int idMemoria, Consistencias consistencia);
 char* getTablasSafe(t_dictionary * dic, char*key);
 void ejecutar();
 void iniciarEstructurasAsociadas();
-void asignarConsistenciaAMemoria(Memoria * memoria, Consistencias consistencia);
-void llenarTablasPorConsistencia(char * nombreTable, char * consistencia);
 Instruccion * dameSiguiente(char * path, int numeroInstruccion);
-void preguntarPorMemoriasDisponibles();
+void lanzar_gossiping();
 void newToReady();
-int logicaCreate(Create * create);
-Proceso * logicaRun(Run * run, Proceso * proceso);
-int logicaDescribe(Describe * describe);
-int logicaJournal(Journal * journal);
-int logicaDrop(Drop * drop);
-int logicaSelect(Select * select);
-void logicaAdd(Add * add);
-int logicaInsert(Insert * insert);
-bool esFinLectura(Proceso * p, char * instruccionALeer);
-bool esFinQuantum(Proceso * p, char * instruccionALeer);
+void logicaCreate(Proceso * proceso);
+void logicaRun(Proceso * proceso);
+void logicaDescribe(Proceso * proceso);
+void logicaJournal(Proceso * proceso);
+void logicaDrop(Proceso * proceso);
+void logicaSelect(Proceso * proceso);
+void logicaAdd(Proceso * proceso);
+void logicaInsert(Proceso * proceso);
+void logicaMetrics(Proceso * proceso);
 void calculoMetrics();
 void inicializarValoresMetrics();
-void graficar(int contadorInsert, int contadorSelect, int contadorSelectInsert, int operacionesTotales, int tiempoPromedioInsert, int tiempoPromedioSelect);
-int enviarInstruccionLuqui(char* ip, char* puerto, Instruccion *instruccion,
-		Procesos proceso_del_que_envio);
+void loguear_metrics();
+void print_metrics();
+void *TH_confMonitor(void * p);
+Consistencias obtenerConsistencia(char * nombreTabla);
+int generarHash(char * nombreTabla, int tamLista);
+void mostrarId(Memoria * memoria);
+void enviar_journal(Memoria *memoria);
+bool existe_memoria_en(Memoria *mem1, t_list* lista);
+void agregarSiNoExiste(t_list * list, Memoria *m);
+t_list *dame_lista_de_consistencia(Consistencias consistencia);
+pthread_mutex_t dame_mutex_de_consistencia(Consistencias consistencia);
+void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistencia);
+void finalizar_procesos(void);
+AcumuladorMemoria* dameAcumulador(int id_memoria, t_list* lista_acumuladores);
+
 
 // Variables del proceso
 t_list *estadoReady;
@@ -69,13 +95,8 @@ t_list *estadoNew;
 t_list *estadoExit;
 
 // tablas del proceso
-t_dictionary * memoriasDisponibles;
-t_dictionary * memoriasAsociadas;
-t_dictionary * tablasPorConsistencia;
-
-t_list * memoriasSc;
-t_list * memoriasHc;
-t_list * memoriasEv;
+t_list *acum30sMetrics;
+t_dictionary * metrics;
 
 char* PUERTO_DE_ESCUCHA;
 
@@ -87,5 +108,34 @@ uint32_t REFRESH_METADATA;
 uint32_t RETARDO;
 int TAMANO_MAXIMO_LECTURA_ARCHIVO;
 int HILOS_KERNEL;
+int SEGUNDOS_METRICS;
+int PREGUNTAR_POR_MEMORIAS;
+int TIEMPO_DESCRIBE;
+
+t_list *lista_ec;
+t_list *lista_sc;
+t_list *lista_shc;
+t_list *lista_disp;
+
+pthread_mutex_t mutex_disp;
+pthread_mutex_t mutex_sc;
+pthread_mutex_t mutex_ec;
+pthread_mutex_t mutex_shc;
+
+pthread_mutex_t mutex_metrics;
+
+/*
+	Describes
+*/
+typedef struct {
+	char * tablename;
+	Consistencias consistencia;
+}Table_Metadata;
+
+
+
+t_list * lista_de_tablas;
+pthread_mutex_t lista_de_tablas_mx;
+void realizarDescribeGeneral(void);
 
 #endif /* KERNEL_H_ */

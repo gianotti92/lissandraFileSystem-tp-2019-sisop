@@ -1,125 +1,212 @@
 #include "poolMemory.h"
 
 int main(void) {
+
+	pthread_mutex_init(&mutexMarcos, NULL);
+	pthread_mutex_init(&mutexSegmentos, NULL);
+	pthread_mutex_init(&mutexMemorias, NULL);
+	sem_init(&semJournal, 0, 2);
+
+	print_guenguencha();
+
 	configure_logger();
 	configuracion_inicial();
-	MAX_VAL = 10; // esto hay que reemplazarlo por el valor del FS
 	inicializar_memoria();
 
-	pthread_t consolaPoolMemory, gossiping, servidorPM;
-	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);
-	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);
+	pthread_mutex_init(&mutexListaMemorias, NULL);
+	L_MEMORIAS = list_create();
+	pthread_t consolaPoolMemory, gossiping, journaling, servidorPM, T_confMonitor;
+	void *TR_confMonitor;
+
+	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL); 										//se encarga de mantener actualizados los valores del config
+	pthread_create(&consolaPoolMemory, NULL, (void*) leer_por_consola, retorno_consola);			//consola - sale por retorno_consola()
+	pthread_create(&gossiping, NULL, (void*) lanzar_gossiping, NULL);								//crea y mantiene actualizada la lista de memorias - gossiping
+	pthread_create(&journaling, NULL, (void*) f_journaling, NULL);								    //lanza el proceso de journal cada RETARDO_JURNAL tiempo
 
 	Comunicacion *comunicacion_instrucciones = malloc(sizeof(Comunicacion));
-	comunicacion_instrucciones->puerto_servidor = PUERTO_DE_ESCUCHA;
+	comunicacion_instrucciones->puerto_servidor = malloc(strlen(PUERTO_DE_ESCUCHA)+1);
+	strcpy(comunicacion_instrucciones->puerto_servidor, PUERTO_DE_ESCUCHA);
 	comunicacion_instrucciones->proceso = POOLMEMORY;
-	comunicacion_instrucciones->tipo_comunicacion = T_INSTRUCCION;
+
 	pthread_create(&servidorPM, NULL, (void*) servidor_comunicacion, comunicacion_instrucciones);
 
 	pthread_join(servidorPM, NULL);
 	pthread_join(consolaPoolMemory, NULL);
 	pthread_join(gossiping, NULL);
+	pthread_join(journaling, NULL);
+	pthread_join(T_confMonitor,&TR_confMonitor);
 
-	list_destroy(l_maestro_paginas); //entender el list_destroy_and_destroy_elements()
-	list_destroy(l_memorias);
-	free(memoria_principal);
+	if((int)TR_confMonitor != 0) {
+		log_error(LOG_ERROR,"Error con el thread de monitoreo de configuracion: %d",(int)TR_confMonitor);
+	}
+
+	list_destroy(L_MARCOS); //entender el list_destroy_and_destroy_elements()
+	list_destroy(L_MEMORIAS);
+
+	pthread_mutex_destroy(&mutexMarcos);
+	pthread_mutex_destroy(&mutexSegmentos);
+	pthread_mutex_destroy(&mutexMemorias);
+	sem_destroy(&semJournal);
+
+
+	free(MEMORIA_PRINCIPAL);
 
 }
 
 void configuracion_inicial(void){
 	t_config* CONFIG;
 	CONFIG = config_create("config.cfg");
+	usleep(10*1000);
 	if (!CONFIG) {
-		printf("No encuentro el archivo config\n");
+		printf("Memoria: Archivo de configuracion no encontrado. \n");
 		exit_gracefully(EXIT_FAILURE);
 	}
-	PUERTO_DE_ESCUCHA = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
-	IP_FS = config_get_string_value(CONFIG,"IP_FS");
-	PUERTO_FS = config_get_string_value(CONFIG,"PUERTO_FS");
+	char* config_puerto_escucha = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
+	PUERTO_DE_ESCUCHA = malloc(strlen(config_puerto_escucha) + 1);
+	strcpy(PUERTO_DE_ESCUCHA, config_puerto_escucha);
+	char* config_ip_fs = config_get_string_value(CONFIG,"IP_FS");
+	IP_FS = malloc(strlen(config_ip_fs)+1);
+	strcpy(IP_FS, config_ip_fs);
+	char* config_puerto_fs = config_get_string_value(CONFIG,"PUERTO_FS");
+	PUERTO_FS = malloc(strlen(config_puerto_fs) + 1);
+	strcpy(PUERTO_FS, config_puerto_fs);
 	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
-	IP_SEEDS = config_get_string_value(CONFIG,"IP_SEEDS");
-	PUERTOS_SEEDS = config_get_string_value(CONFIG,"PUERTOS_SEEDS");
+	char** config_ip_seeds = config_get_array_value(CONFIG,"IP_SEEDS");
+	int i = 0;
 
+	while(config_ip_seeds[i]!= NULL){
+		IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
+		IP_SEEDS[i] = string_duplicate(config_ip_seeds[i]);
+		free(config_ip_seeds[i]);
+		i++;
+	}
+	free(config_ip_seeds);
+	IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
+	IP_SEEDS[i] = NULL;
+
+
+	char** config_puertos_seeds = config_get_array_value(CONFIG,"PUERTOS_SEEDS");
+	i = 0;
+	while(config_puertos_seeds[i]!= NULL){
+		PUERTOS_SEEDS= realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
+		PUERTOS_SEEDS[i] = string_duplicate(config_puertos_seeds[i]);
+		free(config_puertos_seeds[i]);
+		i++;
+	}
+	free(config_puertos_seeds);
+	PUERTOS_SEEDS = realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
+	PUERTOS_SEEDS[i] = NULL;
+
+	RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
+	RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
+	RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
+	RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
+	NUMERO_MEMORIA = config_get_int_value(CONFIG,"NUMERO_MEMORIA");
+	config_destroy(CONFIG);
+	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
+	instruccion_maxValue->instruccion = MAX_VALUE;
+	fd_disponibles = dictionary_create();
+	Instruccion* respuesta = enviar_instruccion(IP_FS,PUERTO_FS, instruccion_maxValue, POOLMEMORY, T_VALUE);
+
+	if (respuesta->instruccion == RETORNO) {
+		Retorno_Generico* retorno_generico = respuesta->instruccion_a_realizar;
+
+		if (retorno_generico->tipo_retorno == TAMANIO_VALOR_MAXIMO) {
+			Retorno_Max_Value* retorno_maxValue = retorno_generico->retorno;
+			MAX_VAL = retorno_maxValue->value_size;
+			free_retorno(respuesta);
+			log_info(LOG_INFO, "MAX_VALUE obtenido del FileSystem: %d.", MAX_VAL);
+
+		} else {
+			log_instruccion_parseada(respuesta);
+			free_retorno(respuesta);
+			log_error(LOG_ERROR, "Memoria: No se obtuvo un MAX_VALUE al pedir el MAX_VALUE al FileSystem.");
+			exit_gracefully(EXIT_FAILURE);
+		}
+
+	} else {
+		log_instruccion_parseada(respuesta);
+		free_retorno(respuesta);
+		log_error(LOG_ERROR, "Se obtuvo un ERROR al pedir el MAX_VALUE al FileSystem.");
+		exit_gracefully(EXIT_FAILURE);
+	}
+	
 
 }
 
 void retorno_consola(char* leido){
+	if(strcmp(leido, "memorias") == 0){
+		pthread_mutex_lock(&mutexListaMemorias);
+		list_iterate(L_MEMORIAS, (void*)mostrar_memoria);
+		pthread_mutex_unlock(&mutexListaMemorias);
+		free(leido);
+		return;
+	}
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
-	Instruccion* respuesta = atender_consulta(instruccion_parseada);// tiene que devolver el paquete con la respuesta
+	Instruccion* respuesta = atender_consulta(instruccion_parseada);
 
+	log_instruccion_parseada(respuesta);
 	print_instruccion_parseada(respuesta);
 
 }
 
 void retornarControl(Instruccion *instruccion, int cliente){
-
-	printf("Lo que me llego desde KERNEL es:\n");
-	print_instruccion_parseada(instruccion);
-	printf("El fd de la consulta es %d y no esta cerrado\n", cliente);
-
-	Instruccion* respuesta = atender_consulta(instruccion); //tiene que devolver el paquete con la respuesta
-
-
-
-
-
-
-	responder(cliente, respuesta);
-
-	//liberar_conexion(cliente); // Para liberar el fd del socket
-	//liberar_conexion(fd_proceso); // Para liberar el fd del socket
-	free_consulta(instruccion);
+	Instruccion* respuesta = atender_consulta(instruccion);
+	log_instruccion_parseada(respuesta);
+	Instruccion * resultado = responder(cliente, respuesta);
+	free_retorno(resultado);
 }
 
-void inicializar_memoria(){
+void inicializar_memoria(void){
 
+	pthread_mutex_lock(&mutexMarcos);
+	pthread_mutex_lock(&mutexSegmentos);
 
-	memoria_principal = malloc(SIZE_MEM); //resevo memoria para paginar
+	MEMORIA_PRINCIPAL = malloc(SIZE_MEM); //resevo memoria para paginar
+	PAGINAS_USADAS = 0; //contador de paginas en uso
+	PAGINAS_MODIFICADAS = 0; //contador de paginas para saber si estoy full
 
-
-	if (memoria_principal == NULL){
-		log_error(LOGGER, "Memoria: No se pudo malloquear la memoria principal.");
+	if (MEMORIA_PRINCIPAL == NULL){
+		log_error(LOG_ERROR, "Memoria: No se pudo malloquear la memoria principal.");
+		pthread_mutex_unlock(&mutexMarcos);
+		pthread_mutex_unlock(&mutexSegmentos);
 		exit_gracefully(-1);
 	}
 
 	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VAL + sizeof(bool); //calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF
 
-	l_maestro_paginas = list_create(); //creo la tabla maestra de paginas, es una t_list global
+	L_MARCOS = list_create(); //creo la tabla maestra de paginas, es una t_list global
 
-	l_segmentos = list_create(); //creo la tabla de segmentos, es una t_list global
+	L_SEGMENTOS = list_create(); //creo la tabla de segmentos, es una t_list global
 
 	int memoria_formateada = 0; //inicializo un contador de memoria formateada
 
-	void* desplazamiento = memoria_principal; //pongo al principio el desplazamiento
+	void* desplazamiento = MEMORIA_PRINCIPAL; //pongo al principio el desplazamiento
 
 	while (memoria_formateada + tamanio_pagina < SIZE_MEM){
 
-		Pagina_general* registro_maestra = malloc(sizeof(Pagina_general)); //registro para la tabla maestra de paginas
+		Marco* registro_maestra = malloc(sizeof(Marco)); //registro para la tabla maestra de paginas
 
 		if (registro_maestra == NULL){
-			log_error(LOGGER, "Memoria: Fallo malloc para Pagina_general.");
+			log_error(LOG_ERROR, "Memoria: Fallo malloc para marco.");
 			exit_gracefully(-1);
 		}
 
 		registro_maestra->en_uso = false;
 		registro_maestra->pagina = desplazamiento;
 
-		list_add(l_maestro_paginas, registro_maestra); //inserto el registro para una nueva pagina en la tabla maestra de paginas
-
+		list_add(L_MARCOS, registro_maestra); //inserto el registro para una nueva pagina en la tabla maestra de paginas
 
 		//formateo de memoria
 		*(t_key*) desplazamiento = 0;
 		desplazamiento += sizeof(t_key);			//lugar de key
 
-
 		*(t_timestamp*) desplazamiento = 0;
 		desplazamiento += sizeof(t_timestamp);		//lugar de timestamp
-
 
 		char* palabra = "\0";
 		memcpy(desplazamiento, palabra, MAX_VAL);
 		desplazamiento += MAX_VAL;				//lugar de value
-
 
 		*(t_flag*) desplazamiento = 0;
 		desplazamiento += sizeof(t_flag);			//lugar de modificado
@@ -131,28 +218,53 @@ void inicializar_memoria(){
 
 	}
 
-	printf("Memoria incializada de %i bytes con %i paginas de %i bytes cada una. \n",SIZE_MEM,l_maestro_paginas->elements_count, tamanio_pagina);
-	log_info(LOGGER, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,l_maestro_paginas->elements_count, tamanio_pagina);
+
+	pthread_mutex_unlock(&mutexMarcos);
+	pthread_mutex_unlock(&mutexSegmentos);
+
+	
+	log_info(LOG_INFO, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
 }
 
 Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
-		Instruccion* instruccion_respuesta = malloc(sizeof(Instruccion));
 
-		if (instruccion_parseada->instruccion == SELECT){
+		usleep(RETARDO_MEM*1000);
 
-			Select* instruccion_select = (Select*) instruccion_parseada->instruccion_a_realizar;
+		sem_wait(&semJournal);
 
-			Segmento* segmento = buscar_segmento(instruccion_select->nombre_tabla);
-			void* pagina = NULL;
+		Instruccion* instruccion_respuesta;
 
-			if (segmento != NULL){
-				pagina = buscar_pagina_en_segmento(segmento, instruccion_select->key);
+		switch	(instruccion_parseada->instruccion){
+		case SELECT:;
+
+			if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
+				//la memoria esta full, lanzo journal
+				t_timestamp timestamp = get_timestamp();
+				lanzar_journal(timestamp);
 			}
 
-			if(pagina == NULL){
+			pthread_mutex_lock(&mutexSegmentos);
+
+			Select* instruccion_select = instruccion_parseada->instruccion_a_realizar;
+			char* nombre_tabla_select = malloc(strlen(instruccion_select->nombre_tabla)+1);
+			strcpy(nombre_tabla_select, instruccion_select->nombre_tabla);
+			t_key key_select = instruccion_select->key;
+
+			Segmento* segmento = buscar_segmento(nombre_tabla_select);
+			int id_pagina = -1;
+
+			if (segmento != NULL){
+				id_pagina = buscar_pagina_en_segmento(segmento, key_select);
+			}
+
+			pthread_mutex_unlock(&mutexSegmentos);
+
+			if(id_pagina < 0){
 			// no tenemos la tabla-key en memoria
+
 				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION))){
+					usleep(RETARDO_FS*1000);
 
 					if (instruccion_respuesta->instruccion == RETORNO){
 						Retorno_Generico* resp_retorno_generico = instruccion_respuesta->instruccion_a_realizar;
@@ -160,86 +272,161 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 						if (resp_retorno_generico->tipo_retorno == VALOR){
 							Retorno_Value* resp_retorno_value = resp_retorno_generico->retorno;
 
-							int result_insert = insertar_en_memoria(instruccion_select->nombre_tabla, instruccion_select->key, resp_retorno_value->value, resp_retorno_value->timestamp, false);
+							int result_insert = insertar_en_memoria(nombre_tabla_select, key_select, resp_retorno_value->value, resp_retorno_value->timestamp, false);
 
-							if (result_insert < 0){
+							if(result_insert == -2){
+								instruccion_respuesta = respuesta_error(MEMORY_FULL);
+							} else if (result_insert < 0){
 								instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 							}
-
-						} else {
-							instruccion_respuesta = respuesta_error(BAD_RESPONSE);
-						}
-					}
+						} 
+					} 
 				}
 			// en instruccion_respuesta queda la respuesta del FS que puede ser ERROR o RETORNO
-			} else {
+			}else {
 			// tenemos la tabla-key en memoria
-
+				instruccion_respuesta = malloc(sizeof(Instruccion));
 				instruccion_respuesta->instruccion = RETORNO;
 				Retorno_Generico* p_retorno_generico = malloc(sizeof(Retorno_Generico));
 				Retorno_Value* p_retorno_valor = malloc(sizeof(Retorno_Value));
 
+				void* pagina = get_pagina(id_pagina);
 				p_retorno_valor->timestamp = *get_timestamp_pagina(pagina);
-				p_retorno_valor->value = get_value_pagina(pagina);
-
+				char* value = get_value_pagina(pagina);
+				p_retorno_valor->value = malloc(strlen(value) + 1);
+				strcpy(p_retorno_valor->value, value);
 				p_retorno_generico->tipo_retorno = VALOR;
 				p_retorno_generico->retorno = p_retorno_valor;
 
 				instruccion_respuesta->instruccion_a_realizar = p_retorno_generico;
+
+				marcar_ultimo_uso(id_pagina);
+
+				free(instruccion_select->nombre_tabla);
+				free(instruccion_select);
+				free(instruccion_parseada);
+
 			}
-		}
-		else if (instruccion_parseada->instruccion == INSERT){
+			free(nombre_tabla_select);
+			break;
+
+		case INSERT:;
+
+			if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
+				//la memoria esta full, lanzo journal
+				t_timestamp timestamp = get_timestamp();
+				lanzar_journal(timestamp);
+			}
 
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
 
-			int result = insertar_en_memoria(instruccion_insert->nombre_tabla , instruccion_insert->key, instruccion_insert->value, instruccion_insert->timestamp_insert, true);
+			char* nombre_tabla_insert = malloc(strlen(instruccion_insert->nombre_tabla)+1);
+			strcpy(nombre_tabla_insert, instruccion_insert->nombre_tabla);
+			char* value_insert = malloc(strlen(instruccion_insert->value)+1);
+			strcpy(value_insert, instruccion_insert->value);
+			t_key key_insert = instruccion_insert->key;
 
-			if (result >= 0){
-				instruccion_respuesta = respuesta_success();
-			} else {
+			if (string_length(instruccion_insert->value) > MAX_VAL) {
+				instruccion_respuesta = respuesta_error(LARGE_VALUE);
+				break;
+			}
+
+			int result_insert = insertar_en_memoria(nombre_tabla_insert , key_insert, value_insert, instruccion_insert->timestamp_insert, true);
+
+			if(result_insert == -2){
+				instruccion_respuesta = respuesta_error(MEMORY_FULL);
+			} else if (result_insert < 0){
 				instruccion_respuesta = respuesta_error(INSERT_FAILURE);
 			}
-		}
-		else if (instruccion_parseada->instruccion == DROP){
 
+			instruccion_respuesta = respuesta_success();
+
+			free(instruccion_insert->nombre_tabla);
+			free(instruccion_insert->value);
+			free(instruccion_insert);
+			free(instruccion_parseada);
+			free(nombre_tabla_insert);
+			free(value_insert);
+
+			break;
+
+		case DROP:;
 			Drop* instruccion_drop = (Drop*) instruccion_parseada->instruccion_a_realizar;
 
-			eliminar_de_memoria(instruccion_drop->nombre_tabla);
+			char* nombre_tabla_drop = malloc(strlen(instruccion_drop->nombre_tabla)+1);
+			strcpy(nombre_tabla_drop, instruccion_drop->nombre_tabla);
+
+			eliminar_de_memoria(nombre_tabla_drop);
 
 			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
+			usleep(RETARDO_FS*1000);
 
-		}
-		else if (instruccion_parseada->instruccion == JOURNAL){
+			free(nombre_tabla_drop);
 
+			break;
+
+		case JOURNAL:;
 			Journal* instruccion_journal = (Journal*) instruccion_parseada->instruccion_a_realizar;
 
-			int result = lanzar_journal(instruccion_journal->timestamp);
+			int result_journal = lanzar_journal(instruccion_journal->timestamp);
 
-			if (result >= 0){
+			if (result_journal >= 0){
 				instruccion_respuesta = respuesta_success();
 			} else {
 				instruccion_respuesta = respuesta_error(JOURNAL_FAILURE);
 			}
-		}
-		else if(instruccion_parseada->instruccion != ERROR &&
-				instruccion_parseada->instruccion != METRICS &&
-				instruccion_parseada->instruccion != ADD &&
-				instruccion_parseada->instruccion != RUN &&
-				instruccion_parseada->instruccion != JOURNAL){
-			instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
-		}
-		else {
-			instruccion_respuesta = respuesta_error(BAD_REQUEST);
-		}
 
-		free_consulta(instruccion_parseada);
+			free(instruccion_journal);
+			free(instruccion_parseada);
+
+			break;
+
+		case GOSSIP:;
+			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
+			t_list *lista_gossip = gossip->lista_memorias;
+			int aux = 0;
+			Memoria * mem = list_get(lista_gossip, aux);
+			while(mem != NULL){
+				add_memory_if_not_exists(mem);
+				aux++;
+				mem = list_get(lista_gossip, aux);
+			}
+			list_destroy_and_destroy_elements(lista_gossip, (void*)eliminar_memoria);
+			free(instruccion_parseada->instruccion_a_realizar);
+			free(instruccion_parseada);
+			instruccion_respuesta = malloc(sizeof(Instruccion));
+			instruccion_respuesta->instruccion = RETORNO;
+			Retorno_Generico * retorno = malloc(sizeof(Retorno_Generico));
+			retorno->tipo_retorno = RETORNO_GOSSIP;
+			Gossip * gossip_ret = malloc(sizeof(Gossip));
+			t_list *lista = filtrar_memorias_a_enviar();
+			t_list *a_enviar = list_duplicate_all(lista, (void*)duplicar_memoria, mutexListaMemorias);
+			list_destroy(lista);
+			gossip_ret->lista_memorias = a_enviar;
+			retorno->retorno = gossip_ret;
+			instruccion_respuesta->instruccion_a_realizar = retorno;
+			break;
+		case ERROR:;
+			instruccion_respuesta = instruccion_parseada;
+			break;
+		default:;
+				instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion_parseada, POOLMEMORY, T_INSTRUCCION);
+				usleep(RETARDO_FS*1000);
+				break;
+		}
+		sem_post(&semJournal);
+
 		return instruccion_respuesta;
 }
 
 
 int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp timestamp_insert, t_flag modificado){
 
+	pthread_mutex_lock(&mutexSegmentos);
+
 	Segmento* segmento = buscar_segmento(nombre_tabla);
+	bool pagina_nueva = false;
+
 
 	if(segmento == NULL){
 		//no tenemos el segmento, creo uno
@@ -251,61 +438,98 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 
 	}
 
-	void* pagina = buscar_pagina_en_segmento(segmento, key);
+	pthread_mutex_unlock(&mutexSegmentos);
 
-	if(pagina == NULL){
+	int id_pagina = buscar_pagina_en_segmento(segmento, key);
+
+	if(id_pagina < 0){
 		//no tenemos la pagina
-		pagina = seleccionar_pagina();
+		id_pagina = seleccionar_marco();
 
-		if(pagina == NULL){
-			return -2;
+		if(id_pagina < 0){
+			return -2; // no hay paginas, la memoria esta FULL
 		}
+		pagina_nueva = true;
 
-		agregar_pagina_en_segmento(segmento, pagina);
+		agregar_pagina_en_segmento(segmento, id_pagina);
 	}
+
+	void* pagina = get_pagina(id_pagina);
 
 	set_key_pagina(pagina, key);
 	set_value_pagina(pagina, value);
 	set_timestamp_pagina(pagina, timestamp_insert);
 	set_modificado_pagina(pagina, modificado);
 
+	marcar_ultimo_uso(id_pagina);
+
+	if (pagina_nueva && modificado && (PAGINAS_MODIFICADAS < L_MARCOS->elements_count)){
+		PAGINAS_MODIFICADAS++;
+	}
+
 	return 1;
 }
 
+void* get_pagina(int id_pagina){
+
+	if(id_pagina <= (L_MARCOS->elements_count -1)){
+		Marco* marco = list_get(L_MARCOS, id_pagina);
+		return marco->pagina;
+	} else {
+		return (void*) NULL;
+	}
+}
+
 void eliminar_de_memoria(char* nombre_tabla){
+
+	pthread_mutex_lock(&mutexSegmentos);
+
 	Segmento* segmento = buscar_segmento(nombre_tabla);
 
 	if (segmento != NULL){
 		t_list* paginas = segmento->paginas;
 		int posicion = (paginas->elements_count -1);
-		Pagina_general* pagina_general_liberar;
-		void* pagina_liberar;
+		Marco* marco_liberar;
+		int id_pagina_liberar;
 
 		while (posicion >= 0){
-			pagina_liberar = list_get(paginas, posicion);
-			pagina_general_liberar = buscar_pagina_general(pagina_liberar);
 
-			if(pagina_general_liberar != NULL){
-				pagina_general_liberar->en_uso = false;
+			id_pagina_liberar = (int) list_get(paginas, posicion);
+
+			pthread_mutex_lock(&mutexMarcos);
+			marco_liberar = list_get(L_MARCOS, id_pagina_liberar);
+
+			if(marco_liberar != NULL){
+				marco_liberar->en_uso = false;
+				PAGINAS_USADAS--;
 			}
+
+			pthread_mutex_unlock(&mutexMarcos);
 
 			posicion --;
 
 		}
 
-		list_destroy(paginas);
 
+		list_destroy(paginas);
 		int index = index_segmento(nombre_tabla);
 
 		if (index >= 0){
-			list_remove(l_segmentos, index);
+			Segmento* segmento_liberar = list_get(L_SEGMENTOS, index);
+			list_remove(L_SEGMENTOS, index);
+			free(segmento_liberar->nombre);
+			free(segmento_liberar);
+
 		}
 	}
+	pthread_mutex_unlock(&mutexSegmentos);
 }
 
 
-void agregar_pagina_en_segmento(Segmento* segmento, void* pagina){
-	list_add(segmento->paginas, pagina);
+void agregar_pagina_en_segmento(Segmento* segmento, int id_pagina){
+	pthread_mutex_lock(&mutexSegmentos);
+	list_add(segmento->paginas, (void*) id_pagina);
+	pthread_mutex_unlock(&mutexSegmentos);
 }
 
 void* buscar_segmento(char* nombre_segmento){
@@ -314,20 +538,20 @@ void* buscar_segmento(char* nombre_segmento){
 	Segmento* segmento;
 	bool encontrado = false;
 
-	while (posicion < l_segmentos->elements_count && !encontrado){
+	while (posicion < L_SEGMENTOS->elements_count && !encontrado){
 
-		segmento = list_get(l_segmentos, posicion);
+		segmento = list_get(L_SEGMENTOS, posicion);
 
 		if(coincide_segmento(nombre_segmento, segmento)){
 			encontrado = true;
 		}
+
 		posicion ++;
 	}
 
 	if (encontrado) {
 		return segmento;
 	}
-
 	return NULL;
 }
 
@@ -337,9 +561,9 @@ int index_segmento(char* nombre_segmento){
 	Segmento* segmento;
 	bool encontrado = false;
 
-	while (posicion < l_segmentos->elements_count && !encontrado){
+	while (posicion < L_SEGMENTOS->elements_count && !encontrado){
 
-		segmento = list_get(l_segmentos, posicion);
+		segmento = list_get(L_SEGMENTOS, posicion);
 
 		if(coincide_segmento(nombre_segmento, segmento)){
 			encontrado = true;
@@ -354,57 +578,44 @@ int index_segmento(char* nombre_segmento){
 	return -1;
 }
 
-void* buscar_pagina_en_segmento(Segmento* segmento, t_key key){
+int buscar_pagina_en_segmento(Segmento* segmento, t_key key){
 
 	t_list* l_paginas = segmento->paginas;
 
-	int posicion = 0;
-	void* pagina = list_get(l_paginas, posicion);
-
-	if (pagina != NULL){
-
-		while (!coincide_pagina(key, pagina) && ((posicion + 1) < l_paginas->elements_count)){
-			posicion ++;
-			pagina = list_get(l_paginas, posicion);
-		}
-
-		if (coincide_pagina(key, pagina)) {
-			return pagina;
-		}
-	}
-
-	return NULL;
-
-}
-
-Pagina_general* buscar_pagina_general(void* pagina){
-
-	int posicion = (l_maestro_paginas->elements_count -1);
-	Pagina_general* pagina_general = list_get(l_maestro_paginas, posicion);
-	Pagina_general* pagina_encontrada = NULL;
+	int posicion = (l_paginas->elements_count -1);
+	int id_pagina;
 
 	while (posicion >= 0){
-		pagina_general = list_get(l_maestro_paginas, posicion);
+		id_pagina = (int) list_get(l_paginas, posicion);
 
-		if(pagina_general->pagina == pagina){
-			pagina_encontrada = pagina_general;
+		if (coincide_pagina(key, id_pagina)) {
+			return id_pagina;
 		}
 
-		posicion --;
+		posicion--;
 	}
 
-	return pagina_encontrada;
+	return -1;
 }
+
 
 bool coincide_segmento (char* nombre_segmento, Segmento* segmento){
-	int resultado = strcmp(nombre_segmento, segmento->nombre);
-	return resultado == 0;
+
+	return strcmp(nombre_segmento, segmento->nombre) == 0;
 
 }
 
-bool coincide_pagina (t_key key, void* pagina){
-	t_key key_en_pagina = *get_key_pagina(pagina);
-	return key == key_en_pagina;
+bool coincide_pagina (t_key key, int id_pagina){
+
+	void* pagina = get_pagina(id_pagina);
+
+	if(pagina != NULL) {
+
+		t_key key_en_pagina = *get_key_pagina(pagina);
+		return key == key_en_pagina;
+	} else {
+		return false;
+	}
 }
 
 
@@ -444,9 +655,8 @@ void set_timestamp_pagina( void* p_pagina, t_timestamp timestamp){
 }
 
 void set_value_pagina( void* p_pagina, char* value){
-	void* p_value =  p_pagina;
-	p_value += (sizeof(t_key) + sizeof(t_timestamp));
-	memcpy(p_value, value, MAX_VAL);
+	
+	memcpy(p_pagina + sizeof(t_key) + sizeof(t_timestamp), value, strlen(value)+1);
 
 }
 
@@ -456,15 +666,15 @@ void set_modificado_pagina( void* p_pagina, t_flag estado){
 	*(t_flag*) p_modif = estado;
 }
 
-void print_lista_paginas(){
+void print_lista_paginas(void){
 	int nro_pagina = 0;
-	int size_lista = l_maestro_paginas->elements_count;
-	Pagina_general* pagina_general;
+	int size_lista = L_MARCOS->elements_count;
+	Marco* marco;
 	void* pagina;
 
 	while (nro_pagina < size_lista){
-		pagina_general = list_get(l_maestro_paginas, nro_pagina);
-		pagina = pagina_general->pagina;
+		marco = list_get(L_MARCOS, nro_pagina);
+		pagina = marco->pagina;
 
 		t_timestamp timestamp = *get_timestamp_pagina(pagina);
 		t_key key = *get_key_pagina(pagina);
@@ -489,150 +699,355 @@ void print_pagina(void* pagina){
 }
 
 
-void lanzar_gossiping(){
-
-	l_memorias = list_create();
-	log_info(LOGGER, "Memoria: Se lanza el proceso de gossiping.");
-
-	IP_SEEDS = string_substring(IP_SEEDS, 1, string_length(IP_SEEDS)-2);
-	PUERTOS_SEEDS = string_substring(PUERTOS_SEEDS, 1, string_length(PUERTOS_SEEDS)-2);
-
-	char** ips = string_split(IP_SEEDS, ",");
-	char** puertos = string_split(PUERTOS_SEEDS, ",");
-
+void lanzar_gossiping(void){
 	int posicion = 0;
-
-	while (ips[posicion] != NULL && puertos[posicion] != NULL){
-
-		char* puerto = puertos[posicion];
-		char* ip = ips[posicion];
-
+	while (IP_SEEDS[posicion] != NULL && PUERTOS_SEEDS[posicion] != NULL){
+		char* ip = IP_SEEDS[posicion];
+		char* puerto = PUERTOS_SEEDS[posicion];
 		Memoria* nueva_memoria = malloc(sizeof(Memoria));
-		nueva_memoria->ip = ip;
-		nueva_memoria->puerto = puerto;
-		nueva_memoria->idMemoria = posicion;
-
-		list_add(l_memorias, nueva_memoria);
-
+		nueva_memoria->ip = malloc(strlen(ip) +1);
+		strcpy(nueva_memoria->ip, ip);
+		nueva_memoria->puerto = malloc(strlen(puerto)+1);
+		strcpy(nueva_memoria->puerto ,puerto);
+		nueva_memoria->idMemoria = -1;
+		free(ip);
+		free(puerto);
+		list_add(L_MEMORIAS, nueva_memoria);
 		posicion++;
 	}
-	Instruccion *instruccion = malloc(sizeof(Instruccion));
-	Gossip * gossip = malloc(sizeof(Gossip));
-	gossip->lista_memorias = l_memorias;
-	instruccion->instruccion = GOSSIP;
-	instruccion->instruccion_a_realizar = gossip;
+	free(IP_SEEDS);
+	free(PUERTOS_SEEDS);
+	Memoria * memoria = malloc(sizeof(Memoria));
+	char* local_ip = get_local_ip();
+	memoria->ip = malloc(strlen(local_ip)+1);
+	strcpy(memoria->ip, local_ip);
+	memoria->puerto = malloc(strlen(PUERTO_DE_ESCUCHA)+1);
+	strcpy(memoria->puerto, PUERTO_DE_ESCUCHA);
+	memoria->idMemoria = NUMERO_MEMORIA;
+	pthread_mutex_lock(&mutexListaMemorias);
+	list_add(L_MEMORIAS, memoria);
+	pthread_mutex_unlock(&mutexListaMemorias);
+	while(true){
+		usleep(RETARDO_GOSSIPING*1000);
+		t_list *lista = filtrar_memorias_gossipear();
+		t_list *a_gossipear = list_duplicate_all(lista, (void*)duplicar_memoria, mutexListaMemorias);
+		list_iterate(a_gossipear, (void*)gossipear);
+		list_destroy_and_destroy_elements(a_gossipear, (void*)eliminar_memoria);
+	}
+}
 
-	// Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS,PUERTO_FS,instruccion, POOLMEMORY, T_GOSSIPING);
+t_list* filtrar_memorias_gossipear(void){
+	int aux = 0;
+	t_list *lista_filtrada = list_create();
+	Memoria *m1 = list_get(L_MEMORIAS, aux);
+	bool filtrar(Memoria *m2){
+		return strcmp(m1->ip, m2->ip) == 0 && strcmp(m1->puerto, m2->puerto) == 0;
+	}
+	while(m1 != NULL){
+		if(list_count_satisfying(L_MEMORIAS, (void*)filtrar) > 1){
+			if(m1->idMemoria != -1){
+				list_add(lista_filtrada, m1);
+			}
+		}else{
+			list_add(lista_filtrada, m1);
+		}
+
+		aux++;
+		m1 = list_get(L_MEMORIAS, aux);
+	}
+	return lista_filtrada;
+}
+
+t_list *filtrar_memorias_a_enviar(void){
+	int aux = 0;
+	t_list *lista_filtrada = list_create();
+	Memoria *m1 = list_get(L_MEMORIAS, aux);
+	bool filtrar(Memoria *m2){
+		return strcmp(m1->ip, m2->ip) == 0 && strcmp(m1->puerto, m2->puerto) == 0;
+	}
+	while(m1 != NULL){
+		if(list_count_satisfying(L_MEMORIAS, (void*)filtrar) > 0){
+			if(m1->idMemoria != -1){
+				list_add(lista_filtrada, m1);
+			}
+		}
+		aux++;
+		m1 = list_get(L_MEMORIAS, aux);
+	}
+	return lista_filtrada;
+}
+
+void gossipear(Memoria *mem){
+	if(mem->idMemoria != NUMERO_MEMORIA){
+		Instruccion *inst  = malloc(sizeof(Instruccion));
+		Gossip * gossip = malloc(sizeof(Gossip));
+		t_list *lista_filtrada = filtrar_memorias_a_enviar();
+		t_list *a_enviar = list_duplicate_all(lista_filtrada, (void*)duplicar_memoria, mutexListaMemorias);
+		list_destroy(lista_filtrada);
+		gossip->lista_memorias = a_enviar;
+		inst->instruccion = GOSSIP;
+		inst ->instruccion_a_realizar = gossip;
+		Instruccion *res = enviar_instruccion(mem->ip, mem->puerto, inst, POOLMEMORY, T_GOSSIPING);
+		if(res->instruccion == RETORNO){
+			Retorno_Generico *ret = res->instruccion_a_realizar;
+			if(ret->tipo_retorno == RETORNO_GOSSIP){
+				Gossip *gossip = ret->retorno;
+				t_list *lista_retorno = gossip->lista_memorias;
+				list_iterate(lista_retorno, (void*)mostrar_memoria);
+			}
+		}
+		free_retorno(res);
+	}
+}
+
+void add_memory_if_not_exists(Memoria *mem){
+	if(!existe_memoria(L_MEMORIAS, mem)){
+		Memoria *a_agregar = duplicar_memoria(mem);
+		pthread_mutex_lock(&mutexListaMemorias);
+		list_add(L_MEMORIAS, a_agregar);
+		pthread_mutex_unlock(&mutexListaMemorias);
+	}
+}
+
+bool existe_memoria(t_list *lista, Memoria *mem1){
+	int posicion_en_lista = 0;
+	pthread_mutex_lock(&mutexListaMemorias);
+	Memoria *mem2 = list_get(lista, posicion_en_lista);
+	while(mem2 != NULL){
+		if(strcmp(mem1->ip, mem2->ip) == 0 && strcmp(mem1->puerto, mem2->puerto) == 0 && mem1->idMemoria == mem2->idMemoria) {
+			pthread_mutex_unlock(&mutexListaMemorias);
+			return true;
+		}
+		posicion_en_lista ++;
+		mem2 = list_get(lista, posicion_en_lista);
+	}
+	pthread_mutex_unlock(&mutexListaMemorias);
+	return false;
+}
+
+void* f_journaling (void) {
+
+	while(true){
+		usleep(RETARDO_JOURNAL*1000);
+		t_timestamp timestamp = get_timestamp();
+		lanzar_journal(timestamp);
+	}
+
 }
 
 int lanzar_journal(t_timestamp timestamp_journal){
 
-	int posicion_segmento = (l_segmentos->elements_count -1);
+	sem_wait(&semJournal);
+
+	int posicion_segmento = (L_SEGMENTOS->elements_count -1);
 	int posicion_pagina;
 	Segmento* segmento;
 	t_list* paginas;
+	int id_pagina;
 	void* pagina;
-	Pagina_general* pagina_general;
-
-	Insert* instruccion_insert = malloc(sizeof(Insert));
-	Instruccion* instruccion = malloc(sizeof(Instruccion));
-	instruccion->instruccion = INSERT;
-	instruccion->instruccion_a_realizar = instruccion_insert;
-
+	Marco* marco;
 
 	while(posicion_segmento >= 0){
 
-		segmento = list_get(l_segmentos, posicion_segmento);
+		segmento = list_get(L_SEGMENTOS, posicion_segmento);
 		paginas = segmento->paginas;
 		posicion_pagina = (paginas->elements_count -1);
 
+
 		while (posicion_pagina >= 0){
-			pagina = list_get(paginas, posicion_pagina);
+			id_pagina = (int) list_get(paginas, posicion_pagina);
+			pagina = get_pagina(id_pagina);
 
 			if (*get_modificado_pagina(pagina)){
+
+				Instruccion* instruccion = malloc(sizeof(Instruccion));
+				instruccion->instruccion = INSERT;
+				Insert* instruccion_insert = malloc(sizeof(Insert));
+				instruccion->instruccion_a_realizar = instruccion_insert;
+
 				instruccion_insert->key = *get_key_pagina(pagina);
-				instruccion_insert->nombre_tabla = segmento->nombre;
+
+				instruccion_insert->nombre_tabla = malloc(strlen(segmento->nombre)+1);
+				strcpy(instruccion_insert->nombre_tabla, segmento->nombre);
+
 				instruccion_insert->timestamp_insert = *get_timestamp_pagina(pagina);
-				instruccion_insert->value = get_value_pagina(pagina);
+
+				char* value = get_value_pagina(pagina);
+				instruccion_insert->value = malloc(strlen(value) + 1);
+				strcpy(instruccion_insert->value, value);
 				instruccion_insert->timestamp = timestamp_journal;
-
-				Instruccion* instruccion_respuesta;
-				if((instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION))){
-
-					if(instruccion_respuesta->instruccion == ERROR){
-						free_consulta(instruccion);
-						return -1;
-					}
-				}
-
-				pagina_general = buscar_pagina_general(pagina);
-				pagina_general->en_uso = false;
-
+				Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION);
+				usleep(RETARDO_FS*1000);
+				free_retorno(instruccion_respuesta);
+				marco = list_get(L_MARCOS, id_pagina);
+				marco->en_uso = false;
+				PAGINAS_MODIFICADAS--;
 			}
+
 			posicion_pagina--;
 		}
 		eliminar_de_memoria(segmento->nombre);
 		posicion_segmento--;
 	}
 
-	free_consulta(instruccion);
+	sem_post(&semJournal);
 	return 1;
 }
 
-void print_memorias (){
+int seleccionar_marco(void){
 
-	int posicion = 0;
-	int size = l_memorias->elements_count;
-	Memoria* memoria;
-
-	while (posicion < size){
-		memoria = list_get(l_memorias, posicion);
-
-		printf("ID: %i IP: %s PUERTO: %s \n", memoria->idMemoria, memoria->ip, memoria->puerto);
-		posicion++;
-	}
-
-}
-
-void* seleccionar_pagina (){
-	 //aca iria el algoritmo para reemplazar paginas
-
-	if(!memoria_full()){
-
+	if(L_MARCOS->elements_count > PAGINAS_USADAS){
+		// hay paginas vacias
 		int posicion = 0;
-		Pagina_general* pagina_general = list_get(l_maestro_paginas, posicion);
+		Marco* marco = list_get(L_MARCOS, posicion);
 
-		while(pagina_en_uso(pagina_general)){
-			posicion++;
-			pagina_general = list_get(l_maestro_paginas, posicion);
+		if(marco < 0){
+			return -1;
 		}
 
-		pagina_general->en_uso = true;
+		while(pagina_en_uso(marco)){
+			posicion++;
+			marco = list_get(L_MARCOS, posicion);
 
-		return pagina_general->pagina;
-	}
-	else {
+			if(marco < 0){
+				return -1;
+			}
+		}
+
+		marco->en_uso = true;
+		PAGINAS_USADAS++;
+
+		return posicion;
+	} else {
+
+		int id_pagina = marco_por_LRU(); //algoritmo para reemplazar paginas
+		if (id_pagina < 0){
+			eliminar_referencia(id_pagina);
+			return id_pagina;
+		}
+
 		printf("No hay mas memoria chinguenguencha!");
-		log_info(LOGGER,"Memoria - La memoria esta FULL.");
-		return (void*) NULL;
+		log_info(LOG_INFO,"Memoria - LRU no selecciono una memoria.");
+		return -1;
 	}
 }
 
 Segmento* crear_segmento(char* nombre_segmento){
 
 	Segmento* nuevo_segmento = malloc(sizeof(Segmento));
-	nuevo_segmento->nombre = nombre_segmento;
+	nuevo_segmento->nombre = malloc(strlen(nombre_segmento)+1);
+	strcpy(nuevo_segmento->nombre, nombre_segmento);
 	nuevo_segmento->paginas = list_create();
-	list_add(l_segmentos, nuevo_segmento);
+	list_add(L_SEGMENTOS, nuevo_segmento);
 
 	return nuevo_segmento;
 
 }
 
-bool pagina_en_uso(Pagina_general* pagina_general){
-	return pagina_general->en_uso == true;
+bool pagina_en_uso(Marco* marco){
+	return marco->en_uso == true;
 }
 
-bool memoria_full(){
-	return list_all_satisfy(l_maestro_paginas, (void*)pagina_en_uso);
+bool memoria_full(void){
+	return list_all_satisfy(L_MARCOS, (void*)pagina_en_uso);
+}
+
+/*
+	Manejo Monitoreo
+*/
+void *TH_confMonitor(void * p){
+
+	int confMonitor_cb(void){
+		t_config* CONFIG = config_create("config.cfg");
+		if(CONFIG == NULL) {
+			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
+			return 1;
+		}
+
+		RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
+		RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
+		RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
+		RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
+
+
+		log_info(LOG_ERROR,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
+		config_destroy(CONFIG);
+		return 0;
+	}
+
+	int retMon = monitorNode("config.cfg", IN_MODIFY, &confMonitor_cb);
+	if(retMon!=0){
+		return (void*)1;
+	}
+	return (void*)0;
+}
+
+void marcar_ultimo_uso(int id_pagina){
+
+	Marco* marco = list_get(L_MARCOS, id_pagina);
+
+	if(marco != NULL){
+		marco->ultimo_uso = get_timestamp();
+	}
+}
+
+int marco_por_LRU(void){
+
+	Marco *marco, *marco_seleccionado;
+	int posicion = L_MARCOS->elements_count -1;
+	int id_seleccionado;
+
+	marco_seleccionado = list_get(L_MARCOS, posicion);
+	id_seleccionado = posicion;
+	posicion--;
+
+		while (posicion >= 0){
+
+			marco = list_get(L_MARCOS, posicion);
+
+			if(marco->ultimo_uso < marco_seleccionado->ultimo_uso){
+				marco_seleccionado = marco;
+				id_seleccionado = posicion;
+			}
+
+			posicion--;
+		}
+
+	return id_seleccionado;
+}
+
+void eliminar_referencia(int id_pagina_eliminar){
+
+	Segmento* segmento;
+	int pos_segmento = L_SEGMENTOS->elements_count -1;
+
+	t_list* paginas_de_segmento;
+	int pos_paginas;
+
+	int id_pagina;
+
+	bool marco_eliminado = false;
+
+	while (pos_segmento >= 0 && !marco_eliminado) {
+		segmento = list_get(L_SEGMENTOS, pos_segmento);
+		paginas_de_segmento = segmento->paginas;
+
+		pos_paginas = paginas_de_segmento->elements_count -1;
+
+		while (pos_paginas >= 0 && !marco_eliminado){
+
+			id_pagina = (int) list_get(paginas_de_segmento, pos_paginas);
+
+			if (id_pagina == id_pagina_eliminar){
+				list_remove(paginas_de_segmento, pos_paginas);
+				marco_eliminado = true;
+			}
+
+			pos_paginas--;
+		}
+
+		pos_segmento--;
+
+	}
+
 }

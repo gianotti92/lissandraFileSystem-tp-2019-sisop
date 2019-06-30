@@ -1,3 +1,6 @@
+#ifndef UTILGUENGUENCHA_PARSER_H_
+#define UTILGUENGUENCHA_PARSER_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,7 +16,6 @@
 #include <commons/config.h>
 #include <commons/log.h>
 #include <commons/collections/list.h>
-#include <pthread.h>
 #include <commons/string.h>
 #include <math.h>
 #include <time.h>
@@ -43,21 +45,21 @@ bool es_numero(char*);
 
 /**
 * @NAME: print_instruccion_parseada
-* @DESC: Imprime por pantalla la instruccion pasada como parametro.
+* @DESC: Imprime por pantalla la instruccion pasada como parametro, no libera la memoria.
 */
 void print_instruccion_parseada(Instruccion*);
+
+/**
+* @NAME: log_instruccion_parseada
+* @DESC: Loguea sin visualizacion la instruccion pasada como parametro y libera la memoria.
+*/
+void log_instruccion_parseada(Instruccion *);
 
 /**
 * @NAME: crear_instruccion
 * @DESC: Crea una instruccion pasandole como parametro el enum de la operacion, el puntero a una operacion y el sizeof() de esa operacion.
 */
-Instruccion* crear_instruccion(Instruction_set, void*, int);
-
-/**
-* @NAME: instruccion_error
-* @DESC: Devuelve una instruccion ERROR.
-*/
-Instruccion* instruccion_error();
+Instruccion* crear_instruccion(Instruction_set, void* instruccion_a_realizar);
 
 /**
 * @NAME: es_select
@@ -132,13 +134,15 @@ unsigned long int string_to_ulint(char*);
 void leer_por_consola(void (*f) (char*));
 
 /**
-* @NAME: free_consulta
-* @DESC: Realiza free a una Instruccion y a lo que contenga.
-*/
-void free_consulta(Instruccion*);
-
-/**
 * @NAME: get_timestamp
 * @DESC: Devuelve el timestamp del sistema.
 */
 uintmax_t get_timestamp();
+
+/**
+* @NAME: free_retorno
+* @DESC: Libera una instruccion tipo RETORNO.
+*/
+void free_retorno(Instruccion * instruccion_parseada);
+
+#endif /* UTILGUENGUENCHA_PARSER_H_ */

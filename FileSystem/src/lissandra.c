@@ -9,22 +9,22 @@ int main(void) {
 	/*
 		** Inicializaciones **
 	*/
+	print_guenguencha();
 	pthread_t T_consola,T_server,T_confMonitor,T_dump;
 	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump;
 
 	configure_logger();
-
+	fd_disponibles = dictionary_create();
 	pthread_mutex_init(&memtableMutex,NULL);
 	pthread_mutex_init(&tableMetadataMutex,NULL);
 
 	// Cargo la config inicial
 	t_config* conf = config_create("config.cfg");
 	if(conf == NULL) {
-		log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
+		log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
 		pthread_mutex_destroy(&memtableMutex);
 		pthread_mutex_destroy(&tableMetadataMutex);
-		log_destroy(LOGGER);
-		return 1;
+		exit_gracefully(EXIT_FAILURE);
 	}
 	global_conf_load(conf);
 	config_destroy(conf);
@@ -33,9 +33,8 @@ int main(void) {
 	if(fs_init()!=0){
 		pthread_mutex_destroy(&memtableMutex);
 		pthread_mutex_destroy(&tableMetadataMutex);
-		log_destroy(LOGGER);
 		global_conf_destroy();
-		return 1;
+		exit_gracefully(EXIT_FAILURE);
 	}
 
 	// Memtable & Table Metadata
@@ -60,22 +59,22 @@ int main(void) {
 	// Espero el fin del thread monitor
 	pthread_join(T_confMonitor,&TR_confMonitor);
 	if((int)TR_confMonitor != 0) {
-		log_error(LOGGER,"Error con el thread de monitoreo de configuracion: %d",(int)TR_confMonitor);
+		log_error(LOG_ERROR,"Error con el thread de monitoreo de configuracion: %d",(int)TR_confMonitor);
 	}
 	// Espero el fin del thread consola
 	pthread_join(T_consola,&TR_consola);
 	if((int)TR_consola != 0) {
-		log_error(LOGGER,"Error con el thread consola: %d",(int)TR_consola);
+		log_error(LOG_ERROR,"Error con el thread consola: %d",(int)TR_consola);
 	}
 	// Espero el fin del thread server
 	pthread_join(T_server,&TR_server);
 	if((int)TR_server != 0) {
-		log_error(LOGGER,"Error con el thread server: %d",(int)TR_server);
+		log_error(LOG_ERROR,"Error con el thread server: %d",(int)TR_server);
 	}
 	// Espero el fin del thread dump
 	pthread_join(T_dump,&TR_dump);
 	if((int)TR_dump != 0) {
-		log_error(LOGGER,"Error con el thread de dump: %d",(int)TR_dump);
+		log_error(LOG_ERROR,"Error con el thread de dump: %d",(int)TR_dump);
 	}
 
 
@@ -86,38 +85,40 @@ int main(void) {
 	destroyMemtable();
 	pthread_mutex_destroy(&memtableMutex);
 	pthread_mutex_destroy(&tableMetadataMutex);
-	log_destroy(LOGGER);
 	global_conf_destroy();
 	fs_destroy();
-	return 0;	
+	exit_gracefully(EXIT_SUCCESS);	
 }
 /*
 	Manejo Server
 */
 void *TH_server(void * p){
-	Comunicacion com;
-	com.puerto_servidor=global_conf.puerto;
-	com.proceso=FILESYSTEM;
-	com.tipo_comunicacion=T_VALUE;
-	servidor_comunicacion(&com);
+	Comunicacion *com = malloc(sizeof(Comunicacion));
+	com->puerto_servidor = malloc(strlen(global_conf.puerto)+1);
+	strcpy(com->puerto_servidor, global_conf.puerto);
+	com->proceso=FILESYSTEM;
+	servidor_comunicacion(com);
 	return (void *)0;
 }
 void retornarControl(Instruccion *instruccion, int socket_cliente){
-	Instruccion*resController=controller(instruccion);
-	Instruccion*res=responder(socket_cliente,resController);
-	free_consulta(instruccion);
+	Instruccion *resController = controller(instruccion);
+	//FIXME :: hay que liberar instruccion dependiendo de donde caigamos en controller
+	log_instruccion_parseada(resController);
+	Instruccion *res = responder(socket_cliente, resController);
+
 	switch(res->instruccion){
-		case SUCCESS:
-		// veo
+		case RETORNO:
+			//log_info(LOG_DEBUG, "Lo respondi bien");
 		break;
 		case ERROR:
-		// veo
+			log_error(LOG_ERROR_SV, "Error al responder");
 		break;
 		default:
-		// veo
+			log_error(LOG_ERROR_SV, "Error desconocido al responder");
 		break;
 	}
-	//Liberar res y resController
+
+	free_retorno(res);
 }
 /*
 	Manejo Consola
@@ -133,33 +134,10 @@ void TH_consola(char* leido){
 		
 		Instruccion*res=controller(instruccion_parseada);
 
-		switch(res->instruccion){
-			case RETORNO:
-				switch(((Retorno_Generico*)res->instruccion_a_realizar)->tipo_retorno){
-					case SUCCESS:
-						printf("Realizado\n");
-					break;
-					case DATOS_DESCRIBE:
-						list_iterate((t_list*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno,(void*)showDescribeList);
-					break;
-					case VALOR:
-						printf("Valor: %s - Timestamp: %u - Key: %d",((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->value,((Retorno_Value*)((Retorno_Generico*)res->instruccion_a_realizar)->retorno)->timestamp,((Select*)instruccion_parseada->instruccion_a_realizar)->key);
-					break;
-					default:
-					// veo
-					break;
-				}
-			break;
-			case ERROR:
-				// vemos
-			break;
-			default:
-				// vemos
-			break;
-		}
-		// libero
+		log_instruccion_parseada(res);
+		print_instruccion_parseada(res);
+
 	}
-	free_consulta(instruccion_parseada);
 }
 /*
 	Manejo Monitoreo
@@ -169,11 +147,12 @@ void *TH_confMonitor(void * p){
 	int confMonitor_cb(void){
 		t_config* conf = config_create("config.cfg");
 		if(conf == NULL) {
-			log_error(LOGGER,"Archivo de configuracion: config.cfg no encontrado");
+			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
 			return 1;
 		}
+		printf("conf: %p",conf);
 		global_conf_update(conf);
-		log_info(LOGGER,"Se ha actualizado el archivo de configuracion: retardo: %d, tiempo_dump: %d",global_conf.retardo,global_conf.tiempo_dump);
+		log_info(LOG_INFO,"Se ha actualizado el archivo de configuracion: retardo: %d, tiempo_dump: %d",global_conf.retardo,global_conf.tiempo_dump);
 		config_destroy(conf);
 		return 0;
 	}
@@ -188,13 +167,10 @@ void *TH_confMonitor(void * p){
 /*
 	Manejo Dump
 */
-void cleanRegistros(void*elem) {
-	if(elem == NULL){
-		return;
-	}
-	struct dumpTableList* dump_table_item = (struct dumpTableList*)elem;
+void cleanRegistros(struct dumpTableList* dump_table_item) {
 	void cleanValue(struct tableRegister* reg){
 		free(reg->value);
+		free(reg);
 	}
 	list_iterate(dump_table_item->registros,(void*)cleanValue);
 	list_destroy(dump_table_item->registros);
@@ -202,12 +178,7 @@ void cleanRegistros(void*elem) {
 void *TH_dump(void* p){
 	t_list* table_list = list_create();
 
-	void loadDumpStructure(void*elem){
-		if(elem == NULL){
-			return;
-		}
-		struct memtableItem* item=(struct memtableItem*)elem;
-
+	void loadDumpStructure(struct memtableItem* item){
 		/* Defino la funcion de criterio para la busqueda de la tabla */
 		bool igualCurrTableName(void * param) {
 			struct dumpTableList* dump_table_item = (struct dumpTableList*)param;
@@ -220,7 +191,8 @@ void *TH_dump(void* p){
 		if(tableFound == NULL) {  /*Si no la encontre, la creo*/
 			/* Reservo memoria para la nueva tabla*/
 			struct dumpTableList* newTable = malloc(sizeof(struct dumpTableList));
-			/* Cargo el nombre del item que estoy recorriendo en la nueva tabla*/ 
+			/* Cargo el nombre del item que estoy recorriendo en la nueva tabla*/
+			newTable->tableName = malloc(strlen(item->tableName)+1);
 			strcpy(newTable->tableName,item->tableName);
 			/* Creo una lista de registros para la nueva tabla */
 			newTable->registros = list_create();
@@ -237,16 +209,11 @@ void *TH_dump(void* p){
 		}
 	}
 
-	void performDump(void* elem) {
-		if(elem == NULL){
-			return;
-		}
-		struct dumpTableList* dump_table_item = (struct dumpTableList*)elem;
-
+	void performDump(struct dumpTableList* dump_table_item) {
 		// Obtengo el nombre del archivo
 		struct tableMetadataItem* found = get_table_metadata(dump_table_item->tableName);
 		if(found == NULL) {
-			log_error(LOGGER,"DUMP: No se encontro la metadata de la tabla '%s'",dump_table_item->tableName);
+			//log_error(LOG_ERROR,"DUMP: No se encontro la metadata de la tabla '%s'",dump_table_item->tableName);
 			return;
 		}
 		char*path=getTablePath(dump_table_item->tableName);
@@ -275,13 +242,13 @@ void *TH_dump(void* p){
 		pthread_mutex_lock(&memtableMutex);
 
 		/* Cargo estructura de tablas desde la memtable */
-		list_iterate(global_memtable, &loadDumpStructure);
+		list_iterate(global_memtable, (void*)loadDumpStructure);
 
 		/* Realizo el dump con los datos en la table_list */
-		list_iterate(table_list,&performDump);
+		list_iterate(table_list,(void*)performDump);
 
 		/* Limpio los registros de cada tabla */
-		list_iterate(table_list,&cleanRegistros);
+		list_iterate(table_list,(void*)cleanRegistros);
 
 		/* Limpio la table_list */
 		list_clean(table_list);
@@ -292,7 +259,7 @@ void *TH_dump(void* p){
 		/* Ya dumpie, desbloqueo*/
 		pthread_mutex_unlock(&memtableMutex);
 
-		//log_info(LOGGER,"Dump de Memtable Realizado");
+		log_info(LOG_INFO,"Dump de Memtable Realizado");
 	}
 	list_destroy(table_list);
 	return (void*)0;
@@ -310,7 +277,7 @@ void* TH_compactacion(void* p){
 
 		struct tableMetadataItem* fnd = get_table_metadata(item->tableName);
 		if(fnd == NULL && item->endFlag != 0) {
-			log_error(LOGGER,"Compaction: No se encontro la metadata de la tabla %s",item->tableName);
+			//log_error(LOG_ERROR,"Compaction: No se encontro la metadata de la tabla %s",item->tableName);
 			continue;
 		} else {
 			if(item->endFlag==1){
@@ -321,13 +288,13 @@ void* TH_compactacion(void* p){
 		t_list* tmpc_files = list_create();
 		
 		if(compac_search_tmp_files(tmpc_files,item->tableName)!=0) {
-			list_destroy(tmpc_files);
+			list_destroy_and_destroy_elements(tmpc_files,(void*)free);
 			continue;
 		}
 
 		// Si no hay archivos temporales
 		if(list_size(tmpc_files)==0){
-			list_destroy(tmpc_files);
+			list_destroy_and_destroy_elements(tmpc_files,(void*)free);
 			continue;
 		}
 
@@ -336,7 +303,7 @@ void* TH_compactacion(void* p){
 		if(compac_get_tmp_registers(registrosTemporales,tmpc_files)!=0){
 			clean_registers_list(registrosTemporales);
 			list_destroy(registrosTemporales);
-			list_destroy(tmpc_files);
+			list_destroy_and_destroy_elements(tmpc_files,(void*)free);
 			continue;
 		}
 
@@ -347,14 +314,14 @@ void* TH_compactacion(void* p){
 			list_destroy(registrosParticiones);
 			clean_registers_list(registrosTemporales);
 			list_destroy(registrosTemporales);
-			list_destroy(tmpc_files);
+			list_destroy_and_destroy_elements(tmpc_files,(void*)free);
 			continue;
 		}
 
 		// Comparar uno por uno, modificando la estructura en memoria de cada particion
 		compac_match_registers(registrosParticiones,registrosTemporales);
 		
-		long startBlocking = getTimestamp();
+		t_timestamp startBlocking = getTimestamp();
 		pthread_rwlock_wrlock(&fnd->lock);
 
 		// borrar archivos tmpc
@@ -363,10 +330,10 @@ void* TH_compactacion(void* p){
 			list_destroy(registrosParticiones);
 			clean_registers_list(registrosTemporales);
 			list_destroy(registrosTemporales);
-			list_destroy(tmpc_files);
+			list_destroy_and_destroy_elements(tmpc_files,(void*)free);
 			pthread_rwlock_unlock(&fnd->lock);
-			long endBlocking = getTimestamp();
-			log_info(LOGGER,"Compactacion: Error al borrar los archivos de la tabla %s, se bloqueo por %lu milisegundos",item->tableName,endBlocking-startBlocking);
+			t_timestamp endBlocking = getTimestamp();
+			log_error(LOG_ERROR,"Compactacion: Error al borrar los archivos de la tabla %s, se bloqueo por %d milisegundos",item->tableName,endBlocking-startBlocking);
 			continue;
 		}
 
@@ -376,22 +343,22 @@ void* TH_compactacion(void* p){
 			list_destroy(registrosParticiones);
 			clean_registers_list(registrosTemporales);
 			list_destroy(registrosTemporales);
-			list_destroy(tmpc_files);
+			list_destroy_and_destroy_elements(tmpc_files,(void*)free);
 			pthread_rwlock_unlock(&fnd->lock);
-			long endBlocking = getTimestamp();
-			log_info(LOGGER,"Compactacion: Error al crear las nuevas particiones de la tabla %s, se bloqueo por %lu milisegundos",item->tableName,endBlocking-startBlocking);
+			t_timestamp endBlocking = getTimestamp();
+			log_error(LOG_ERROR,"Compactacion: Error al crear las nuevas particiones de la tabla %s, se bloqueo por %d milisegundos",item->tableName,endBlocking-startBlocking);
 			continue;
 		}
 
 		pthread_rwlock_unlock(&fnd->lock);
-		long endBlocking = getTimestamp();
-		log_info(LOGGER,"Se ha compactado la tabla %s, se bloqueo por %lu milisegundos",item->tableName,endBlocking-startBlocking);
+		t_timestamp endBlocking = getTimestamp();
+		log_info(LOG_INFO,"Se ha compactado la tabla %s, se bloqueo por %d milisegundos",item->tableName,endBlocking-startBlocking);
 
 		compac_clean_partition_registers(registrosParticiones);
 		list_destroy(registrosParticiones);
 		clean_registers_list(registrosTemporales);
 		list_destroy(registrosTemporales);
-		list_destroy(tmpc_files);
+		list_destroy_and_destroy_elements(tmpc_files,(void*)free);
 	}
 	return (void*)0;
 }
