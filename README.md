@@ -2,10 +2,10 @@
 
 ## Como levantar el proyecto...
 
-- cd tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/
-- make
+> cd tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/
+> make
 
-###La secuencia de compilación debería ser la siguiente:
+### La secuencia de compilación debería ser la siguiente:
 
 >Se hizo clean FileSystem
 >Se hizo clean Kernel
@@ -34,23 +34,25 @@
 ## 1° Kernel
 
 - Setear config según corresponda por kernel
-- cd tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/kernel/
-- ./Release/kernel
+> cd tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/kernel/
+> ./Release/kernel
 
 
 ## 2° PoolMemory
 
 - Setear config según corresponda por la memoria
-- cd tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/PoolMemory/
-- ./Release/poolMemory
+
+> cd tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/PoolMemory/
+> ./Release/poolMemory
 
 
 ## 3° FileSystem
 
 - Setear config según corresponda por el filesystem
 - Setear el archivo Metadata.bin en el path /home/utnso/LISSANDRA_FS/Metadata/ con los valores correspondientes a BLOCK_SIZE, BLOCKS y MAGIC_NUMBER
-- cd tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/FileSystem/
-- ./Release/fileSystem
+
+> cd tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/FileSystem/
+> ./Release/fileSystem
 
 ## Integrantes
 
@@ -60,53 +62,5 @@
 - Aceval Alejo
 - Wagner Kevin
 
-##[Enunciado del TP](https://docs.google.com/document/d/1QlzXwpSvI5ua2lbO8pF6ZgjlgMndFlwzlAci7qhZmqE/edit)
-
-@                                `:,,,:`                      @
-@                             ;'+;#++:',:                     @
-@                         ,;',++#'#+#'++;:`                   @
-@                         ;'+;++###+#+++++'.                  @
-@                   ,'+;';'##++++####+#+#++;:                 @
-@                   ;'+++,++'+########++++++'.                @
-@                  ;++;++;++####+##++++++++#'+                @
-@                ';'++###+++#######++++++++++++++#            @
-@                '+;+###+++++#################++++',          @
-@               '+####++++++###########################++     @
-@              ;++####++++######+++++++++++##############+    @
-@             ;'+#####++##########++++++++++++++###@######+#  @
-@             +'#####++##++++++++++++++++++++++####@#######+` @
-@            .'+#+####+''''''''+++++++++''+++######@######### @
-@            `++#+###'''''#######++''''+'''+++##+##@#######++ @
-@            .'+####''''@########+''''''''''''''+#@########+  @
-@            ;'++###'''@@@@@@@@####+''''''####+'''#@########+ @
-@            @+++###'''##++    ####''''''#######''#@########+ @
-@           `++#+#+#'''####+++###+++';'''#@@#@#@''@@@#######+ @
-@            '+#++#@'''''+######++'';;;''@@@   @@''@@######++ @
-@           @@@@@##@';;:;;''+++'''';::;''@@@@@@@@+@@@@#####+. @
-@           @@@@@#@;:::::;;''''''';;::;;;'+@@@@+++@@@@####++  @
-@          @@@@##@#:,,,::;;'''';;;::::;;;''++###+'@@@@####+,  @
-@          @@@@@@@':,,,::;;'''';;::::::;;;''++++''@@@@####+   @
-@          +@@@@@;,;::'#+'';;;;;;;;;::;;;::''++';:@#:         @
-@          '@@@@@;::::'++;;;;;;;;';;;;;;;;''''+';,'`          @
-@            @@@@:,:::'++#+':;;;'''''';;'''''++':;'           @
-@            @@@@,::;:'++##'#;;;;''''+'''';;;'#';;;           @
-@             @@@;::':'+++ '#::'''''''''';;' ++';';           @
-@              ;@+::;:;+';  +:,;''''''''''#  #';'',           @
-@                 :;::;+';  ';,;:''''''';    +':';:           @
-@                 :;:;:'';;   ;,;::::''''   #;;;+''           @
-@                 :::;:'';;;   ;;;::;;'    +';,'''            @
-@                 ::;;:;';;:             :;+;;:               @
-@                 :::;;;;;;:;           ;:'';',               @
-@              ::::::;;;::;;;;        ;;;;;                   @
-@             ,:::::;;;;;::;;;;;     ;;;;:                    @
-@            :,:::::;;;;;;:;;;;;'''''';;;                     @
-@  ######'::,::;::::;;;;;;;:;;;;;;;;;;;;:                     @
-@#########;:,::;;:::;;;''';;;;;;;;;;;;;;                      @
-@@########+:,:;;;;;;;;;''''';;;;;;;;;;';';;'+##               @
-@@#@#######+,,;;;;;;;;''''''''''';;;;;;;:;:;+###              @
-@@@@@######@':;;;;;;;''''''''''++++;;;;::+;;+######           @
-@@@#@@#####@@';';;;;;;'''''''''''';;;;;:'##:+#########+       @
-@@@@@@@@@@@##@+;;;;;;;'''''''''''';;;;;:+@#'+###########`     @
-@@@@@@@@@@@@@@@#';;;;;'''''''''''';;;;;:@##++###########+     @
-@@@@@@@@@@@@@@@@@';;;'''''''''''';;;;;;:####+#############    @
+[Enunciado del TP](https://docs.google.com/document/d/1QlzXwpSvI5ua2lbO8pF6ZgjlgMndFlwzlAci7qhZmqE/edit)
 
