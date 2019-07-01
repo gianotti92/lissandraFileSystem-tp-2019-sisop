@@ -220,7 +220,6 @@ void finalizar_procesos(void){
 			}
 			list_iterate(proceso->metricas, (void*)agregar_metrics);
 			list_destroy(proceso->metricas);
-			free(proceso->instruccion);
 			free(proceso);
 		}
 	}

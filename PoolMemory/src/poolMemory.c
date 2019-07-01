@@ -793,7 +793,7 @@ void gossipear(Memoria *mem){
 			if(ret->tipo_retorno == RETORNO_GOSSIP){
 				Gossip *gossip = ret->retorno;
 				t_list *lista_retorno = gossip->lista_memorias;
-				list_iterate(lista_retorno, (void*)mostrar_memoria);
+				list_iterate(lista_retorno, (void*)add_memory_if_not_exists);
 			}
 		}
 		free_retorno(res);
