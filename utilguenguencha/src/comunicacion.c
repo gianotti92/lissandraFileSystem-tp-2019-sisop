@@ -257,7 +257,7 @@ Connection *update_conn(char *ip, char *puerto, Connection *new_conn){
 
 void servidor_comunicacion(Comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
-	int aux1, bytes_recibidos, fd_max, server_socket;
+	int aux1, fd_max, server_socket;
 	server_socket = iniciar_servidor(comunicacion->puerto_servidor);
 	Procesos proceso_servidor = comunicacion->proceso;
 	free(comunicacion->puerto_servidor);
@@ -289,17 +289,17 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 					}
 				} else {
 					Tipo_Comunicacion tipo_comu;
-					if ((bytes_recibidos = recv(aux1, &tipo_comu, sizeof(Tipo_Comunicacion), MSG_WAITALL)) <= 0) {
+					if ((recv(aux1, &tipo_comu, sizeof(Tipo_Comunicacion), MSG_WAITALL)) <= 0) {
 						liberar_conexion(aux1);
 						FD_CLR(aux1, &fd_set_master);
 					} else {
 						Procesos proceso_que_envia;
-						if ((bytes_recibidos = recv(aux1, &proceso_que_envia, sizeof(Procesos), MSG_WAITALL)) <= 0) {
+						if ((recv(aux1, &proceso_que_envia, sizeof(Procesos), MSG_WAITALL)) <= 0) {
 							liberar_conexion(aux1);
 							FD_CLR(aux1, &fd_set_master);
 						}else if(validar_sender(proceso_que_envia, proceso_servidor, tipo_comu)){
 							Instruccion *instruccion = malloc(sizeof(Instruccion));
-							if ((bytes_recibidos = recv(aux1, &instruccion->instruccion, sizeof(Instruction_set), MSG_WAITALL))<= 0) {
+							if ((recv(aux1, &instruccion->instruccion, sizeof(Instruction_set), MSG_WAITALL))<= 0) {
 								free(instruccion);
 								liberar_conexion(aux1);
 								FD_CLR(aux1, &fd_set_master);
@@ -348,8 +348,7 @@ int iniciar_servidor(char* puerto_servidor) {
 bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_comu) {
 	size_t buffer_size;
 	void* stream;
-	int bytes_recibidos;
-	if ((bytes_recibidos = recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
+	if ((recv(aux1, &buffer_size, sizeof(size_t), MSG_WAITALL)) <= 0) {
 		return false;
 	}
 	if (buffer_size > 0){
@@ -358,7 +357,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 	switch (instruccion->instruccion) {
 	case SELECT:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
+			if ((recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
 			Select *select;
@@ -372,7 +371,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 		}
 	case INSERT:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
+			if ((recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
 			Insert *insert;
@@ -386,7 +385,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 		}
 	case CREATE:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
+			if ((recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
 			Create *create;
@@ -407,7 +406,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 				instruccion->instruccion_a_realizar = describe;
 				return true;
 			}
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
+			if ((recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
 			Describe *describe;
@@ -421,7 +420,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 		}
 	case DROP:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
+			if ((recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
 			Drop *drop;
@@ -435,7 +434,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 		}
 	case JOURNAL:
 		if(tipo_comu == T_INSTRUCCION){
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL))<= 0) {
+			if ((recv(aux1, stream, buffer_size, MSG_WAITALL))<= 0) {
 				break;
 			}
 			Journal *journal;
@@ -456,7 +455,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 				instruccion->instruccion_a_realizar = gossip;
 				return true;
 			}
-			if ((bytes_recibidos = recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
+			if ((recv(aux1, stream, buffer_size, MSG_WAITALL)) <= 0) {
 				break;
 			}
 			Gossip *gossip;
@@ -979,9 +978,8 @@ Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 }
 
 Instruccion *recibir_respuesta(int fd_a_escuchar){
-	int bytes_recibidos;
 	Instruction_set retorno;
-	if((bytes_recibidos = recv(fd_a_escuchar, &retorno, sizeof(Instruction_set), MSG_WAITALL)) <= 0){
+	if((recv(fd_a_escuchar, &retorno, sizeof(Instruction_set), MSG_WAITALL)) <= 0){
 
 		return respuesta_error(CONNECTION_ERROR);
 	}
@@ -994,14 +992,13 @@ Instruccion *recibir_respuesta(int fd_a_escuchar){
 }
 
 Instruccion *recibir_error(int fd_a_escuchar){
-	int bytes_recibidos;
 	Error_set tipo_error;
 	size_t buffer_size;
-	if ((bytes_recibidos = recv(fd_a_escuchar, &buffer_size, sizeof(buffer_size), MSG_WAITALL)) <= 0){
+	if ((recv(fd_a_escuchar, &buffer_size, sizeof(buffer_size), MSG_WAITALL)) <= 0){
 
 		return respuesta_error(CONNECTION_ERROR);
 	}
-	if ((bytes_recibidos = recv(fd_a_escuchar, &tipo_error, buffer_size, MSG_WAITALL)) <= 0){
+	if ((recv(fd_a_escuchar, &tipo_error, buffer_size, MSG_WAITALL)) <= 0){
 
 		return respuesta_error(CONNECTION_ERROR);
 	}else{
@@ -1011,13 +1008,12 @@ Instruccion *recibir_error(int fd_a_escuchar){
 
 
 Instruccion *recibir_retorno(int fd_a_escuchar){
-	int bytes_recibidos;
 	size_t buffer_size;
-	if ((bytes_recibidos = recv(fd_a_escuchar, &buffer_size, sizeof(buffer_size), MSG_WAITALL)) <= 0){
+	if ((recv(fd_a_escuchar, &buffer_size, sizeof(buffer_size), MSG_WAITALL)) <= 0){
 		return respuesta_error(CONNECTION_ERROR);
 	}
 	void *stream = malloc(buffer_size);
-	if ((bytes_recibidos = recv(fd_a_escuchar, stream, buffer_size, MSG_WAITALL)) <= 0){
+	if ((recv(fd_a_escuchar, stream, buffer_size, MSG_WAITALL)) <= 0){
 		free(stream);
 		return respuesta_error(CONNECTION_ERROR);
 	}

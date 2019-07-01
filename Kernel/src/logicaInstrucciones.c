@@ -50,6 +50,7 @@ void logicaRun(Proceso * proceso){
 	}else{
 		free(((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 		free(proceso->instruccion->instruccion_a_realizar);
+		free(proceso->instruccion);
 		proceso->fin_proceso = true;
 	}
 }
@@ -125,7 +126,7 @@ void logicaSelect(Proceso * proceso){
 		if(memoriasAsoc->elements_count > 0){
 			switch(consistencia){
 				case SC || EC :;
-					int random = (rand() % (memoriasAsoc->elements_count -1));
+					int random = rand() % memoriasAsoc->elements_count;
 					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 					break;
 
@@ -171,7 +172,7 @@ void logicaInsert(Proceso *proceso){
 		if(memoriasAsoc->elements_count > 0){
 			switch(consistencia){
 				case SC || EC :;
-					int random = (rand() % (memoriasAsoc->elements_count -1));
+					int random = rand() % memoriasAsoc->elements_count;
 					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 					break;
 				default:;
@@ -216,7 +217,7 @@ void logicaDrop(Proceso *proceso){
 		if(memoriasAsoc->elements_count > 0){
 			switch(consistencia){
 				case SC || EC :;
-					int random = (rand() % (memoriasAsoc->elements_count -1));
+					int random = rand() % memoriasAsoc->elements_count;
 					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 					break;
 				default:;
@@ -299,7 +300,7 @@ void logicaDescribe(Proceso *proceso){
 			if(memoriasAsoc->elements_count > 0){
 				switch(consistencia){
 					case SC || EC :;
-						int random = (rand() % (memoriasAsoc->elements_count -1));
+						int random = rand() % memoriasAsoc->elements_count;
 						mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 						break;
 					default:;

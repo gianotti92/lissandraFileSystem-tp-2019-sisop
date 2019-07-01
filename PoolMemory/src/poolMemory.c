@@ -170,7 +170,7 @@ void inicializar_memoria(void){
 		log_error(LOG_ERROR, "Memoria: No se pudo malloquear la memoria principal.");
 		pthread_mutex_unlock(&mutexMarcos);
 		pthread_mutex_unlock(&mutexSegmentos);
-		exit_gracefully(-1);
+		exit_gracefully(EXIT_FAILURE);
 	}
 
 	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VAL + sizeof(bool); //calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF
@@ -189,7 +189,7 @@ void inicializar_memoria(void){
 
 		if (registro_maestra == NULL){
 			log_error(LOG_ERROR, "Memoria: Fallo malloc para marco.");
-			exit_gracefully(-1);
+			exit_gracefully(EXIT_FAILURE);
 		}
 
 		registro_maestra->en_uso = false;
@@ -793,7 +793,7 @@ void gossipear(Memoria *mem){
 			if(ret->tipo_retorno == RETORNO_GOSSIP){
 				Gossip *gossip = ret->retorno;
 				t_list *lista_retorno = gossip->lista_memorias;
-				list_iterate(lista_retorno, (void*)mostrar_memoria);
+				list_iterate(lista_retorno, (void*)add_memory_if_not_exists);
 			}
 		}
 		free_retorno(res);
