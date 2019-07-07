@@ -350,9 +350,7 @@ void logicaDescribe(Proceso *proceso){
 }
 
 void logicaMetrics(Proceso * proceso){
-	pthread_mutex_lock(&mutex_metrics);
-	print_metrics();
-	pthread_mutex_unlock(&mutex_metrics);
+	loguear_metrics(LOG_OUTPUT);
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
 	free(proceso->instruccionAProcesar);
 
