@@ -8,6 +8,7 @@ ADD MEMORY 1 TO SC
 ADD MEMORY 2 TO SHC
 ADD MEMORY 3 TO EC
 
+
 CREATE MARINOS SHC 1 10000
 CREATE AVES SC 5 50000
 CREATE MAMIFEROS EC 3 60000
@@ -20,6 +21,31 @@ CREATE COLORES SC 2 35000
 CREATE COLORES SC 2 35000
 CREATE COLORES SC 2 35000
 CREATE COLORES SC 2 35000
+
+FS
+
+==32321== Thread 13:
+==32321== Syscall param nanosleep(req) points to uninitialised byte(s)
+==32321==    at 0x416C3CA: ??? (syscall-template.S:84)
+==32321==    by 0x419C2C4: usleep (usleep.c:32)
+==32321==    by 0x804D489: TH_compactacion (lissandra.c:274)
+==32321==    by 0x40A5294: start_thread (pthread_create.c:333)
+==32321==    by 0x41A30AD: clone (clone.S:114)
+==32321==  Address 0xb060308 is on thread 13's stack
+==32321==  in frame #1, created by usleep (usleep.c:25)
+==32321==
+==32321== Conditional jump or move depends on uninitialised value(s)
+==32321==    at 0x402F48E: strcpy (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==32321==    by 0x804BC57: fs_read_buffer_to_registers (fileSystem.c:361)
+==32321==    by 0x804AB0D: fs_read (fileSystem.c:82)
+==32321==    by 0x804A254: getRegisters.8205 (compactacion.c:40)
+==32321==    by 0x40562C3: list_iterate (in /usr/lib/libcommons.so)
+==32321==    by 0x804A2BE: compac_get_tmp_registers (compactacion.c:42)
+==32321==    by 0x804D54D: TH_compactacion (lissandra.c:303)
+==32321==    by 0x40A5294: start_thread (pthread_create.c:333)
+==32321==    by 0x41A30AD: clone (clone.S:114)
+==32321==
+
 
 ADD MEMORY 1 TO SC
 CREATE MARINOS EC 1 10000

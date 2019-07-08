@@ -3,8 +3,6 @@
 
 pthread_mutex_t mutex_diccionario_fd; // Lock para estructura de diccionario
 
-int closed = -1;
-
 typedef struct {
 	int fd;
 	pthread_mutex_t mutex;
@@ -210,12 +208,6 @@ Connection *get_conn(char* ip, char* puerto);
 * @DESC: pone el fd en el diccionario y devuelve un puntero al mismo
 */
 Connection *update_conn(char *ip, char *puerto, Connection *conn);
-/**
-* @NAME: fd_is_valid()
-* @DESC: chequea que el fd sea aun valido
-*/
-int fd_is_valid(int fd);
-
 
 Connection *get_conn(char *ip, char *puerto){
 	char *key = string_new();
@@ -257,19 +249,23 @@ Connection *update_conn(char *ip, char *puerto, Connection *new_conn){
 
 void servidor_comunicacion(Comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
+	struct timeval tv;
+	tv.tv_sec = 5;
+    tv.tv_usec = 0;
 	int aux1, fd_max, server_socket;
 	server_socket = iniciar_servidor(comunicacion->puerto_servidor);
 	Procesos proceso_servidor = comunicacion->proceso;
 	free(comunicacion->puerto_servidor);
 	free(comunicacion);
 	FD_ZERO(&fd_set_master);
-	FD_ZERO(&fd_set_temporal);
 	FD_SET(server_socket, &fd_set_master);
 	fd_max = server_socket;
 	for (;;) {
+		FD_ZERO(&fd_set_temporal);
 		fd_set_temporal = fd_set_master;
-		if (select(fd_max + 1, &fd_set_temporal, NULL, NULL, NULL) == -1) {
-			exit_gracefully(EXIT_FAILURE);
+		if (select(fd_max + 1, &fd_set_temporal, NULL, NULL, &tv) == -1) {
+			log_error(LOG_ERROR,"Timeout en select");
+			continue;
 		}
 		int fin = fd_max;
 		for (aux1 = 0; aux1 <= fin; aux1++) {
@@ -281,7 +277,8 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 							(struct sockaddr *) &client_address,
 							&tamanio_client_address);
 					if (socket_cliente < 0) {
-						exit_gracefully(EXIT_FAILURE);
+						log_error(LOG_ERROR, "Error levantando un socket");
+						continue;
 					}
 					FD_SET(socket_cliente, &fd_set_master);
 					if (socket_cliente > fd_max) {
@@ -305,8 +302,10 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 								FD_CLR(aux1, &fd_set_master);
 							}
 							if (recibir_buffer(aux1, instruccion, tipo_comu)) {
+								fsync(aux1);
 								retornarControl(instruccion, aux1);
 							} else {
+								fsync(aux1);
 								free(instruccion);
 							}
 						}else{
@@ -491,51 +490,47 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 		if (enviar_paquete(paquete, conn->fd)) {
 			eliminar_paquete(paquete);
 			Instruccion *respuesta = recibir_respuesta(conn->fd);
+			fsync(conn->fd);
 			pthread_mutex_unlock(&conn->mutex);
 			free(conn);
 			return respuesta;
 		}else{
-			pthread_mutex_unlock(&conn->mutex);
+			fsync(conn->fd);
 			eliminar_paquete(paquete);
-			if(!fd_is_valid(conn->fd)){
-				conn = crear_conexion(ip, puerto, true);
-				free(conn);
-			}
-			return respuesta_error(CONNECTION_ERROR);
-
+			crear_conexion(ip, puerto, true);
+			pthread_mutex_unlock(&conn->mutex);
+			free(conn);
 		}
 	}
 	return respuesta_error(CONNECTION_ERROR);
 }
 
-
 Connection *crear_conexion(char *ip, char* puerto, bool reconnect) {
 	Connection *conn = get_conn(ip, puerto);
-	if(conn == NULL || reconnect){
-		if(conn == NULL){
-			conn = malloc(sizeof(Connection));
-			conn->fd = -1;
-			pthread_mutex_init(&conn->mutex, NULL);
-		}
-		if(!fd_is_valid(conn->fd) || reconnect){
-			int sockfd;
-		    struct sockaddr_in servaddr;
-		    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-		        return NULL;
-		    }
-		    bzero(&servaddr, sizeof(servaddr));
-
-		    servaddr.sin_family = AF_INET;
-		    servaddr.sin_addr.s_addr = inet_addr(ip);
-		    servaddr.sin_port = htons(atoi(puerto));
-
-		    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
-		        return NULL;
-		    }
-		    conn->fd = sockfd;
-	    	return update_conn(ip, puerto, conn);
-	    }
+	if(conn == NULL){
+		conn = malloc(sizeof(Connection));
+		conn->fd = -1;
+		pthread_mutex_init(&conn->mutex, NULL);
 	}
+	if(reconnect || conn->fd == -1){
+		int sockfd;
+	    struct sockaddr_in servaddr;
+	    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+	        return NULL;
+	    }
+	    bzero(&servaddr, sizeof(servaddr));
+
+	    servaddr.sin_family = AF_INET;
+	    servaddr.sin_addr.s_addr = inet_addr(ip);
+	    servaddr.sin_port = htons(atoi(puerto));
+
+	    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+	        return NULL;
+	    }
+	    conn->fd = sockfd;
+    	return update_conn(ip, puerto, conn);
+    }
+
 	return conn;
 }
 
@@ -551,10 +546,6 @@ bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
 	memcpy(a_enviar + desplazamiento, &paquete->buffer->size, sizeof(paquete->buffer->size));
 	desplazamiento += sizeof(paquete->buffer->size);
 	if(paquete->buffer->size == 0){
-		if(!fd_is_valid(socket_cliente)){
-			free(a_enviar);
-			return false;
-		}
 		if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
 			free(a_enviar);
 			return false;
@@ -566,10 +557,6 @@ bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
 		a_enviar = realloc(a_enviar, desplazamiento + paquete->buffer->size);
 		memcpy(a_enviar + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
 		desplazamiento += paquete->buffer->size;
-		if(!fd_is_valid(socket_cliente)){
-			free(a_enviar);
-			return false;
-		}
 		if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
 			free(a_enviar);
 			return false;
@@ -589,10 +576,6 @@ bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente) {
 	desplazamiento += sizeof(paquete->buffer->size);
 	memcpy(a_enviar + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
 	desplazamiento += paquete->buffer->size;
-	if(!fd_is_valid(socket_cliente)){
-		free(a_enviar);
-		return false;
-	}
 	if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
 		free(a_enviar);
 		return false;
@@ -603,6 +586,7 @@ bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente) {
 }
 
 void liberar_conexion(int socket_cliente) {
+	fsync(socket_cliente);
 	close(socket_cliente);
 }
 
@@ -967,11 +951,12 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 	t_paquete_retorno *paquete = crear_paquete_retorno(instruccion);
 	if(enviar_paquete_retorno(paquete, fd_a_responder)){
+		fsync(fd_a_responder);
 		eliminar_paquete_retorno(paquete);
 		return respuesta_success();
 	}else{
+		fsync(fd_a_responder);
 		eliminar_paquete_retorno(paquete);
-		liberar_conexion(fd_a_responder);
 		return respuesta_error(CONNECTION_ERROR);
 	}
 }
@@ -979,7 +964,6 @@ Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 Instruccion *recibir_respuesta(int fd_a_escuchar){
 	Instruction_set retorno;
 	if((recv(fd_a_escuchar, &retorno, sizeof(Instruction_set), MSG_WAITALL)) <= 0){
-
 		return respuesta_error(CONNECTION_ERROR);
 	}
 	switch(retorno){
@@ -1236,12 +1220,4 @@ void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error){
 	paquete->buffer->stream = malloc(sizeof(error->error));
 	memcpy(paquete->buffer->stream, &error->error, sizeof(error->error));
 	paquete->buffer->size += sizeof(error->error);
-}
-
-int fd_is_valid(int fd){
-	if(fd != -1){
-		return true;
-	}else{
-		return false;
-	}
 }

@@ -58,23 +58,22 @@ void logicaRun(Proceso * proceso){
 void logicaCreate(Proceso * proceso){
 	t_list *memoriasAsoc = dame_lista_de_consistencia(((Create*) proceso->instruccionAProcesar->instruccion_a_realizar)->consistencia);
 	if(memoriasAsoc->elements_count > 0){
+		int random = rand() % memoriasAsoc->elements_count;
+		Memoria * memoria = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 		Instruction_set inst = proceso->instruccionAProcesar->instruccion;
 		t_timestamp metrics_tiempo = ((Create*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
-		t_list * memoriasAsoc = list_duplicate_all(lista_disp, (void*)duplicar_memoria, mutex_disp);
-		int random = rand() % memoriasAsoc->elements_count;
-		Memoria * mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
-		Instruccion * instruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
+		Instruccion * instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
 		if(instruccionRespuesta->instruccion != ERROR){
 			AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
 			nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 			nuevoAcum->instruccion = inst;
-			nuevoAcum->id_memoria = mem->idMemoria;
+			nuevoAcum->id_memoria = memoria->idMemoria;
 			list_add(proceso->metricas, nuevoAcum);
 			realizarDescribeGeneral();
 		}
 		print_instruccion_parseada(instruccionRespuesta);
 		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
-		eliminar_memoria(mem);
+		eliminar_memoria(memoria);
 	}else{
 		log_error(LOG_ERROR, "No hay memorias asignadas a este criterio");
 	}
