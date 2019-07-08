@@ -40,8 +40,9 @@ void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistenci
 			case SHC:
 				agregarSiNoExiste(lista_shc, memoria);
 				break;
-			case DISP:
+			default:
 				agregarSiNoExiste(lista_disp, memoria);
+				break;
 		}
 		pthread_mutex_unlock(&mutex);
 	}
@@ -139,7 +140,7 @@ t_list *dame_lista_de_consistencia(Consistencias consistencia){
 		case SHC:
 			lista = list_duplicate_all(lista_shc, (void*)duplicar_memoria, mutex_shc);
 			break;
-		case DISP:
+		default:
 			lista = list_duplicate_all(lista_disp, (void*)duplicar_memoria, mutex_disp);
 			break;
 	}

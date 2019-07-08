@@ -3,7 +3,7 @@
 void configure_logger() {
 	LOG_INFO = log_create("log_info.log","tp-lissandra", 0, LOG_LEVEL_INFO);
 	LOG_ERROR = log_create("log_error.log","tp-lissandra", 1, LOG_LEVEL_ERROR);
-	LOG_OUTPUT = log_create("log_output.log", "tp-lissandra", 1, LOG_LEVEL_INFO);
+	LOG_OUTPUT = log_create("log_output.log", "tp-lissandra", 0, LOG_LEVEL_INFO);
 	LOG_ERROR_SV = log_create("log_error_sv.log","tp-lissandra", 0, LOG_LEVEL_ERROR);
 	LOG_OUTPUT_SV = log_create("log_output_sv.log", "tp-lissandra", 0, LOG_LEVEL_INFO);
 	LOG_DEBUG = log_create("log_debug.log","tp-lissandra", 1, LOG_LEVEL_DEBUG);

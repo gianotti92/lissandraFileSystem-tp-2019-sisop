@@ -992,7 +992,7 @@ Instruccion *recibir_respuesta(int fd_a_escuchar){
 }
 
 Instruccion *recibir_error(int fd_a_escuchar){
-	Error_set tipo_error;
+	Error_set tipo_error = UNKNOWN;
 	size_t buffer_size;
 	if ((recv(fd_a_escuchar, &buffer_size, sizeof(buffer_size), MSG_WAITALL)) <= 0){
 

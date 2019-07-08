@@ -9,10 +9,6 @@ void configuracion_inicial(void) {
 
 	LOGGER_METRICS = log_create("log_metrics.log", "log_metrics", 0, LOG_LEVEL_INFO);
 	
-	char * puertoEscucha = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
-	PUERTO_DE_ESCUCHA = malloc(strlen(puertoEscucha) + 1);
-	strcpy(PUERTO_DE_ESCUCHA, puertoEscucha);
-	
 	char * ipMemoriaPrincipal = config_get_string_value(CONFIG,"IP_MEMORIA_PPAL");
 	IP_MEMORIA_PPAL = malloc(strlen(ipMemoriaPrincipal) + 1);
 	strcpy(IP_MEMORIA_PPAL, ipMemoriaPrincipal);

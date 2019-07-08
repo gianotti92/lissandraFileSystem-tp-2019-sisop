@@ -56,22 +56,28 @@ void logicaRun(Proceso * proceso){
 }
 
 void logicaCreate(Proceso * proceso){
-	Instruction_set inst = proceso->instruccionAProcesar->instruccion;
-	t_timestamp metrics_tiempo = ((Create*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
-	t_list * memoriasAsoc = list_duplicate_all(lista_disp, (void*)duplicar_memoria, mutex_disp);
-	int random = (rand() % (memoriasAsoc->elements_count - 1));
-	Memoria * mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
-	Instruccion * instruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
-	if(instruccionRespuesta->instruccion != ERROR){
-		AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
-		nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
-		nuevoAcum->instruccion = inst;
-		nuevoAcum->id_memoria = mem->idMemoria;
-		list_add(proceso->metricas, nuevoAcum);
+	t_list *memoriasAsoc = dame_lista_de_consistencia(((Create*) proceso->instruccionAProcesar->instruccion_a_realizar)->consistencia);
+	if(memoriasAsoc->elements_count > 0){
+		Instruction_set inst = proceso->instruccionAProcesar->instruccion;
+		t_timestamp metrics_tiempo = ((Create*) proceso->instruccionAProcesar->instruccion_a_realizar)->timestamp;
+		t_list * memoriasAsoc = list_duplicate_all(lista_disp, (void*)duplicar_memoria, mutex_disp);
+		int random = rand() % memoriasAsoc->elements_count;
+		Memoria * mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+		Instruccion * instruccionRespuesta = enviar_instruccion(IP_MEMORIA_PPAL, PUERTO_MEMORIA_PPAL, proceso->instruccionAProcesar, KERNEL, T_INSTRUCCION);
+		if(instruccionRespuesta->instruccion != ERROR){
+			AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
+			nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
+			nuevoAcum->instruccion = inst;
+			nuevoAcum->id_memoria = mem->idMemoria;
+			list_add(proceso->metricas, nuevoAcum);
+			realizarDescribeGeneral();
+		}
+		print_instruccion_parseada(instruccionRespuesta);
+		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
+		eliminar_memoria(mem);
+	}else{
+		log_error(LOG_ERROR, "No hay memorias asignadas a este criterio");
 	}
-	print_instruccion_parseada(instruccionRespuesta);
-	list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
-	eliminar_memoria(mem);
 }
 
 void logicaAdd(Proceso * proceso){
@@ -120,7 +126,7 @@ void logicaAdd(Proceso * proceso){
 
 void logicaSelect(Proceso * proceso){
 	Consistencias consistencia = obtenerConsistencia(((Select*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
-	if(consistencia > 0){
+	if(consistencia != NOT_FOUND){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
 		Memoria * mem = NULL;
 		if(memoriasAsoc->elements_count > 0){
@@ -166,7 +172,7 @@ void logicaSelect(Proceso * proceso){
 
 void logicaInsert(Proceso *proceso){
 	Consistencias consistencia = obtenerConsistencia(((Insert*) proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
-	if(consistencia > 0){
+	if(consistencia != NOT_FOUND){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
 		Memoria * mem = NULL;
 		if(memoriasAsoc->elements_count > 0){
@@ -211,7 +217,7 @@ void logicaInsert(Proceso *proceso){
 
 void logicaDrop(Proceso *proceso){
 	Consistencias consistencia = obtenerConsistencia(((Drop*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
-	if(consistencia > 0){
+	if(consistencia != NOT_FOUND){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
 		Memoria * mem = NULL;
 		if(memoriasAsoc->elements_count > 0){
@@ -295,7 +301,7 @@ void logicaDescribe(Proceso *proceso){
 	if(((Describe*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla != NULL){
 		Consistencias consistencia = obtenerConsistencia(((Describe*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 		Memoria * mem = NULL;
-		if(consistencia > 0){
+		if(consistencia != NOT_FOUND){
 			t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
 			if(memoriasAsoc->elements_count > 0){
 				switch(consistencia){
@@ -364,7 +370,7 @@ Consistencias obtenerConsistencia(char * nombreTabla){
 	Table_Metadata * found = list_find(lista_de_tablas,(void*)criterioNombre);
 	pthread_mutex_unlock(&lista_de_tablas_mx);
 	if(found == NULL) {
-		return -1;
+		return NOT_FOUND;
 	} else {
 		return found->consistencia;
 	}

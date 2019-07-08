@@ -11,7 +11,7 @@
 #define t_flag bool
 
 typedef enum {
-	EC, SC, SHC, DISP
+	EC, SC, SHC, DISP, NOT_FOUND
 } Consistencias;
 
 typedef enum {
