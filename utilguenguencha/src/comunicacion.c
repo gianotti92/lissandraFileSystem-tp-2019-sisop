@@ -496,7 +496,6 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 			return respuesta;
 		}else{
 			pthread_mutex_unlock(&conn->mutex);
-			free(conn);
 			eliminar_paquete(paquete);
 			if(!fd_is_valid(conn->fd)){
 				conn = crear_conexion(ip, puerto, true);
@@ -986,8 +985,10 @@ Instruccion *recibir_respuesta(int fd_a_escuchar){
 	switch(retorno){
 		case RETORNO:
 			return recibir_retorno(fd_a_escuchar);
+			break;
 		default:
 			return recibir_error(fd_a_escuchar);
+			break;
 	}
 }
 
@@ -1239,7 +1240,8 @@ void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error){
 
 int fd_is_valid(int fd){
 	if(fd != -1){
-    	return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
-    }
-    return false;
+		return true;
+	}else{
+		return false;
+	}
 }

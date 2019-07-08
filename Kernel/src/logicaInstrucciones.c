@@ -85,7 +85,7 @@ void logicaAdd(Proceso * proceso){
 	if(memoria == NULL){
 		free(proceso->instruccionAProcesar->instruccion_a_realizar);
 		free(proceso->instruccionAProcesar);
-		log_error(LOG_OUTPUT, "No corresponde a un id de memoria válido, las validas son:");
+		log_error(LOG_DEBUG, "No corresponde a un id de memoria válido, las validas son:");
 		pthread_mutex_lock(&mutex_disp);
 		list_iterate(lista_disp, (void*)mostrar_memoria);
 		pthread_mutex_unlock(&mutex_disp);
@@ -203,10 +203,10 @@ void logicaInsert(Proceso *proceso){
 			eliminar_memoria(mem);
 			return;
 		}else{
-			log_error(LOG_OUTPUT, "No hay memorias asignadas a este criterio");
+			log_error(LOG_ERROR, "No hay memorias asignadas a este criterio");
 		}
 	}else{
-		log_error(LOG_OUTPUT, "La tabla no existe");
+		log_error(LOG_ERROR, "La tabla no existe");
 	}
 	free(((Insert*) proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 	free(((Insert*) proceso->instruccionAProcesar->instruccion_a_realizar)->value);
@@ -248,10 +248,10 @@ void logicaDrop(Proceso *proceso){
 			eliminar_memoria(mem);
 			return;
 		}else{
-			log_error(LOG_OUTPUT, "No hay memorias asignadas para ese criterio");
+			log_error(LOG_ERROR, "No hay memorias asignadas para ese criterio");
 		}
 	}else{
-		log_error(LOG_OUTPUT, "La tabla no existe");
+		log_error(LOG_ERROR, "La tabla no existe");
 	}
 	free(((Drop*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
@@ -331,10 +331,10 @@ void logicaDescribe(Proceso *proceso){
 				eliminar_memoria(mem);
 				return;
 			}else{
-				log_error(LOG_OUTPUT, "No hay memorias asignadas para ese criterio");
+				log_error(LOG_ERROR, "No hay memorias asignadas para ese criterio");
 			}
 		}else{
-			log_error(LOG_OUTPUT, "La tabla no existe");
+			log_error(LOG_ERROR, "La tabla no existe");
 		}
 	}else{
 		Instruction_set inst = proceso->instruccionAProcesar->instruccion;

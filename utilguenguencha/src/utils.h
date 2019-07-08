@@ -6,6 +6,7 @@
 #include <commons/config.h>
 #include <commons/collections/queue.h>
 #include <commons/log.h>
+#include <signal.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -37,6 +38,7 @@ int monitorNode(char * node,int mode,int(*callback)(void));
 void eliminar_y_cerrar_fd_abiertos(int * fd);
 void print_guenguencha(void);
 char LOCAL_IP[16];
+void handler(int s);
 char *get_local_ip(void);
 Memoria *duplicar_memoria(Memoria *memoria);
 Retorno_Describe *duplicar_describe(Retorno_Describe *describe);

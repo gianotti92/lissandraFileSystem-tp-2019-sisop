@@ -1,9 +1,8 @@
 #include "kernel.h"
 
 // Hay que definirla ya que no tiene definición en kernel y sino rompería, de todos modos no se usa
-void retornarControl(Instruccion *instruccion, int socket_cliente) {
-}
-;
+void retornarControl(Instruccion *instruccion, int socket_cliente){};
+
 void *TH_describe(void *p);
 
 int main(void) {

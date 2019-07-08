@@ -1,6 +1,7 @@
 #include "utils.h"
 
 void configure_logger() {
+	signal(SIGPIPE, handler);
 	LOG_INFO = log_create("log_info.log","tp-lissandra", 0, LOG_LEVEL_INFO);
 	LOG_ERROR = log_create("log_error.log","tp-lissandra", 1, LOG_LEVEL_ERROR);
 	LOG_OUTPUT = log_create("log_output.log", "tp-lissandra", 0, LOG_LEVEL_INFO);
@@ -22,6 +23,10 @@ void exit_gracefully(int exit_code){
 	log_destroy(LOG_DEBUG);
 	log_destroy(LOG_OUTPUT);
 	exit(exit_code);
+}
+
+void handler(int s) {
+	//printf("Caught SIGPIPE\n");
 }
 
 void eliminar_y_cerrar_fd_abiertos(int * fd){
