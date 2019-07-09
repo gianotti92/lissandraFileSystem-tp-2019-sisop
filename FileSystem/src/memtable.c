@@ -1,5 +1,6 @@
 #include "lissandra.h"
 
+
 void* TH_asesino(void*p);
 
 struct memtableItem* createMemtableItem(char* tableName, struct tableRegister reg) {
@@ -19,6 +20,7 @@ void cleanMemtable(void){
 	void freeValues(void* elem) {
 		struct memtableItem* item = (struct memtableItem*)elem;
 		free(item->reg.value);
+		free(item->tableName);
 		free(item);
 	}
 	list_iterate(global_memtable, &freeValues);

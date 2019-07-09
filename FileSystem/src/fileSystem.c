@@ -73,6 +73,7 @@ int fs_read(char* filename, t_list* registros){
 		return 0;
 	}
 	char *bufferData=malloc(mdata.size+1);
+	memset(bufferData,0,mdata.size+1);
 	retval=fs_read_blocks_to_buffer(bufferData,&mdata);
 	if(retval != 0){
 		free(bufferData);
@@ -365,11 +366,27 @@ void fs_read_buffer_to_registers(char* buffParam,long bufferSize,t_list* registr
 		char*itemSave=NULL;
 		struct tableRegister *reg = malloc(sizeof(struct tableRegister));
 		char*keystr=strtok_r(line,";",&itemSave);
+		if(keystr == NULL){
+			log_error(LOG_ERROR,"fs_read_buffer_to_registers : bad buffer: %s (keystr)",buff);
+			free(reg);
+			return;
+		}
 		sscanf(keystr,"%hu",&reg->key);
 		char*value=strtok_r(NULL,";",&itemSave);
+		if(value == NULL){
+			log_error(LOG_ERROR,"fs_read_buffer_to_registers : bad buffer: %s (value)",buff);
+			free(reg);
+			return;
+		}
 		reg->value=malloc(strlen(value)+1);
 		strcpy(reg->value,value);
 		char*timestampstr=strtok_r(NULL,";",&itemSave);
+		if(timestampstr == NULL){
+			log_error(LOG_ERROR,"fs_read_buffer_to_registers : bad buffer: %s (timestampstr)",buff);
+			free(reg->value);
+			free(reg);
+			return;
+		}
 		sscanf(timestampstr,"%d",&reg->timestamp);
 		list_add(registros,(void*)reg);
 		line = strtok_r(NULL,"\n",&lineSave);
@@ -493,7 +510,13 @@ t_bitarray* bitarray_get(void){
 	}
 	free(filename);
 	char *bitarray = malloc(bitarray_size());
-	fread(bitarray,bitarray_size(),1,fd);
+	int ret_read = fread(bitarray,bitarray_size(),1,fd);
+	if(ret_read < 0){
+		log_error(LOG_ERROR,"Error al leer el archivo '%s', %s",filename,strerror(errno));
+		fclose(fd);
+		free(bitarray);
+		return NULL;
+	}
 	fclose(fd);
 	return bitarray_create_with_mode(bitarray,bitarray_size(),MSB_FIRST);
 }
