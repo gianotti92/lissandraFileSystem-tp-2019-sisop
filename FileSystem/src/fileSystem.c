@@ -1,17 +1,24 @@
 #include "lissandra.h"
 
-struct file_mdata{
+typedef struct file_mdata{
 	long size;
     t_list* blocks;
-};
+}file_mdata;
 
-struct filesystem_conf{
+typedef struct filesystem_conf{
 	int BLOCK_SIZE;
 	int BLOCKS;
 	char*MAGIC_NUMBER;
-};
+}filesystem_conf;
 
-struct filesystem_conf global_fs_conf;
+typedef struct filesystem_bitmap{
+	FILE* file;
+	t_bitarray* bitmap;
+	pthread_rwlock_t lock;
+}filesystem_bitmap;
+
+filesystem_conf global_fs_conf;
+filesystem_bitmap fs_bitmap;
 
 /* Structure Initialization */
 int create_directory_structure(void);
@@ -20,8 +27,8 @@ int fs_get_conf(void);
 /* Write Functions */
 char* fs_write_registers_to_buffer(t_list *registros,int* buffer_size);
 int fs_write_get_free_blocks(t_list* blocks,int cant_blocks);
-int fs_write_buffer_to_blocks(char* buffer,struct file_mdata* mdata);
-int fs_write_set_mdata(char* filename,struct file_mdata* mdata);
+int fs_write_buffer_to_blocks(char* buffer,file_mdata* mdata);
+int fs_write_set_mdata(char* filename,file_mdata* mdata);
 
 /* Create Functions */
 int fs_create_set_mdata(char* filename); 
@@ -30,20 +37,23 @@ int fs_create_set_mdata(char* filename);
 int fs_delete_set_free_blocks(t_list* blocks);
 
 /* Read Functions */
-int fs_read_blocks_to_buffer(char*buffer,struct file_mdata* mdata);
+int fs_read_blocks_to_buffer(char*buffer,file_mdata* mdata);
 void fs_read_buffer_to_registers(char* buff,long bufferSize,t_list* registros);
-int fs_read_get_mdata(char* filename,struct file_mdata* mdata);
+int fs_read_get_mdata(char* filename,file_mdata* mdata);
 
-/* Bitarray */
-void bitarray_init(void);
-int bitarray_size(void);
-void bitarray_to_file(char *bitarray);
-t_bitarray* bitarray_get(void);
-void bitarray_show(t_bitarray* bitarray);
+/* Bitmap */
+int bitmap_init(void);
+int bitmap_get_from_file();
+int bitmap_init_file(char*filename);
+int bitmap_size(void);
+bool bitmap_get(int pos);
+int bitmap_set(int pos);
+int bitmap_clean(int pos);
 
 /* Utils */
 int existeDirectorio(char *path);
 int file_exist (char *filename);
+int file_create_empty(char* filename);
 int fs_get_reg_size(void);
 char* directorio_sin_ultima_barra(char*path);
 
@@ -57,14 +67,20 @@ int fs_init(void){
 	if(fs_get_conf()!=0){
 		return 1;
 	}
-	bitarray_init();
+	if(bitmap_init()!=0){
+		return 1;
+	}
 	return 0;
 }
 void fs_destroy(void){
 	free(global_fs_conf.MAGIC_NUMBER);
+	free(fs_bitmap.bitmap->bitarray);
+	bitarray_destroy(fs_bitmap.bitmap);
+	fclose(fs_bitmap.file);
+	pthread_rwlock_destroy(&fs_bitmap.lock);
 }
 int fs_read(char* filename, t_list* registros){
-	struct file_mdata mdata;
+	file_mdata mdata;
 	int retval=fs_read_get_mdata(filename,&mdata);
 	if(retval != 0){
 		return retval;
@@ -91,7 +107,7 @@ int fs_write(char* filename, t_list* registros){
 	int buffer_size;
 	char *buffer=fs_write_registers_to_buffer(registros,&buffer_size);
 
-	struct file_mdata mdata;
+	file_mdata mdata;
 	mdata.size=buffer_size;
 
 	int cant_blocks = mdata.size/global_fs_conf.BLOCK_SIZE;
@@ -126,7 +142,7 @@ int fs_create(char* filename){
 	return fs_create_set_mdata(filename);
 }
 int fs_delete(char* filename){
-	struct file_mdata mdata;
+	file_mdata mdata;
 	int retval = fs_read_get_mdata(filename,&mdata);
 	if(retval != 0){
 		return retval;
@@ -184,14 +200,14 @@ int fs_write_get_free_blocks(t_list* blocks,int cant_blocks){
 		log_error(LOG_ERROR,"Error al asignar %d bloques, pasa el maximo de %d",cant_blocks,global_fs_conf.BLOCKS);
 		return BLOCK_MAX_REACHED;
 	}
-	t_bitarray* bitarray = bitarray_get();
-	if(bitarray==NULL){
-		return MISSING_FILE;
-	}
 	int cantAsign=0;
 	for(int i=0; i<global_fs_conf.BLOCKS && cantAsign<cant_blocks;i++){
-		if(bitarray_test_bit(bitarray,i)==false){
-			bitarray_set_bit(bitarray,i);
+		if(bitmap_get(i)==false){
+			int ret_bit = bitmap_set(i);
+			if(ret_bit != 0){
+				log_error(LOG_ERROR,"Error al asignar el bloque %d, se asignaron %d",i,cantAsign);
+				return ret_bit;
+			}
 			int *bloque = malloc(sizeof(int));
 			*bloque=i;
 			list_add(blocks,(void*)bloque);
@@ -199,17 +215,12 @@ int fs_write_get_free_blocks(t_list* blocks,int cant_blocks){
 		}
 	}
 	if(cant_blocks != cantAsign){
-		free(bitarray->bitarray);
-		bitarray_destroy(bitarray);
 		log_error(LOG_ERROR,"Error al asignar %i bloques, se asignaron %d",cant_blocks,cantAsign);
 		return BLOCK_ASSIGN_ERROR;
 	}
-	bitarray_to_file(bitarray->bitarray);
-	free(bitarray->bitarray);
-	bitarray_destroy(bitarray);
 	return 0;
 }
-int fs_write_buffer_to_blocks(char* buffer,struct file_mdata* mdata) {
+int fs_write_buffer_to_blocks(char* buffer,file_mdata* mdata) {
 	int i=0,error=0;
 	int cant = mdata->size/global_fs_conf.BLOCK_SIZE;
 
@@ -243,7 +254,7 @@ int fs_write_buffer_to_blocks(char* buffer,struct file_mdata* mdata) {
 	list_iterate(mdata->blocks,(void*)writeInFile);
 	return error;
 }
-int fs_write_set_mdata(char* filename,struct file_mdata* mdata){
+int fs_write_set_mdata(char* filename,file_mdata* mdata){
 	FILE* f=fopen(filename,"w");
 	if(f==NULL){
 		log_error(LOG_ERROR,"Error al crear el archivo '%s', %s",filename,strerror(errno));
@@ -296,10 +307,6 @@ int fs_create_set_mdata(char* filename){
 	Delete Functions
 */
 int fs_delete_set_free_blocks(t_list* blocks){
-	t_bitarray* bitarray = bitarray_get();
-	if(bitarray==NULL){
-		return MISSING_FILE;
-	}
 	int error=0;
 	void limpiar(int *block){
 		char*filename=malloc(strlen(global_conf.directorio_bloques)+digitos(*block)+5);
@@ -309,20 +316,20 @@ int fs_delete_set_free_blocks(t_list* blocks){
 			error=FILE_DELETE_ERROR;
 		}
 		free(filename);
-		bitarray_clean_bit(bitarray,*block);
+		int ret_bit = bitmap_clean(*block);
+		if(ret_bit!=0){
+			log_error(LOG_ERROR,"Error al liberar el bloque %d",*block);
+			error=ret_bit;
+		}
 	}
 	list_iterate(blocks,(void*)limpiar);
-
-	bitarray_to_file(bitarray->bitarray);
-	free(bitarray->bitarray);
-	bitarray_destroy(bitarray);
 	return error;
 }
 
 /*
 	Read Functions
 */
-int fs_read_blocks_to_buffer(char*buffer,struct file_mdata* mdata){
+int fs_read_blocks_to_buffer(char*buffer,file_mdata* mdata){
 	int i=0,error=0;
 
 	void readFile(int*block){
@@ -392,7 +399,7 @@ void fs_read_buffer_to_registers(char* buffParam,long bufferSize,t_list* registr
 		line = strtok_r(NULL,"\n",&lineSave);
 	}
 }
-int fs_read_get_mdata(char* filename,struct file_mdata* mdata){
+int fs_read_get_mdata(char* filename,file_mdata* mdata){
 	t_config* conf=config_create(filename);
 	if(conf==NULL){
 		log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
@@ -466,67 +473,115 @@ int fs_get_conf(void){
 }
 
 /*
-	Bitarray
+	Bitmap
 */
-void bitarray_init(void){
+int bitmap_init(void){
 	char*filename=malloc(strlen(global_conf.directorio_metadata)+11);
 	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
-	if(!file_exist(filename)){
-		char *bitarray = malloc(bitarray_size());
-		memset(bitarray,0,bitarray_size());
-		bitarray_to_file(bitarray);
-		free(bitarray);
+	fs_bitmap.file = fopen(filename,"rb+");
+	if(fs_bitmap.file == NULL){
+		if(errno == ENOENT){ //No such file or directory
+			int ret_init_file = bitmap_init_file(filename);
+			if(ret_init_file!=0){
+				free(filename);
+				return ret_init_file;
+			}
+			fs_bitmap.file = fopen(filename,"rb+");
+			log_info(LOG_INFO,"No se encontro archivo bitmap, se creo uno nuevo en 0");
+		} else {
+			log_error(LOG_ERROR,"Error al abrir el archivo '%s', %s",filename,strerror(errno));
+			free(filename);
+			return FILE_OPEN_ERROR;
+		}
+	} else {
+		int ret_init_file = bitmap_get_from_file();
+		if(ret_init_file!=0){
+			free(filename);
+			return ret_init_file;
+		}
 	}
+	pthread_rwlock_init(&fs_bitmap.lock,NULL);
 	free(filename);
+	return 0;
 }
-void bitarray_to_file(char *bitarray){
-	char*filename=malloc(strlen(global_conf.directorio_metadata)+11);
-	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
-	FILE * fd = fopen(filename, "wb");
-	if(fd==NULL){
-		log_error(LOG_ERROR,"Error al abrir el archivo %s, %s",filename,strerror(errno));
-		free(filename);
-		return;
+bool bitmap_get(int pos){
+	pthread_rwlock_rdlock(&fs_bitmap.lock);
+	bool r = bitarray_test_bit(fs_bitmap.bitmap,pos);
+	pthread_rwlock_unlock(&fs_bitmap.lock);
+	return r;
+}
+int bitmap_set(int pos){
+	pthread_rwlock_wrlock(&fs_bitmap.lock);
+	bitarray_set_bit(fs_bitmap.bitmap,pos);
+	rewind(fs_bitmap.file);
+	int ret_write = fwrite(fs_bitmap.bitmap->bitarray,bitmap_size(),1,fs_bitmap.file);
+	if(ret_write < 0){
+		log_error(LOG_ERROR,"Error al actualizar el bitmap (fwrite), %s",strerror(errno));
+		bitarray_clean_bit(fs_bitmap.bitmap,pos);
+		pthread_rwlock_unlock(&fs_bitmap.lock);
+		return FILE_SYNC_ERROR;
 	}
-	fwrite(bitarray,bitarray_size(),1,fd);
-	fclose(fd);
-	free(filename);
+	int ret_flush = fflush(fs_bitmap.file);
+	if(ret_flush != 0){
+		log_error(LOG_ERROR,"Error al actualizar el bitmap (fflush), %s",strerror(errno));
+		bitarray_clean_bit(fs_bitmap.bitmap,pos);
+		pthread_rwlock_unlock(&fs_bitmap.lock);
+		return FILE_SYNC_ERROR;
+	}
+	pthread_rwlock_unlock(&fs_bitmap.lock);
+	return 0;
 }
-int bitarray_size(void){
+int bitmap_clean(int pos){
+	pthread_rwlock_wrlock(&fs_bitmap.lock);
+	bitarray_clean_bit(fs_bitmap.bitmap,pos);
+	rewind(fs_bitmap.file);
+	int ret_write = fwrite(fs_bitmap.bitmap->bitarray,bitmap_size(),1,fs_bitmap.file);
+	if(ret_write < 0){
+		log_error(LOG_ERROR,"Error al actualizar el bitmap (fwrite), %s",strerror(errno));
+		bitarray_set_bit(fs_bitmap.bitmap,pos);
+		pthread_rwlock_unlock(&fs_bitmap.lock);
+		return FILE_SYNC_ERROR;
+	}
+	int ret_flush = fflush(fs_bitmap.file);
+	if(ret_flush != 0){
+		log_error(LOG_ERROR,"Error al actualizar el bitmap (fflush), %s",strerror(errno));
+		bitarray_set_bit(fs_bitmap.bitmap,pos);
+		pthread_rwlock_unlock(&fs_bitmap.lock);
+		return FILE_SYNC_ERROR;
+	}
+	pthread_rwlock_unlock(&fs_bitmap.lock);
+	return 0;
+}
+int bitmap_size(void){
 	int CANTIDAD = global_fs_conf.BLOCKS;
 	int size = CANTIDAD/8;
 	if(CANTIDAD > 8*size)
 		size++;
 	return size;
 }
-t_bitarray* bitarray_get(void){
-	char*filename=malloc(strlen(global_conf.directorio_metadata)+11);
-	sprintf(filename,"%sBitmap.bin",global_conf.directorio_metadata);
-	FILE * fd = fopen(filename, "rb");
-	if(fd==NULL){
-		log_error(LOG_ERROR,"Error al abrir el archivo %s, %s",filename,strerror(errno));
-		free(filename);
-		return NULL;
-	}
-	free(filename);
-	char *bitarray = malloc(bitarray_size());
-	int ret_read = fread(bitarray,bitarray_size(),1,fd);
+int bitmap_get_from_file(void) {
+	char *bitmap_buff = malloc(bitmap_size());
+	int ret_read = fread(bitmap_buff,bitmap_size(),1,fs_bitmap.file);
 	if(ret_read < 0){
-		log_error(LOG_ERROR,"Error al leer el archivo '%s', %s",filename,strerror(errno));
-		fclose(fd);
-		free(bitarray);
-		return NULL;
+		log_error(LOG_ERROR,"Error al leer desde el archivo bitmap");
+		free(bitmap_buff);
+		return FILE_OPEN_ERROR;
 	}
-	fclose(fd);
-	return bitarray_create_with_mode(bitarray,bitarray_size(),MSB_FIRST);
+	fs_bitmap.bitmap = bitarray_create_with_mode(bitmap_buff,bitmap_size(),MSB_FIRST);
+	return 0;
 }
-void bitarray_show(t_bitarray* bitarray){
-	printf("Imprimo bitarray: ");
-	for (int i = 0; i < global_fs_conf.BLOCKS; i++){
-		printf("%d",bitarray_test_bit(bitarray,i));
+int bitmap_init_file(char*filename){
+	FILE * bitmap_file = fopen(filename,"wb");
+	if(bitmap_file==NULL){
+		log_error(LOG_ERROR,"Error al crear el archivo '%s', %s",filename,strerror(errno));
+		return FILE_OPEN_ERROR;
 	}
-	printf("\n");
-	return;
+	char *bitmap_buff = malloc(bitmap_size());
+	memset(bitmap_buff,0,bitmap_size());
+	fwrite(bitmap_buff,bitmap_size(),1,bitmap_file);
+	fclose(bitmap_file);
+	fs_bitmap.bitmap = bitarray_create_with_mode(bitmap_buff,bitmap_size(),MSB_FIRST);
+	return 0;
 }
 
 /*
@@ -541,6 +596,15 @@ int existeDirectorio(char *path){
 int file_exist (char *filename){
 	struct stat buffer;
 	return (stat (filename, &buffer) == 0);
+}
+int file_create_empty(char* filename){
+	FILE* f = fopen(filename,"wb");
+	if(f==NULL){
+		log_error(LOG_ERROR,"Error al crear el archivo '%s', %s",filename,strerror(errno));
+		return FILE_OPEN_ERROR;
+	}
+	fclose(f);
+	return 0;
 }
 int fs_get_reg_size(void){
 	// max key: 65536 -> 5 char + max value -> conf + max timestamp -> 19 char + 2 ';' + '\n' + '\0'

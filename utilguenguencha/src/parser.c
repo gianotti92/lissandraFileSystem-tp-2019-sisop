@@ -643,6 +643,10 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 					log_error(LOG_ERROR,"NO SE PUDO ABRIR EL ARCHIVO");
 				break;
 
+				case FILE_SYNC_ERROR:;
+					log_error(LOG_ERROR,"NO SE PUDO SINCRONIZAR EL ARCHIVO");
+				break;
+
 				case DIR_OPEN_ERROR:;
 					log_error(LOG_ERROR,"NO SE PUDO ABRIR EL DIRECTORIO");
 				break;

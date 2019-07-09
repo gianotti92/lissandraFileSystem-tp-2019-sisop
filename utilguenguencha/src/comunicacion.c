@@ -213,14 +213,8 @@ Connection *get_conn(char *ip, char *puerto){
 	char *key = string_new();
 	string_append(&key, ip);
 	string_append(&key, puerto);
-	Connection *result = NULL;
 	pthread_mutex_lock(&mutex_diccionario_fd);
-	Connection *conn = dictionary_get(fd_disponibles, key);
-	if(conn != NULL){
-		result = malloc(sizeof(Connection));
-		result->fd = conn->fd;
-		result->mutex = conn->mutex;
-	}
+	Connection *result = dictionary_get(fd_disponibles, key);
 	pthread_mutex_unlock(&mutex_diccionario_fd);
 	free(key);
 	return result;
@@ -492,14 +486,12 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 			Instruccion *respuesta = recibir_respuesta(conn->fd);
 			fsync(conn->fd);
 			pthread_mutex_unlock(&conn->mutex);
-			free(conn);
 			return respuesta;
 		}else{
 			fsync(conn->fd);
 			eliminar_paquete(paquete);
 			crear_conexion(ip, puerto, true);
 			pthread_mutex_unlock(&conn->mutex);
-			free(conn);
 		}
 	}
 	return respuesta_error(CONNECTION_ERROR);
