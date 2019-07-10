@@ -91,7 +91,7 @@ void ejecutar() {
 		switch (proceso->instruccion->instruccion) {
 			case RUN:;
 				proceso->fin_proceso = false;
-				while(proceso->quantumProcesado <= QUANTUM || proceso->fin_proceso){
+				while(proceso->quantumProcesado <= QUANTUM && !proceso->fin_proceso){
 					usleep(RETARDO*1000);
 					logicaRun(proceso);
 				}
