@@ -228,17 +228,15 @@ Connection *update_conn(char *ip, char *puerto, Connection *new_conn){
 	pthread_mutex_lock(&mutex_diccionario_fd);
 	Connection *old_conn =dictionary_get(fd_disponibles, key);
 	if(old_conn == NULL){
-		Connection *to_save = malloc(sizeof(Connection));
-		to_save->fd = new_conn->fd;
-		to_save->mutex = new_conn->mutex;
-		dictionary_put(fd_disponibles, key, to_save);
+		dictionary_put(fd_disponibles, key, new_conn);
+		old_conn =dictionary_get(fd_disponibles, key);
 	}else{
 		old_conn->fd = new_conn->fd;
-		old_conn->mutex = new_conn->mutex;
 	}
+	free(new_conn);
 	pthread_mutex_unlock(&mutex_diccionario_fd);
 	free(key);
-	return new_conn;
+	return old_conn;
 }
 
 void servidor_comunicacion(Comunicacion *comunicacion){

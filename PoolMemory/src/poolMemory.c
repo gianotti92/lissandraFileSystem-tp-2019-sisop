@@ -729,8 +729,8 @@ void lanzar_gossiping(void){
 	pthread_mutex_unlock(&mutexListaMemorias);
 	while(true){
 		usleep(RETARDO_GOSSIPING*1000);
-		t_list *lista = filtrar_memorias_gossipear();
-		t_list *a_gossipear = list_duplicate_all(lista, (void*)duplicar_memoria, mutexListaMemorias);
+		t_list *a_gossipear = filtrar_memorias_gossipear();
+		//t_list *a_gossipear = list_duplicate_all(lista, (void*)duplicar_memoria, mutexListaMemorias);
 		list_iterate(a_gossipear, (void*)gossipear);
 		list_destroy_and_destroy_elements(a_gossipear, (void*)eliminar_memoria);
 	}

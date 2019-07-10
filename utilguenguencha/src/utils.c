@@ -17,7 +17,7 @@ void exit_gracefully(int exit_code){
 	else{
 		log_info(LOG_INFO,"Proceso termino correctamente");
 	}
-	dictionary_destroy_and_destroy_elements(fd_disponibles, (void*)eliminar_y_cerrar_fd_abiertos);
+	dictionary_destroy_and_destroy_elements(fd_disponibles, (void*)free);
 	log_destroy(LOG_INFO);
 	log_destroy(LOG_ERROR);
 	log_destroy(LOG_DEBUG);
@@ -26,17 +26,7 @@ void exit_gracefully(int exit_code){
 }
 
 void handler(int s) {
-	//printf("Caught SIGPIPE\n");
-}
-
-void eliminar_y_cerrar_fd_abiertos(int * fd){
-	bool fd_is_valid(int fd){
-    	return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
-	}
-	if(fd_is_valid(*fd)){
-		close(*fd);
-	}
-	free(fd);
+	//No se que pasa aca
 }
 
 char *consistencia2string(Consistencias consistencia){
