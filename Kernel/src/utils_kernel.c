@@ -75,7 +75,11 @@ void lanzar_gossiping(){
 				Gossip * gossip = ret->retorno;
 				pthread_mutex_lock(&mutex_disp);
 				t_list *lista_memorias_disponibles_vieja = lista_disp;
-				lista_disp = gossip->lista_memorias;
+				pthread_mutex_t mutexito;
+				pthread_mutex_init(&mutexito, NULL);
+				t_list *nuevas_disp = list_duplicate_all(gossip->lista_memorias, (void*)duplicar_memoria, mutexito);
+				pthread_mutex_destroy(&mutexito);
+				lista_disp = nuevas_disp;
 				pthread_mutex_unlock(&mutex_disp);
 				list_destroy_and_destroy_elements(lista_memorias_disponibles_vieja, (void*)eliminar_memoria);
 			}

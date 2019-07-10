@@ -103,7 +103,6 @@ void ejecutar() {
 					sem_post(&semaforoSePuedePlanificar);
 				}else{
 					log_error(LOG_ERROR, "Termine de ejecutar el script %s, %d lineas terminadas", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
-					(proceso->numeroInstruccion + 1)
 					encolar(estadoExit, proceso);
 					sem_post(&semaforoFinalizar);
 				}
