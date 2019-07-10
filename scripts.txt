@@ -4,6 +4,26 @@ run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts
 run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/misc_1.lql
 run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/misc_2.lql
 
+
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/animales.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/cities_countries.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/comidas.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/compactacion_larga.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/cosas_falla.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/games_computer.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/internet_browser.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/internet_browser_falla.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/library_study.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/misc_1.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/misc_2.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/nintendo_playstation.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/reemplazo1.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/reemplazo2.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/simple_ec.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/simple_sc.lql
+run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/simple_shc.lql
+
+
 ADD MEMORY 1 TO SC
 ADD MEMORY 2 TO SHC
 ADD MEMORY 3 TO EC

@@ -15,7 +15,6 @@
 - Se inicia compilacion de Utilguenguenchas
 - Se hizo clean de las Utilguenguenchas
 -    Se compilo correctamente comunicacion
--    Se compilo correctamente kernel_utils
 -    Se compilo correctamente parser
 -    Se compilo correctamente utils
 - Se compilaron correctamente las Utilguenguenchas

@@ -6,7 +6,7 @@ LIBS := -pthread -lcommons -lreadline
 
 all: default
 
-default: clean dir comunicacion kernel_utils parser utils
+default: clean dir comunicacion parser utils
 
 .PHONY: dir
 .SILENT: dir
@@ -17,10 +17,6 @@ dir:
 comunicacion: src/$@.*
 	gcc -c src/$@.c $(FLAGS) $(LIBS) -o Release/$@.o
 	echo "- Se compilo correctamente comunicacion"
-.SILENT: kernel_utils
-kernel_utils: src/$@.*
-	gcc -c src/$@.c $(FLAGS) $(LIBS) -o Release/$@.o
-	echo "- Se compilo correctamente kernel_utils"
 .SILENT: parser
 parser: src/$@.*
 	gcc -c src/$@.c $(FLAGS) $(LIBS) -o Release/$@.o

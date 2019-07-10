@@ -91,15 +91,19 @@ void ejecutar() {
 		switch (proceso->instruccion->instruccion) {
 			case RUN:;
 				proceso->fin_proceso = false;
+				log_error(LOG_ERROR, "Ejecuto el script %s desde la linea %d ", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
 				while(proceso->quantumProcesado <= QUANTUM && !proceso->fin_proceso){
 					usleep(RETARDO*1000);
 					logicaRun(proceso);
 				}
 				if(!proceso->fin_proceso){
+					log_error(LOG_ERROR, "Corto de hacer el proceso %s, en la linea %d", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
 					proceso->quantumProcesado = 0;
 					encolar(estadoReady, proceso);
 					sem_post(&semaforoSePuedePlanificar);
 				}else{
+					log_error(LOG_ERROR, "Termine de ejecutar el script %s, %d lineas terminadas", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
+					(proceso->numeroInstruccion + 1)
 					encolar(estadoExit, proceso);
 					sem_post(&semaforoFinalizar);
 				}

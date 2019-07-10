@@ -8,11 +8,18 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
+
+/*
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <commons/string.h>
+*/
+
 #include "../../utilguenguencha/src/tipos_guenguencha.h"
 #include "../../utilguenguencha/src/comunicacion.h"
 #include "../../utilguenguencha/src/parser.h"
 #include "../../utilguenguencha/src/utils.h"
-#include "../../utilguenguencha/src/kernel_utils.h"
 
 
 int READS, WRITES;
@@ -86,6 +93,7 @@ pthread_mutex_t dame_mutex_de_consistencia(Consistencias consistencia);
 void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistencia);
 void finalizar_procesos(void);
 AcumuladorMemoria* dameAcumulador(int id_memoria, t_list* lista_acumuladores);
+char* leer_linea(char* path, int linea);
 
 
 // Variables del proceso
