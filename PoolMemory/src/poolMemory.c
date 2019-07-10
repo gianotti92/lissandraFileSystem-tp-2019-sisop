@@ -1,6 +1,11 @@
 #include "poolMemory.h"
 
-int main(void) {
+int main(int argc, char* argv[]) {
+
+	if (argc != 2) {
+		printf("SOLO HAY QUE INGRESAR UN ARGUMENTO (PATH DEL CONFIG), chinguenguencha!");
+		exit(1);
+	}
 
 	pthread_mutex_init(&mutexMarcos, NULL);
 	pthread_mutex_init(&mutexSegmentos, NULL);
@@ -10,7 +15,7 @@ int main(void) {
 	print_guenguencha();
 
 	configure_logger();
-	configuracion_inicial();
+	configuracion_inicial(argv[1]);
 	inicializar_memoria();
 
 	pthread_mutex_init(&mutexListaMemorias, NULL);
@@ -53,9 +58,9 @@ int main(void) {
 
 }
 
-void configuracion_inicial(void){
+void configuracion_inicial(char* path_config){
 	t_config* CONFIG;
-	CONFIG = config_create("config.cfg");
+	CONFIG = config_create(path_config);
 	usleep(10*1000);
 	if (!CONFIG) {
 		printf("Memoria: Archivo de configuracion no encontrado. \n");
@@ -102,6 +107,9 @@ void configuracion_inicial(void){
 	RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
 	RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
 	NUMERO_MEMORIA = config_get_int_value(CONFIG,"NUMERO_MEMORIA");
+
+	printf("SOY MEMORIA: %d", NUMERO_MEMORIA);
+
 	config_destroy(CONFIG);
 	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
 	instruccion_maxValue->instruccion = MAX_VALUE;
