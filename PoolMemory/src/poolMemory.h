@@ -48,7 +48,7 @@ typedef struct{
 
 
 // Funciones del proceso
-void configuracion_inicial(char*);
+void configuracion_inicial();
 void retorno_consola(char* leido);
 void inicializar_memoria(void);
 Instruccion* atender_consulta (Instruccion*);

@@ -2,21 +2,26 @@
 
 int main(int argc, char* argv[]) {
 
-	if (argc != 2) {
-		printf("HAY QUE INGRESAR UN ARGUMENTO (PATH DEL CONFIG), chinguenguencha!");
-		exit(EXIT_FAILURE);
-	}
-
 	pthread_mutex_init(&mutexMarcos, NULL);
 	pthread_mutex_init(&mutexSegmentos, NULL);
 	pthread_mutex_init(&mutexMemorias, NULL);
 	sem_init(&semJournal, 0, 2);
 
-	print_guenguencha();
+	if (argc == 1) {
+		PATH_CONFIG = "config.cfg";
+	} else if (argc == 2) {
+		PATH_CONFIG = argv[1];
+	} else {
+		log_error(LOG_ERROR,"Solo se acepta un argumento (PATH CONFIG) o ninguno para tomar config.cfg.");
+		exit(EXIT_FAILURE);
+	}
 
 	configure_logger();
-	configuracion_inicial(argv[1]);
+	configuracion_inicial();
 	inicializar_memoria();
+
+	print_guenguencha();
+	printf("SOY MEMORIA: %d \n", NUMERO_MEMORIA);
 
 	pthread_mutex_init(&mutexListaMemorias, NULL);
 	L_MEMORIAS = list_create();
@@ -58,58 +63,33 @@ int main(int argc, char* argv[]) {
 
 }
 
-void configuracion_inicial(char* path_config){
+void configuracion_inicial(){
 	t_config* CONFIG;
-	CONFIG = config_create(path_config);
+	CONFIG = config_create(PATH_CONFIG);
 
 	if (!CONFIG) {
-		free(path_config);
+		free(PATH_CONFIG);
 		log_error(LOG_ERROR,"Archivo de configuracion no encontrado.");
 		exit_gracefully(EXIT_FAILURE);
 	}
 
 	//PUERTO_DE_ESCUCHA
-	char* config_puerto_escucha = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
-
-	if (config_puerto_escucha == NULL){
-		log_error(LOG_ERROR,"No se encontro PUERTO_DE_ESCUCHA en %s.", path_config);
-		exit_gracefully(EXIT_FAILURE);
-	}
-
+	char* config_puerto_escucha = config_get_string_value_check(CONFIG,"PUERTO_DE_ESCUCHA");
 	PUERTO_DE_ESCUCHA = malloc(strlen(config_puerto_escucha) + 1);
 	strcpy(PUERTO_DE_ESCUCHA, config_puerto_escucha);
 
 	//IP_FS
-	char* config_ip_fs = config_get_string_value(CONFIG,"IP_FS");
-
-	if (config_ip_fs == NULL){
-		log_error(LOG_ERROR,"No se encontro IP_FS en %s.", path_config);
-		exit_gracefully(EXIT_FAILURE);
-	}
-
+	char* config_ip_fs = config_get_string_value_check(CONFIG,"IP_FS");
 	IP_FS = malloc(strlen(config_ip_fs)+1);
 	strcpy(IP_FS, config_ip_fs);
 
 	//PUERTO_FS
-	char* config_puerto_fs = config_get_string_value(CONFIG,"PUERTO_FS");
-
-	if (config_puerto_fs == NULL){
-		log_error(LOG_ERROR,"No se encontro PUERTO_FS en %s.", path_config);
-		exit_gracefully(EXIT_FAILURE);
-	}
-
+	char* config_puerto_fs = config_get_string_value_check(CONFIG,"PUERTO_FS");
 	PUERTO_FS = malloc(strlen(config_puerto_fs) + 1);
 	strcpy(PUERTO_FS, config_puerto_fs);
 
 	//SIZE_MEM
-	char * value_size_mem = config_get_string_value(CONFIG, "SIZE_MEM");
-
-	if (value_size_mem == NULL){
-		log_error(LOG_ERROR,"No se encontro SIZE_MEM en %s.", path_config);
-		exit_gracefully(EXIT_FAILURE);
-	}
-
-	SIZE_MEM = atoi(value_size_mem);
+	SIZE_MEM = config_get_int_value_check(CONFIG, "SIZE_MEM");
 
 	//IP_SEEDS
 	char** config_ip_seeds = config_get_array_value(CONFIG,"IP_SEEDS");
@@ -139,64 +119,27 @@ void configuracion_inicial(char* path_config){
 	PUERTOS_SEEDS[i_pu] = NULL;
 
 	if (i_ip > i_pu){
-		log_error(LOG_ERROR,"Hay mas IP_SEEDS que PUERTOS_SEEDS en %s.", path_config);
+		log_error(LOG_ERROR,"Hay mas IP_SEEDS que PUERTOS_SEEDS en %s.", PATH_CONFIG);
 		exit_gracefully(EXIT_FAILURE);
 	} else if(i_ip < i_pu) {
-		log_error(LOG_ERROR,"Hay mas PUERTOS_SEEDS que IP_SEEDS en %s.", path_config);
+		log_error(LOG_ERROR,"Hay mas PUERTOS_SEEDS que IP_SEEDS en %s.", PATH_CONFIG);
 		exit_gracefully(EXIT_FAILURE);
 	}
 
 	//RETARDO_MEM
-	char* value_retardo_mem = config_get_string_value(CONFIG,"RETARDO_MEM");
-
-	if (value_retardo_mem == NULL){
-		log_error(LOG_ERROR,"No se encontro RETARDO_MEM en %s.", path_config);
-		exit_gracefully(EXIT_FAILURE);
-	}
-
-	RETARDO_MEM = atoi(value_retardo_mem);
+	RETARDO_MEM = config_get_int_value_check(CONFIG,"RETARDO_MEM");
 
 	//RETARDO_FS
-	char* value_retardo_fs = config_get_string_value(CONFIG,"RETARDO_FS");
-
-	if (value_retardo_fs == NULL){
-		log_error(LOG_ERROR,"No se encontro RETARDO_FS en %s.", path_config);
-		exit_gracefully(EXIT_FAILURE);
-	}
-
-	RETARDO_FS = atoi(value_retardo_fs);
+	RETARDO_FS = config_get_int_value_check(CONFIG,"RETARDO_FS");
 
 	//RETARDO_JURNAL
-	char* value_retardo_journal = config_get_string_value(CONFIG,"RETARDO_JOURNAL");
-
-	if (value_retardo_journal == NULL){
-		log_error(LOG_ERROR,"No se encontro RETARDO_JOURNAL en %s.", path_config);
-		exit_gracefully(EXIT_FAILURE);
-	}
-
-	RETARDO_JOURNAL = atoi(value_retardo_journal);
+	RETARDO_JOURNAL = config_get_int_value_check(CONFIG,"RETARDO_JOURNAL");
 
 	//RETARDO_GOSSIPING
-	 char* value_retardo_gossiping = config_get_string_value(CONFIG,"RETARDO_GOSSIPING");
-
-	if (value_retardo_gossiping == NULL){
-		log_error(LOG_ERROR,"No se encontro RETARDO_GOSSIPING en %s.", path_config);
-		exit_gracefully(EXIT_FAILURE);
-	}
-
-	RETARDO_GOSSIPING = atoi(value_retardo_gossiping);
+	RETARDO_GOSSIPING = config_get_int_value_check(CONFIG,"RETARDO_GOSSIPING");
 
 	//NUMERO_MEMORIA
-	char* value_numero_memoria = config_get_string_value(CONFIG,"NUMERO_MEMORIA");
-
-	if (value_numero_memoria == NULL){
-		log_error(LOG_ERROR,"No se encontro NUMERO_MEMORIA en %s.", path_config);
-		exit_gracefully(EXIT_FAILURE);
-	}
-
-	NUMERO_MEMORIA = atoi(value_numero_memoria);
-
-	printf("SOY MEMORIA: %d \n", NUMERO_MEMORIA);
+	NUMERO_MEMORIA = config_get_int_value_check(CONFIG,"NUMERO_MEMORIA");
 
 	config_destroy(CONFIG);
 
@@ -1042,24 +985,23 @@ bool memoria_full(void){
 void *TH_confMonitor(void * p){
 
 	int confMonitor_cb(void){
-		t_config* CONFIG = config_create("config.cfg");
+		t_config* CONFIG = config_create(PATH_CONFIG);
 		if(CONFIG == NULL) {
-			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
+			log_error(LOG_ERROR,"Archivo de configuracion: %s no encontrado", PATH_CONFIG);
 			return 1;
 		}
 
-		RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
-		RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
-		RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
-		RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
+		RETARDO_MEM = config_get_int_value_check(CONFIG,"RETARDO_MEM");
+		RETARDO_FS = config_get_int_value_check(CONFIG,"RETARDO_FS");
+		RETARDO_JOURNAL = config_get_int_value_check(CONFIG,"RETARDO_JOURNAL");
+		RETARDO_GOSSIPING = config_get_int_value_check(CONFIG,"RETARDO_GOSSIPING");
 
-
-		log_info(LOG_ERROR,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
+		log_info(LOG_INFO,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
 		config_destroy(CONFIG);
 		return 0;
 	}
 
-	int retMon = monitorNode("config.cfg", IN_MODIFY, &confMonitor_cb);
+	int retMon = monitorNode(PATH_CONFIG, IN_MODIFY, &confMonitor_cb);
 	if(retMon!=0){
 		return (void*)1;
 	}
