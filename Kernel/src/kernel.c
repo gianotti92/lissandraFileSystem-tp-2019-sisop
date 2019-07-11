@@ -5,16 +5,27 @@ void retornarControl(Instruccion *instruccion, int socket_cliente){};
 
 void *TH_describe(void *p);
 
-int main(void) {
-	print_guenguencha();
+int main(int argc, char* argv[])  {
+
 	pthread_mutex_init(&mutexRecursosCompartidos, NULL);
 	pthread_mutex_init(&lista_de_tablas_mx, NULL);
 	sem_init(&semaforoSePuedePlanificar, 0, 0);
 	sem_init(&semaforoNewToReady, 0, 0);
 	sem_init(&semaforoFinalizar, 0, 0);
 
+	if (argc == 1) {
+		PATH_CONFIG = "config.cfg";
+	} else if (argc == 2) {
+		PATH_CONFIG = argv[1];
+	} else {
+		log_error(LOG_ERROR,"Solo se acepta un argumento (PATH CONFIG) o ninguno para tomar config.cfg.");
+		exit(EXIT_FAILURE);
+	}
+
 	configure_logger();
 	configuracion_inicial();
+	print_guenguencha();
+
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
 	
@@ -180,9 +191,9 @@ void ejecutar() {
 void *TH_confMonitor(void * p) {
 
 	int confMonitor_cb(void) {
-		t_config* conf = config_create("config.cfg");
+		t_config* conf = config_create(PATH_CONFIG);
 		if (conf == NULL) {
-			log_error(LOG_ERROR, "Archivo de configuracion: config.cfg no encontrado");
+			log_error(LOG_ERROR, "Archivo de configuracion: %s no encontrado", PATH_CONFIG);
 			return 1;
 		}
 		actualizar_configuracion(conf);
@@ -190,7 +201,7 @@ void *TH_confMonitor(void * p) {
 		return 0;
 	}
 
-	int retMon = monitorNode("config.cfg", IN_MODIFY, &confMonitor_cb);
+	int retMon = monitorNode(PATH_CONFIG, IN_MODIFY, &confMonitor_cb);
 	if (retMon != 0) {
 		return (void*) 1;
 	}
