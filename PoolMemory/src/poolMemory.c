@@ -281,6 +281,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
 				//la memoria esta full, lanzo journal
+				log_info("MEM %d FULL.", NUMERO_MEMORIA);
 				t_timestamp timestamp = get_timestamp();
 				lanzar_journal(timestamp);
 			}
