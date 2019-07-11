@@ -3,7 +3,7 @@
 int main(int argc, char* argv[]) {
 
 	if (argc != 2) {
-		printf("SOLO HAY QUE INGRESAR UN ARGUMENTO (PATH DEL CONFIG), chinguenguencha!");
+		printf("HAY QUE INGRESAR UN ARGUMENTO (PATH DEL CONFIG), chinguenguencha!");
 		exit(EXIT_FAILURE);
 	}
 
@@ -61,57 +61,146 @@ int main(int argc, char* argv[]) {
 void configuracion_inicial(char* path_config){
 	t_config* CONFIG;
 	CONFIG = config_create(path_config);
-	usleep(10*1000);
+
 	if (!CONFIG) {
 		free(path_config);
-		printf("Memoria: Archivo de configuracion no encontrado. \n");
+		log_error(LOG_ERROR,"Archivo de configuracion no encontrado.");
 		exit_gracefully(EXIT_FAILURE);
 	}
+
+	//PUERTO_DE_ESCUCHA
 	char* config_puerto_escucha = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
+
+	if (config_puerto_escucha == NULL){
+		log_error(LOG_ERROR,"No se encontro PUERTO_DE_ESCUCHA en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
 	PUERTO_DE_ESCUCHA = malloc(strlen(config_puerto_escucha) + 1);
 	strcpy(PUERTO_DE_ESCUCHA, config_puerto_escucha);
+
+	//IP_FS
 	char* config_ip_fs = config_get_string_value(CONFIG,"IP_FS");
+
+	if (config_ip_fs == NULL){
+		log_error(LOG_ERROR,"No se encontro IP_FS en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
 	IP_FS = malloc(strlen(config_ip_fs)+1);
 	strcpy(IP_FS, config_ip_fs);
+
+	//PUERTO_FS
 	char* config_puerto_fs = config_get_string_value(CONFIG,"PUERTO_FS");
+
+	if (config_puerto_fs == NULL){
+		log_error(LOG_ERROR,"No se encontro PUERTO_FS en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
 	PUERTO_FS = malloc(strlen(config_puerto_fs) + 1);
 	strcpy(PUERTO_FS, config_puerto_fs);
-	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
-	char** config_ip_seeds = config_get_array_value(CONFIG,"IP_SEEDS");
-	int i = 0;
 
-	while(config_ip_seeds[i]!= NULL){
-		IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
-		IP_SEEDS[i] = string_duplicate(config_ip_seeds[i]);
-		free(config_ip_seeds[i]);
-		i++;
+	//SIZE_MEM
+	char * value_size_mem = config_get_string_value(CONFIG, "SIZE_MEM");
+
+	if (value_size_mem == NULL){
+		log_error(LOG_ERROR,"No se encontro SIZE_MEM en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	SIZE_MEM = atoi(value_size_mem);
+
+	//IP_SEEDS
+	char** config_ip_seeds = config_get_array_value(CONFIG,"IP_SEEDS");
+	int i_ip = 0;
+
+	while(config_ip_seeds[i_ip]!= NULL){
+		IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i_ip+1));
+		IP_SEEDS[i_ip] = string_duplicate(config_ip_seeds[i_ip]);
+		free(config_ip_seeds[i_ip]);
+		i_ip++;
 	}
 	free(config_ip_seeds);
-	IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
-	IP_SEEDS[i] = NULL;
+	IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i_ip+1));
+	IP_SEEDS[i_ip] = NULL;
 
-
+	//PUERTOS_SEEDS
 	char** config_puertos_seeds = config_get_array_value(CONFIG,"PUERTOS_SEEDS");
-	i = 0;
-	while(config_puertos_seeds[i]!= NULL){
-		PUERTOS_SEEDS= realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
-		PUERTOS_SEEDS[i] = string_duplicate(config_puertos_seeds[i]);
-		free(config_puertos_seeds[i]);
-		i++;
+	int i_pu = 0;
+	while(config_puertos_seeds[i_pu]!= NULL){
+		PUERTOS_SEEDS= realloc(PUERTOS_SEEDS, sizeof(char*) * (i_pu+1));
+		PUERTOS_SEEDS[i_pu] = string_duplicate(config_puertos_seeds[i_pu]);
+		free(config_puertos_seeds[i_pu]);
+		i_pu++;
 	}
 	free(config_puertos_seeds);
-	PUERTOS_SEEDS = realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
-	PUERTOS_SEEDS[i] = NULL;
+	PUERTOS_SEEDS = realloc(PUERTOS_SEEDS, sizeof(char*) * (i_pu+1));
+	PUERTOS_SEEDS[i_pu] = NULL;
 
-	RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
-	RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
-	RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
-	RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
-	NUMERO_MEMORIA = config_get_int_value(CONFIG,"NUMERO_MEMORIA");
+	if (i_ip > i_pu){
+		log_error(LOG_ERROR,"Hay mas IP_SEEDS que PUERTOS_SEEDS en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	} else if(i_ip < i_pu) {
+		log_error(LOG_ERROR,"Hay mas PUERTOS_SEEDS que IP_SEEDS en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
 
-	printf("SOY MEMORIA: %d\n", NUMERO_MEMORIA);
+	//RETARDO_MEM
+	char* value_retardo_mem = config_get_string_value(CONFIG,"RETARDO_MEM");
+
+	if (value_retardo_mem == NULL){
+		log_error(LOG_ERROR,"No se encontro RETARDO_MEM en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	RETARDO_MEM = atoi(value_retardo_mem);
+
+	//RETARDO_FS
+	char* value_retardo_fs = config_get_string_value(CONFIG,"RETARDO_FS");
+
+	if (value_retardo_fs == NULL){
+		log_error(LOG_ERROR,"No se encontro RETARDO_FS en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	RETARDO_FS = atoi(value_retardo_fs);
+
+	//RETARDO_JURNAL
+	char* value_retardo_journal = config_get_string_value(CONFIG,"RETARDO_JOURNAL");
+
+	if (value_retardo_journal == NULL){
+		log_error(LOG_ERROR,"No se encontro RETARDO_JOURNAL en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	RETARDO_JOURNAL = atoi(value_retardo_journal);
+
+	//RETARDO_GOSSIPING
+	 char* value_retardo_gossiping = config_get_string_value(CONFIG,"RETARDO_GOSSIPING");
+
+	if (value_retardo_gossiping == NULL){
+		log_error(LOG_ERROR,"No se encontro RETARDO_GOSSIPING en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	RETARDO_GOSSIPING = atoi(value_retardo_gossiping);
+
+	//NUMERO_MEMORIA
+	char* value_numero_memoria = config_get_string_value(CONFIG,"NUMERO_MEMORIA");
+
+	if (value_numero_memoria == NULL){
+		log_error(LOG_ERROR,"No se encontro NUMERO_MEMORIA en %s.", path_config);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	NUMERO_MEMORIA = atoi(value_numero_memoria);
+
+	printf("SOY MEMORIA: %d \n", NUMERO_MEMORIA);
 
 	config_destroy(CONFIG);
+
+	//MAX_VALUE de FS
 	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
 	instruccion_maxValue->instruccion = MAX_VALUE;
 	fd_disponibles = dictionary_create();
