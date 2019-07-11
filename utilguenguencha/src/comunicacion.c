@@ -490,6 +490,9 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 			pthread_mutex_unlock(&conn->mutex);
 		}
 	}
+
+	//modificar fd porque esta mal
+
 	return respuesta_error(CONNECTION_ERROR);
 }
 
