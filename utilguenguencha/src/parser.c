@@ -565,6 +565,7 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 				free(instruccion_parseada);
 				break;
 			case DATOS_DESCRIBE:
+				log_info(LOG_OUTPUT,"Operacion completada correctamente.");
 				list_iterate(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes, (void*)show_describes);
 				list_destroy_and_destroy_elements(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno)->lista_describes, (void*)eliminar_describe);
 				free(((Describes*)((Retorno_Generico*)(instruccion_parseada->instruccion_a_realizar))->retorno));
@@ -640,6 +641,10 @@ void print_instruccion_parseada(Instruccion * instruccion_parseada) {
 
 				case FILE_OPEN_ERROR:;
 					log_error(LOG_ERROR,"NO SE PUDO ABRIR EL ARCHIVO");
+				break;
+
+				case FILE_SYNC_ERROR:;
+					log_error(LOG_ERROR,"NO SE PUDO SINCRONIZAR EL ARCHIVO");
 				break;
 
 				case DIR_OPEN_ERROR:;

@@ -12,26 +12,19 @@ void realizarDescribeGeneral(void){
 	instruccionDescribe->instruccion_a_realizar = (void *) describe;
 	Instruccion * describeResponse = enviar_instruccion(IP_MEMORIA_PPAL,PUERTO_MEMORIA_PPAL,instruccionDescribe, KERNEL, T_INSTRUCCION);
 
-	switch(describeResponse->instruccion){
-		case RETORNO:
-			switch(((Retorno_Generico*)describeResponse->instruccion_a_realizar)->tipo_retorno){
-				case DATOS_DESCRIBE:;
-					t_list * describes = ((Describes*)((Retorno_Generico*)describeResponse->instruccion_a_realizar)->retorno)->lista_describes;
-					describe_agregar_tablas_nuevas(describes);
-					describe_eliminar_tablas_viejas(describes);
-				break;
-				default:
-					log_error(LOG_ERROR_SV, "Hilo Describe: Respuesta retorno inesperada\n");
-				break;
-			}
-		break;
-		case ERROR:
-			print_instruccion_parseada(describeResponse);
-		break;
-		default:
-			log_error(LOG_ERROR_SV, "Hilo Describe: Respuesta inesperada\n");
-		break;
+	if(describeResponse->instruccion == RETORNO){
+		switch(((Retorno_Generico*)describeResponse->instruccion_a_realizar)->tipo_retorno){
+			case DATOS_DESCRIBE:;
+				t_list * describes = ((Describes*)((Retorno_Generico*)describeResponse->instruccion_a_realizar)->retorno)->lista_describes;
+				describe_agregar_tablas_nuevas(describes);
+				describe_eliminar_tablas_viejas(describes);
+			break;
+			default:
+				log_error(LOG_ERROR_SV, "Hilo Describe: Respuesta retorno inesperada\n");
+			break;
+		}
 	}
+	free_retorno(describeResponse);
 }
 
 void describe_agregar_tablas_nuevas(t_list * describes){

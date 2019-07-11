@@ -174,6 +174,8 @@ void cleanRegistros(struct dumpTableList* dump_table_item) {
 	}
 	list_iterate(dump_table_item->registros,(void*)cleanValue);
 	list_destroy(dump_table_item->registros);
+	free(dump_table_item->tableName);
+	free(dump_table_item);
 }
 void *TH_dump(void* p){
 	t_list* table_list = list_create();

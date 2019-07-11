@@ -1,9 +1,10 @@
 #include "utils.h"
 
 void configure_logger() {
+	signal(SIGPIPE, handler);
 	LOG_INFO = log_create("log_info.log","tp-lissandra", 0, LOG_LEVEL_INFO);
 	LOG_ERROR = log_create("log_error.log","tp-lissandra", 1, LOG_LEVEL_ERROR);
-	LOG_OUTPUT = log_create("log_output.log", "tp-lissandra", 1, LOG_LEVEL_INFO);
+	LOG_OUTPUT = log_create("log_output.log", "tp-lissandra", 0, LOG_LEVEL_INFO);
 	LOG_ERROR_SV = log_create("log_error_sv.log","tp-lissandra", 0, LOG_LEVEL_ERROR);
 	LOG_OUTPUT_SV = log_create("log_output_sv.log", "tp-lissandra", 0, LOG_LEVEL_INFO);
 	LOG_DEBUG = log_create("log_debug.log","tp-lissandra", 1, LOG_LEVEL_DEBUG);
@@ -16,7 +17,7 @@ void exit_gracefully(int exit_code){
 	else{
 		log_info(LOG_INFO,"Proceso termino correctamente");
 	}
-	dictionary_destroy_and_destroy_elements(fd_disponibles, (void*)eliminar_y_cerrar_fd_abiertos);
+	dictionary_destroy_and_destroy_elements(fd_disponibles, (void*)free);
 	log_destroy(LOG_INFO);
 	log_destroy(LOG_ERROR);
 	log_destroy(LOG_DEBUG);
@@ -24,14 +25,8 @@ void exit_gracefully(int exit_code){
 	exit(exit_code);
 }
 
-void eliminar_y_cerrar_fd_abiertos(int * fd){
-	bool fd_is_valid(int fd){
-    	return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
-	}
-	if(fd_is_valid(*fd)){
-		close(*fd);
-	}
-	free(fd);
+void handler(int s) {
+	//No se que pasa aca
 }
 
 char *consistencia2string(Consistencias consistencia){

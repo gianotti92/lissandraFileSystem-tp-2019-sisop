@@ -8,11 +8,18 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
+
+/*
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <commons/string.h>
+*/
+
 #include "../../utilguenguencha/src/tipos_guenguencha.h"
 #include "../../utilguenguencha/src/comunicacion.h"
 #include "../../utilguenguencha/src/parser.h"
 #include "../../utilguenguencha/src/utils.h"
-#include "../../utilguenguencha/src/kernel_utils.h"
 
 
 int READS, WRITES;
@@ -73,8 +80,7 @@ void logicaInsert(Proceso * proceso);
 void logicaMetrics(Proceso * proceso);
 void calculoMetrics();
 void inicializarValoresMetrics();
-void loguear_metrics();
-void print_metrics();
+void loguear_metrics(t_log*);
 void *TH_confMonitor(void * p);
 Consistencias obtenerConsistencia(char * nombreTabla);
 int generarHash(char * nombreTabla, int tamLista);
@@ -87,6 +93,7 @@ pthread_mutex_t dame_mutex_de_consistencia(Consistencias consistencia);
 void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistencia);
 void finalizar_procesos(void);
 AcumuladorMemoria* dameAcumulador(int id_memoria, t_list* lista_acumuladores);
+char* leer_linea(char* path, int linea);
 
 
 // Variables del proceso
@@ -97,8 +104,6 @@ t_list *estadoExit;
 // tablas del proceso
 t_list *acum30sMetrics;
 t_dictionary * metrics;
-
-char* PUERTO_DE_ESCUCHA;
 
 char * IP_MEMORIA_PPAL;
 char* PUERTO_MEMORIA_PPAL;

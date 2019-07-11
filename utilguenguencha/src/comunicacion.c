@@ -3,8 +3,6 @@
 
 pthread_mutex_t mutex_diccionario_fd; // Lock para estructura de diccionario
 
-int closed = -1;
-
 typedef struct {
 	int fd;
 	pthread_mutex_t mutex;
@@ -19,7 +17,7 @@ int iniciar_servidor(char* puerto);
 * @NAME: crear_conexion
 * @DESC: Funcion que crea una conexion con la IP y Puerto y devuelve fd asociado
 */
-Connection *crear_conexion(char *ip, char* puerto, bool reconnect);
+Connection *crear_conexion(char *ip, char* puerto);
 /**
 * @NAME: crear_paquete
 * @DESC: Funcion que crea un paquete con los datos suministrados
@@ -210,25 +208,13 @@ Connection *get_conn(char* ip, char* puerto);
 * @DESC: pone el fd en el diccionario y devuelve un puntero al mismo
 */
 Connection *update_conn(char *ip, char *puerto, Connection *conn);
-/**
-* @NAME: fd_is_valid()
-* @DESC: chequea que el fd sea aun valido
-*/
-int fd_is_valid(int fd);
-
 
 Connection *get_conn(char *ip, char *puerto){
 	char *key = string_new();
 	string_append(&key, ip);
 	string_append(&key, puerto);
-	Connection *result = NULL;
 	pthread_mutex_lock(&mutex_diccionario_fd);
-	Connection *conn = dictionary_get(fd_disponibles, key);
-	if(conn != NULL){
-		result = malloc(sizeof(Connection));
-		result->fd = conn->fd;
-		result->mutex = conn->mutex;
-	}
+	Connection *result = dictionary_get(fd_disponibles, key);
 	pthread_mutex_unlock(&mutex_diccionario_fd);
 	free(key);
 	return result;
@@ -242,34 +228,35 @@ Connection *update_conn(char *ip, char *puerto, Connection *new_conn){
 	pthread_mutex_lock(&mutex_diccionario_fd);
 	Connection *old_conn =dictionary_get(fd_disponibles, key);
 	if(old_conn == NULL){
-		Connection *to_save = malloc(sizeof(Connection));
-		to_save->fd = new_conn->fd;
-		to_save->mutex = new_conn->mutex;
-		dictionary_put(fd_disponibles, key, to_save);
+		dictionary_put(fd_disponibles, key, new_conn);
+		old_conn = new_conn;
 	}else{
 		old_conn->fd = new_conn->fd;
-		old_conn->mutex = new_conn->mutex;
 	}
 	pthread_mutex_unlock(&mutex_diccionario_fd);
 	free(key);
-	return new_conn;
+	return old_conn;
 }
 
 void servidor_comunicacion(Comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
+	struct timeval tv;
+	tv.tv_sec = 5;
+    tv.tv_usec = 0;
 	int aux1, fd_max, server_socket;
 	server_socket = iniciar_servidor(comunicacion->puerto_servidor);
 	Procesos proceso_servidor = comunicacion->proceso;
 	free(comunicacion->puerto_servidor);
 	free(comunicacion);
 	FD_ZERO(&fd_set_master);
-	FD_ZERO(&fd_set_temporal);
 	FD_SET(server_socket, &fd_set_master);
 	fd_max = server_socket;
 	for (;;) {
+		FD_ZERO(&fd_set_temporal);
 		fd_set_temporal = fd_set_master;
-		if (select(fd_max + 1, &fd_set_temporal, NULL, NULL, NULL) == -1) {
-			exit_gracefully(EXIT_FAILURE);
+		if (select(fd_max + 1, &fd_set_temporal, NULL, NULL, &tv) == -1) {
+			log_error(LOG_ERROR,"Timeout en select");
+			continue;
 		}
 		int fin = fd_max;
 		for (aux1 = 0; aux1 <= fin; aux1++) {
@@ -281,7 +268,8 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 							(struct sockaddr *) &client_address,
 							&tamanio_client_address);
 					if (socket_cliente < 0) {
-						exit_gracefully(EXIT_FAILURE);
+						log_error(LOG_ERROR, "Error levantando un socket");
+						continue;
 					}
 					FD_SET(socket_cliente, &fd_set_master);
 					if (socket_cliente > fd_max) {
@@ -305,8 +293,10 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 								FD_CLR(aux1, &fd_set_master);
 							}
 							if (recibir_buffer(aux1, instruccion, tipo_comu)) {
+								fsync(aux1);
 								retornarControl(instruccion, aux1);
 							} else {
+								fsync(aux1);
 								free(instruccion);
 							}
 						}else{
@@ -484,59 +474,51 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 }
 
 Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
-	Connection *conn = crear_conexion(ip, puerto, false);
+	Connection *conn = crear_conexion(ip, puerto);
 	if(conn != NULL){
 		t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
 		pthread_mutex_lock(&conn->mutex);
 		if (enviar_paquete(paquete, conn->fd)) {
 			eliminar_paquete(paquete);
 			Instruccion *respuesta = recibir_respuesta(conn->fd);
+			fsync(conn->fd);
 			pthread_mutex_unlock(&conn->mutex);
-			free(conn);
 			return respuesta;
 		}else{
-			pthread_mutex_unlock(&conn->mutex);
-			free(conn);
+			fsync(conn->fd);
 			eliminar_paquete(paquete);
-			if(!fd_is_valid(conn->fd)){
-				conn = crear_conexion(ip, puerto, true);
-				free(conn);
-			}
-			return respuesta_error(CONNECTION_ERROR);
-
+			pthread_mutex_unlock(&conn->mutex);
 		}
 	}
 	return respuesta_error(CONNECTION_ERROR);
 }
 
-
-Connection *crear_conexion(char *ip, char* puerto, bool reconnect) {
+Connection *crear_conexion(char *ip, char* puerto) {
 	Connection *conn = get_conn(ip, puerto);
-	if(conn == NULL || reconnect){
-		if(conn == NULL){
-			conn = malloc(sizeof(Connection));
-			conn->fd = -1;
-			pthread_mutex_init(&conn->mutex, NULL);
-		}
-		if(!fd_is_valid(conn->fd) || reconnect){
-			int sockfd;
-		    struct sockaddr_in servaddr;
-		    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-		        return NULL;
-		    }
-		    bzero(&servaddr, sizeof(servaddr));
-
-		    servaddr.sin_family = AF_INET;
-		    servaddr.sin_addr.s_addr = inet_addr(ip);
-		    servaddr.sin_port = htons(atoi(puerto));
-
-		    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
-		        return NULL;
-		    }
-		    conn->fd = sockfd;
-	    	return update_conn(ip, puerto, conn);
-	    }
+	if(conn == NULL){
+		conn = malloc(sizeof(Connection));
+		conn->fd = -1;
+		pthread_mutex_init(&conn->mutex, NULL);
 	}
+	if(conn->fd == -1){
+		int sockfd;
+	    struct sockaddr_in servaddr;
+	    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+	        return NULL;
+	    }
+	    bzero(&servaddr, sizeof(servaddr));
+
+	    servaddr.sin_family = AF_INET;
+	    servaddr.sin_addr.s_addr = inet_addr(ip);
+	    servaddr.sin_port = htons(atoi(puerto));
+
+	    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+	        return NULL;
+	    }
+	    conn->fd = sockfd;
+    	return update_conn(ip, puerto, conn);
+    }
+
 	return conn;
 }
 
@@ -552,10 +534,6 @@ bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
 	memcpy(a_enviar + desplazamiento, &paquete->buffer->size, sizeof(paquete->buffer->size));
 	desplazamiento += sizeof(paquete->buffer->size);
 	if(paquete->buffer->size == 0){
-		if(!fd_is_valid(socket_cliente)){
-			free(a_enviar);
-			return false;
-		}
 		if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
 			free(a_enviar);
 			return false;
@@ -567,10 +545,6 @@ bool enviar_paquete(t_paquete* paquete, int socket_cliente) {
 		a_enviar = realloc(a_enviar, desplazamiento + paquete->buffer->size);
 		memcpy(a_enviar + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
 		desplazamiento += paquete->buffer->size;
-		if(!fd_is_valid(socket_cliente)){
-			free(a_enviar);
-			return false;
-		}
 		if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
 			free(a_enviar);
 			return false;
@@ -590,10 +564,6 @@ bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente) {
 	desplazamiento += sizeof(paquete->buffer->size);
 	memcpy(a_enviar + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
 	desplazamiento += paquete->buffer->size;
-	if(!fd_is_valid(socket_cliente)){
-		free(a_enviar);
-		return false;
-	}
 	if ((send(socket_cliente, a_enviar, desplazamiento, 0)) < 0) {
 		free(a_enviar);
 		return false;
@@ -604,6 +574,7 @@ bool enviar_paquete_retorno(t_paquete_retorno* paquete, int socket_cliente) {
 }
 
 void liberar_conexion(int socket_cliente) {
+	fsync(socket_cliente);
 	close(socket_cliente);
 }
 
@@ -661,6 +632,7 @@ t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_e
 		break;
 	default:
 		// Al default el unico que debe llegar es el MAX_VAL porque es el unico que usa esta opcion
+		// y ya con el header del otro lado entendemos que lo que se pide es un MAX_VAL
 		break;
 	}
 	free(instruccion);
@@ -968,11 +940,12 @@ bool validar_sender(Procesos sender, Procesos receiver, Tipo_Comunicacion comuni
 Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 	t_paquete_retorno *paquete = crear_paquete_retorno(instruccion);
 	if(enviar_paquete_retorno(paquete, fd_a_responder)){
+		fsync(fd_a_responder);
 		eliminar_paquete_retorno(paquete);
 		return respuesta_success();
 	}else{
+		fsync(fd_a_responder);
 		eliminar_paquete_retorno(paquete);
-		liberar_conexion(fd_a_responder);
 		return respuesta_error(CONNECTION_ERROR);
 	}
 }
@@ -980,19 +953,20 @@ Instruccion *responder(int fd_a_responder, Instruccion *instruccion){
 Instruccion *recibir_respuesta(int fd_a_escuchar){
 	Instruction_set retorno;
 	if((recv(fd_a_escuchar, &retorno, sizeof(Instruction_set), MSG_WAITALL)) <= 0){
-
 		return respuesta_error(CONNECTION_ERROR);
 	}
 	switch(retorno){
 		case RETORNO:
 			return recibir_retorno(fd_a_escuchar);
+			break;
 		default:
 			return recibir_error(fd_a_escuchar);
+			break;
 	}
 }
 
 Instruccion *recibir_error(int fd_a_escuchar){
-	Error_set tipo_error;
+	Error_set tipo_error = UNKNOWN;
 	size_t buffer_size;
 	if ((recv(fd_a_escuchar, &buffer_size, sizeof(buffer_size), MSG_WAITALL)) <= 0){
 
@@ -1235,11 +1209,4 @@ void empaquetar_retorno_error(t_paquete_retorno *paquete, Error *error){
 	paquete->buffer->stream = malloc(sizeof(error->error));
 	memcpy(paquete->buffer->stream, &error->error, sizeof(error->error));
 	paquete->buffer->size += sizeof(error->error);
-}
-
-int fd_is_valid(int fd){
-	if(fd != -1){
-    	return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
-    }
-    return false;
 }

@@ -1,9 +1,8 @@
 #include "kernel.h"
 
 // Hay que definirla ya que no tiene definición en kernel y sino rompería, de todos modos no se usa
-void retornarControl(Instruccion *instruccion, int socket_cliente) {
-}
-;
+void retornarControl(Instruccion *instruccion, int socket_cliente){};
+
 void *TH_describe(void *p);
 
 int main(void) {
@@ -91,11 +90,14 @@ void ejecutar() {
 		Proceso * proceso = desencolar(estadoReady);
 		switch (proceso->instruccion->instruccion) {
 			case RUN:;
-				while(proceso->quantumProcesado <= QUANTUM || proceso->fin_proceso){
+				proceso->fin_proceso = false;
+				log_info(LOG_DEBUG, "Ejecuto el script %s desde la linea %d ", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
+				while(proceso->quantumProcesado <= QUANTUM && !proceso->fin_proceso){
 					usleep(RETARDO*1000);
 					logicaRun(proceso);
 				}
 				if(!proceso->fin_proceso){
+					log_info(LOG_DEBUG, "Corto de hacer el proceso %s, en la linea %d", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
 					proceso->quantumProcesado = 0;
 					encolar(estadoReady, proceso);
 					sem_post(&semaforoSePuedePlanificar);
