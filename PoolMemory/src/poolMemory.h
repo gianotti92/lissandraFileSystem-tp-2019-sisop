@@ -84,6 +84,8 @@ void lanzar_gossiping(void);
 void gossipear(Memoria *mem);
 void add_memory_if_not_exists(Memoria *mem);
 bool existe_memoria(t_list *lista, Memoria *mem1);
+void sacar_memoria(Memoria *mem);
+int posicion_de_memoria(t_list *lista, Memoria *mem);
 void *TH_confMonitor(void * p);
 void marcar_ultimo_uso(int id_pagina);
 int marco_por_LRU(void);

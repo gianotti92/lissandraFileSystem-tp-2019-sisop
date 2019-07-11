@@ -827,6 +827,11 @@ void gossipear(Memoria *mem){
 				t_list *lista_retorno = gossip->lista_memorias;
 				list_iterate(lista_retorno, (void*)add_memory_if_not_exists);
 			}
+		} else {
+			//la memoria no contesto un retorno, la damos de baja del gossip
+
+			sacar_memoria(mem);
+
 		}
 		free_retorno(res);
 	}
@@ -851,6 +856,42 @@ bool existe_memoria(t_list *lista, Memoria *mem1){
 		mem2 = list_get(lista, posicion_en_lista);
 	}
 	return false;
+}
+
+void sacar_memoria(Memoria *mem){
+
+	int posicion = posicion_de_memoria(L_MEMORIAS, mem);
+
+	if(posicion >= 0){
+		pthread_mutex_lock(&mutexListaMemorias);
+		Memoria* mem_eliminar = list_remove(L_MEMORIAS, posicion);
+		eliminar_memoria(mem_eliminar);
+		pthread_mutex_unlock(&mutexListaMemorias);
+	}
+}
+
+int posicion_de_memoria(t_list *lista, Memoria *mem){
+
+	pthread_mutex_lock(&mutexListaMemorias);
+	int posicion = lista->elements_count -1;
+	Memoria* mem_comparar;
+
+	while (posicion >= 0){
+		mem_comparar = list_get(lista, posicion);
+
+		if (mem->idMemoria != -1
+			&& strcmp(mem->ip, mem_comparar->ip) == 0
+			&& strcmp(mem->puerto, mem_comparar->puerto) == 0){
+
+			pthread_mutex_unlock(&mutexListaMemorias);
+			return posicion;
+		}
+
+		posicion--;
+	}
+
+	pthread_mutex_unlock(&mutexListaMemorias);
+	return -1;
 }
 
 void* f_journaling (void) {
