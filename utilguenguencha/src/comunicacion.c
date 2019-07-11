@@ -17,7 +17,7 @@ int iniciar_servidor(char* puerto);
 * @NAME: crear_conexion
 * @DESC: Funcion que crea una conexion con la IP y Puerto y devuelve fd asociado
 */
-Connection *crear_conexion(char *ip, char* puerto, bool reconnect);
+Connection *crear_conexion(char *ip, char* puerto);
 /**
 * @NAME: crear_paquete
 * @DESC: Funcion que crea un paquete con los datos suministrados
@@ -229,11 +229,10 @@ Connection *update_conn(char *ip, char *puerto, Connection *new_conn){
 	Connection *old_conn =dictionary_get(fd_disponibles, key);
 	if(old_conn == NULL){
 		dictionary_put(fd_disponibles, key, new_conn);
-		old_conn =dictionary_get(fd_disponibles, key);
+		old_conn = new_conn;
 	}else{
 		old_conn->fd = new_conn->fd;
 	}
-	free(new_conn);
 	pthread_mutex_unlock(&mutex_diccionario_fd);
 	free(key);
 	return old_conn;
@@ -475,7 +474,7 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 }
 
 Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
-	Connection *conn = crear_conexion(ip, puerto, false);
+	Connection *conn = crear_conexion(ip, puerto);
 	if(conn != NULL){
 		t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
 		pthread_mutex_lock(&conn->mutex);
@@ -488,21 +487,20 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 		}else{
 			fsync(conn->fd);
 			eliminar_paquete(paquete);
-			crear_conexion(ip, puerto, true);
 			pthread_mutex_unlock(&conn->mutex);
 		}
 	}
 	return respuesta_error(CONNECTION_ERROR);
 }
 
-Connection *crear_conexion(char *ip, char* puerto, bool reconnect) {
+Connection *crear_conexion(char *ip, char* puerto) {
 	Connection *conn = get_conn(ip, puerto);
 	if(conn == NULL){
 		conn = malloc(sizeof(Connection));
 		conn->fd = -1;
 		pthread_mutex_init(&conn->mutex, NULL);
 	}
-	if(reconnect || conn->fd == -1){
+	if(conn->fd == -1){
 		int sockfd;
 	    struct sockaddr_in servaddr;
 	    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
@@ -634,6 +632,7 @@ t_paquete* crear_paquete(Tipo_Comunicacion tipo_comu, Procesos proceso_del_que_e
 		break;
 	default:
 		// Al default el unico que debe llegar es el MAX_VAL porque es el unico que usa esta opcion
+		// y ya con el header del otro lado entendemos que lo que se pide es un MAX_VAL
 		break;
 	}
 	free(instruccion);
