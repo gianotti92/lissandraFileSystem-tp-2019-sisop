@@ -281,7 +281,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
 				//la memoria esta full, lanzo journal
-				log_info("MEM %d FULL.", NUMERO_MEMORIA);
+				log_info(LOG_INFO, "MEM %d FULL.", NUMERO_MEMORIA);
 				t_timestamp timestamp = get_timestamp();
 				lanzar_journal(timestamp);
 			}
@@ -986,19 +986,19 @@ bool memoria_full(void){
 void *TH_confMonitor(void * p){
 
 	int confMonitor_cb(void){
-		t_config* CONFIG = config_create(PATH_CONFIG);
-		if(CONFIG == NULL) {
+		t_config* conf = config_create(PATH_CONFIG);
+		if(conf == NULL) {
 			log_error(LOG_ERROR,"Archivo de configuracion: %s no encontrado", PATH_CONFIG);
 			return 1;
 		}
 
-		RETARDO_MEM = config_get_int_value_check(CONFIG,"RETARDO_MEM");
-		RETARDO_FS = config_get_int_value_check(CONFIG,"RETARDO_FS");
-		RETARDO_JOURNAL = config_get_int_value_check(CONFIG,"RETARDO_JOURNAL");
-		RETARDO_GOSSIPING = config_get_int_value_check(CONFIG,"RETARDO_GOSSIPING");
+		RETARDO_MEM = config_get_int_value_check(conf,"RETARDO_MEM");
+		RETARDO_FS = config_get_int_value_check(conf,"RETARDO_FS");
+		RETARDO_JOURNAL = config_get_int_value_check(conf,"RETARDO_JOURNAL");
+		RETARDO_GOSSIPING = config_get_int_value_check(conf,"RETARDO_GOSSIPING");
 
 		log_info(LOG_INFO,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
-		config_destroy(CONFIG);
+		config_destroy(conf);
 		return 0;
 	}
 
