@@ -31,7 +31,7 @@ t_list* L_MEMORIAS;
 t_list* L_SEEDS;
 
 
-pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias, mutexListaMemorias;
+pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias, mutexListaGossip;
 sem_t semJournal;
 
 //  estructuras
