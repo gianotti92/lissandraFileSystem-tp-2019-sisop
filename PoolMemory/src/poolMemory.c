@@ -427,9 +427,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 		case GOSSIP:;
 			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
 
-
-			printf("Entro Respuesta gossip %zu \n", (size_t)get_timestamp());
-
 			pthread_mutex_lock(&mutexListaGossip);
 			list_iterate(gossip->lista_memorias, (void*)add_memory_if_not_exists);
 			pthread_mutex_unlock(&mutexListaGossip);
@@ -443,8 +440,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			retorno->tipo_retorno = RETORNO_GOSSIP;
 			Gossip * gossip_ret = malloc(sizeof(Gossip));
 			gossip_ret->lista_memorias = filtrar_memorias_a_enviar();
-
-			printf("Salgo Respuesta gossip %zu \n", (size_t)get_timestamp());
 
 			retorno->retorno = gossip_ret;
 			instruccion_respuesta->instruccion_a_realizar = retorno;
@@ -746,7 +741,6 @@ void lanzar_gossiping(void){
 	int posicion = 0;
 
 	pthread_mutex_lock(&mutexListaGossip);
-	printf("Lock vuelta semillas %zu \n", (size_t)get_timestamp());
 	while (IP_SEEDS[posicion] != NULL && PUERTOS_SEEDS[posicion] != NULL){
 		char* ip = IP_SEEDS[posicion];
 		char* puerto = PUERTOS_SEEDS[posicion];
@@ -773,16 +767,41 @@ void lanzar_gossiping(void){
 	memoria->idMemoria = NUMERO_MEMORIA;
 	list_add(L_MEMORIAS, memoria);
 	pthread_mutex_unlock(&mutexListaGossip);
-	printf("Unlock vuelta semillas %zu \n", (size_t)get_timestamp());
+	int aux;
+	Memoria *m, *mem;
 
 	while(true){
 		usleep(RETARDO_GOSSIPING*1000);
 
-		printf("Entro vuelta gossiping %zu \n", (size_t)get_timestamp());
-		t_list *a_gossipear = filtrar_memorias_gossipear();
-		list_iterate(a_gossipear, (void*)gossipear);
-		list_destroy_and_destroy_elements(a_gossipear, (void*)eliminar_memoria);
-		printf("Salgo vuelta gossiping %zu \n", (size_t)get_timestamp());
+		aux = 0;
+
+		int cantidad = L_MEMORIAS->elements_count;
+		m = list_get(L_MEMORIAS, aux);
+
+		if(m != NULL) {
+			mem = duplicar_memoria(m);
+		} else {
+			mem = NULL;
+		}
+
+		while(L_MEMORIAS->elements_count == cantidad && mem != NULL){
+			gossipear(mem);
+			aux++;
+			eliminar_memoria(mem);
+
+			m = list_get(L_MEMORIAS, aux);
+
+			if(m != NULL) {
+				mem = duplicar_memoria(m);
+			} else {
+				mem = NULL;
+			}
+
+		}
+
+		if (mem != NULL){
+			eliminar_memoria(mem);
+		}
 
 	}
 }
@@ -791,9 +810,7 @@ t_list* filtrar_memorias_gossipear(void){
 	int aux = 0;
 	t_list *lista_filtrada = list_create();
 
-	pthread_mutex_lock(&mutexListaGossip);
-	t_list *copia_memorias = list_duplicate(L_MEMORIAS);
-	pthread_mutex_unlock(&mutexListaGossip);
+	t_list *copia_memorias = list_duplicate_all(L_MEMORIAS, (void*)duplicar_memoria, mutexListaGossip);
 
 	Memoria *m1 = list_get(copia_memorias, aux);
 
@@ -814,15 +831,15 @@ t_list* filtrar_memorias_gossipear(void){
 		aux++;
 		m1 = list_get(copia_memorias, aux);
 	}
-	//list_destroy_and_destroy_elements(copia_memorias, (void*)eliminar_memoria);
+
+	list_destroy_and_destroy_elements(copia_memorias, (void*)eliminar_memoria);
 	return lista_filtrada;
 }
 
 t_list *filtrar_memorias_a_enviar(void){
 
-	pthread_mutex_lock(&mutexListaGossip);
-	t_list *copia_memorias = list_duplicate(L_MEMORIAS);
-	pthread_mutex_unlock(&mutexListaGossip);
+
+	t_list *copia_memorias = list_duplicate_all(L_MEMORIAS, (void*)duplicar_memoria, mutexListaGossip);
 
 	int aux = (copia_memorias->elements_count - 1);
 	t_list *lista_filtrada = list_create();
@@ -843,18 +860,25 @@ t_list *filtrar_memorias_a_enviar(void){
 
 	}
 
-	//list_destroy_and_destroy_elements(copia_memorias, (void*)eliminar_memoria);
+	list_destroy_and_destroy_elements(copia_memorias, (void*)eliminar_memoria);
 	return lista_filtrada;
 }
 
 void gossipear(Memoria *mem){
 
-	printf("Entro gossipear IP: %s P: %s %zu \n", mem->ip, mem->puerto, (size_t)get_timestamp());
-
 	if(mem->idMemoria != NUMERO_MEMORIA){
 		Instruccion *inst  = malloc(sizeof(Instruccion));
 		Gossip * gossip = malloc(sizeof(Gossip));
-		gossip->lista_memorias = filtrar_memorias_a_enviar();
+
+		gossip->lista_memorias = list_create();
+		Memoria * memoria = malloc(sizeof(Memoria));
+		char* local_ip = get_local_ip();
+		memoria->ip = malloc(strlen(local_ip)+1);
+		strcpy(memoria->ip, local_ip);
+		memoria->puerto = malloc(strlen(PUERTO_DE_ESCUCHA)+1);
+		strcpy(memoria->puerto, PUERTO_DE_ESCUCHA);
+		memoria->idMemoria = NUMERO_MEMORIA;
+		list_add(gossip->lista_memorias, memoria);
 
 		inst->instruccion = GOSSIP;
 		inst->instruccion_a_realizar = gossip;
@@ -876,7 +900,6 @@ void gossipear(Memoria *mem){
 		free_retorno(res);
 	}
 
-	printf("Salgo gossipear %zu \n", (size_t)get_timestamp());
 }
 
 void add_memory_if_not_exists(Memoria *mem){
