@@ -528,6 +528,8 @@ Connection *crear_conexion(char *ip, char* puerto) {
 		int sockfd;
 	    struct sockaddr_in servaddr;
 	    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+	    	pthread_mutex_destroy(&conn->mutex);
+			free(conn);
 	        return NULL;
 	    }
 	    bzero(&servaddr, sizeof(servaddr));
@@ -537,6 +539,8 @@ Connection *crear_conexion(char *ip, char* puerto) {
 	    servaddr.sin_port = htons(atoi(puerto));
 
 	    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+			pthread_mutex_destroy(&conn->mutex);
+			free(conn);
 	        return NULL;
 	    }
 	    conn->fd = sockfd;
