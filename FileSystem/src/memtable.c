@@ -101,7 +101,6 @@ void loadCurrentTableMetadata(void){
 				struct tableMetadataItem *item = malloc(sizeof(struct tableMetadataItem));
 				pthread_rwlock_init(&item->lock,NULL);
 				item->endFlag=0;
-				pthread_create(&item->thread,NULL,TH_compactacion,(void*)item);
 				item->tableName = malloc(strlen(dir->d_name)+1);
 				strcpy(item->tableName,dir->d_name);
 				item->metadata.consistencia=string2consistencia(config_get_string_value(conf,"CONSISTENCY"));
@@ -112,6 +111,7 @@ void loadCurrentTableMetadata(void){
 				pthread_mutex_lock(&tableMetadataMutex);
 				list_add(global_table_metadata,(void *)item);
 				pthread_mutex_unlock(&tableMetadataMutex);
+				pthread_create(&item->thread,NULL,TH_compactacion,(void*)item);
 			}
 		}
 		closedir(d);
