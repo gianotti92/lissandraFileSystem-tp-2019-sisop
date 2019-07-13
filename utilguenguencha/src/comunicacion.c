@@ -511,10 +511,9 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 			fsync(conn->fd);
 			eliminar_paquete(paquete);
 			pthread_mutex_unlock(&conn->mutex);
+			desafectar_conn(ip, puerto);
 		}
 	}
-
-	desafectar_conn(ip, puerto);
 
 	return respuesta_error(CONNECTION_ERROR);
 }
