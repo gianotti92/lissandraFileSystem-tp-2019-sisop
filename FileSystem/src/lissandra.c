@@ -149,6 +149,8 @@ void TH_consola(char* leido){
 		log_instruccion_parseada(res);
 		print_instruccion_parseada(res);
 
+	}else{
+		free_retorno(instruccion_parseada);
 	}
 }
 /*

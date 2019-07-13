@@ -182,8 +182,6 @@ void retorno_consola(char* leido){
 		t_list * disponibles = filtrar_memorias_a_enviar();
 		list_iterate(disponibles, (void*)mostrar_memoria);
 		list_destroy_and_destroy_elements(disponibles, (void*)eliminar_memoria);
-		free(leido);
-
 		return;
 	}
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);

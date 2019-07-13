@@ -86,6 +86,38 @@ void lanzar_gossiping(){
 
 				list_destroy_and_destroy_elements(lista_memorias_disponibles_vieja, (void*)eliminar_memoria);
 			}
+		} else {
+			for(Consistencias cons = EC; cons<NOT_FOUND; cons++){
+				pthread_mutex_t mx = dame_mutex_de_consistencia(cons);
+				t_list * lista;
+				switch(cons){
+					case SC:
+						lista = lista_sc;
+						break;
+					case EC:
+						lista = lista_ec;
+						break;
+					case SHC:
+						lista = lista_shc;
+						break;
+					default:
+						lista = lista_disp;
+						break;
+				}
+				pthread_mutex_lock(&mx);
+				list_clean_and_destroy_elements(lista,(void*)eliminar_memoria);
+				if(cons == DISP){
+					Memoria * memoriaPrincipal = malloc(sizeof(Memoria));
+					memoriaPrincipal->idMemoria = 1;
+					memoriaPrincipal->puerto = malloc(strlen(PUERTO_MEMORIA_PPAL) + 1);
+					strcpy(memoriaPrincipal->puerto, PUERTO_MEMORIA_PPAL);
+					memoriaPrincipal->ip = malloc(strlen(IP_MEMORIA_PPAL) + 1);
+					strcpy(memoriaPrincipal->ip, IP_MEMORIA_PPAL);
+					asignar_memoria_a_consistencia(memoriaPrincipal, DISP);
+					eliminar_memoria(memoriaPrincipal);
+				}
+				pthread_mutex_unlock(&mx);
+			}
 		}
 		free_retorno(resp);
 	}
@@ -220,6 +252,7 @@ pthread_mutex_t dame_mutex_de_consistencia(Consistencias consistencia){
 char* leer_linea(char* path, int linea) {
 	char *line_buf = NULL;
 	size_t line_buf_size = 0;
+	int line_count = 0;
 	ssize_t line_size;
 	FILE * fp = fopen(path, "r");
 
@@ -227,14 +260,18 @@ char* leer_linea(char* path, int linea) {
 		perror("Error al leer archivo");
 		return NULL;
 	}
-	int i;
-	for(i = 0; i <= linea; i++){
-		line_size = getline(&line_buf, &line_buf_size, fp);
+	line_size = getline(&line_buf, &line_buf_size, fp);
+	while (line_size >= 0 && line_count != linea){
+	line_count++;
+	free(line_buf);
+	line_buf = NULL;
+	line_size = getline(&line_buf, &line_buf_size, fp);
 	}
 
 	if(line_size >= 0){
 		line_buf[line_size - 1] = '\0';
 	}else{
+		free(line_buf);
 		line_buf = NULL;
 	}
 	fclose(fp);

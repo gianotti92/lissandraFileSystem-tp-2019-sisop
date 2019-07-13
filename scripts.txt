@@ -1,10 +1,11 @@
+CHECKPOINT:
 run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/peliculas.lql
 run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/animales.lql
 run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/comidas.lql
 run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/misc_1.lql
 run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/misc_2.lql
 
-
+ENTREGA:
 run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/animales.lql
 run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/cities_countries.lql
 run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/comidas.lql
@@ -23,338 +24,359 @@ run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/simple_ec.lql
 run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/simple_sc.lql
 run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/simple_shc.lql
 
+FILESYSTEM
 
-ADD MEMORY 1 TO SC
-ADD MEMORY 2 TO SHC
-ADD MEMORY 3 TO EC
+==5718==
+==5718== HEAP SUMMARY:
+==5718==     in use at exit: 67,872 bytes in 238 blocks
+==5718==   total heap usage: 16,514 allocs, 16,276 frees, 12,221,147 bytes allocated
+==5718==
+==5718== 136 bytes in 1 blocks are possibly lost in loss record 35 of 70
+==5718==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5718==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5718==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5718==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5718==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5718==    by 0x804FCE0: loadCurrentTableMetadata (memtable.c:100)
+==5718==    by 0x804F8FE: initTableMetadata (memtable.c:49)
+==5718==    by 0x804CF4C: main (lissandra.c:52)
+==5718==
+==5718== 136 bytes in 1 blocks are possibly lost in loss record 36 of 70
+==5718==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5718==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5718==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5718==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5718==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5718==    by 0x804CF63: main (lissandra.c:60)
+==5718==
+==5718== 136 bytes in 1 blocks are possibly lost in loss record 37 of 70
+==5718==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5718==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5718==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5718==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5718==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5718==    by 0x804CF78: main (lissandra.c:62)
+==5718==
+==5718== 136 bytes in 1 blocks are possibly lost in loss record 38 of 70
+==5718==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5718==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5718==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5718==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5718==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5718==    by 0x804CF90: main (lissandra.c:64)
+==5718==
+==5718== 136 bytes in 1 blocks are possibly lost in loss record 39 of 70
+==5718==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5718==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5718==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5718==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5718==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5718==    by 0x804CFA5: main (lissandra.c:66)
+==5718==
+==5718== 136 bytes in 1 blocks are definitely lost in loss record 40 of 70
+==5718==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5718==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5718==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5718==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5718==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5718==    by 0x804FAF8: deleteInTableMetadata (memtable.c:76)
+==5718==    by 0x804E74F: _drop (lissandraController.c:203)
+==5718==    by 0x804E85A: controller (lissandraController.c:231)
+==5718==    by 0x804D235: TH_consola (lissandra.c:147)
+==5718==    by 0x8055005: leer_por_consola (parser.c:748)
+==5718==    by 0x4098294: start_thread (pthread_create.c:333)
+==5718==    by 0x41960AD: clone (clone.S:114)
+==5718==
+==5718== 272 bytes in 2 blocks are definitely lost in loss record 45 of 70
+==5718==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5718==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5718==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5718==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5718==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5718==    by 0x804FA2F: insertInTableMetadata (memtable.c:65)
+==5718==    by 0x804E4CE: _create (lissandraController.c:160)
+==5718==    by 0x804E82C: controller (lissandraController.c:225)
+==5718==    by 0x804D164: retornarControl (lissandra.c:116)
+==5718==    by 0x8050619: servidor_comunicacion (comunicacion.c:320)
+==5718==    by 0x804D149: TH_server (lissandra.c:112)
+==5718==    by 0x4098294: start_thread (pthread_create.c:333)
+==5718==    by 0x41960AD: clone (clone.S:114)
+==5718==
+==5718== 408 bytes in 3 blocks are possibly lost in loss record 48 of 70
+==5718==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5718==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5718==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5718==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5718==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5718==    by 0x804FA2F: insertInTableMetadata (memtable.c:65)
+==5718==    by 0x804E4CE: _create (lissandraController.c:160)
+==5718==    by 0x804E82C: controller (lissandraController.c:225)
+==5718==    by 0x804D164: retornarControl (lissandra.c:116)
+==5718==    by 0x8050619: servidor_comunicacion (comunicacion.c:320)
+==5718==    by 0x804D149: TH_server (lissandra.c:112)
+==5718==    by 0x4098294: start_thread (pthread_create.c:333)
+==5718==    by 0x41960AD: clone (clone.S:114)
+==5718==
+==5718== LEAK SUMMARY:
+==5718==    definitely lost: 408 bytes in 3 blocks
+==5718==    indirectly lost: 0 bytes in 0 blocks
+==5718==      possibly lost: 1,088 bytes in 8 blocks
+==5718==    still reachable: 66,376 bytes in 227 blocks
+==5718==         suppressed: 0 bytes in 0 blocks
+==5718== Reachable blocks (those to which a pointer was found) are not shown.
+==5718== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==5718==
+==5718== For counts of detected and suppressed errors, rerun with: -v
+==5718== ERROR SUMMARY: 8 errors from 8 contexts (suppressed: 0 from 0)
 
 
-CREATE MARINOS SHC 1 10000
-CREATE AVES SC 5 50000
-CREATE MAMIFEROS EC 3 60000
 
-run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/animales_falla.lql
-run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/misc_1_falla.lql
+POOLMEMORY (A LA QUE SE LE CAE EL SEED Y QUEDA TRATANDO DE GOSIPEAR)
 
-CREATE COLORES SC 2 35000
-CREATE COLORES SC 2 35000
-CREATE COLORES SC 2 35000
-CREATE COLORES SC 2 35000
-CREATE COLORES SC 2 35000
+==5730==
+==5730== HEAP SUMMARY:
+==5730==     in use at exit: 70,048 bytes in 451 blocks
+==5730==   total heap usage: 15,073 allocs, 14,622 frees, 5,567,733 bytes allocated
+==5730==
+==5730== 16 bytes in 2 blocks are definitely lost in loss record 36 of 90
+==5730==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x804A6BA: atender_consulta (poolMemory.c:368)
+==5730==    by 0x804A147: retornarControl (poolMemory.c:198)
+==5730==    by 0x804C778: servidor_comunicacion (comunicacion.c:320)
+==5730==    by 0x4098294: start_thread (pthread_create.c:333)
+==5730==    by 0x41960AD: clone (clone.S:114)
+==5730==
+==5730== 51 bytes in 2 blocks are definitely lost in loss record 50 of 90
+==5730==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x804A6F2: atender_consulta (poolMemory.c:370)
+==5730==    by 0x804A147: retornarControl (poolMemory.c:198)
+==5730==    by 0x804C778: servidor_comunicacion (comunicacion.c:320)
+==5730==    by 0x4098294: start_thread (pthread_create.c:333)
+==5730==    by 0x41960AD: clone (clone.S:114)
+==5730==
+==5730== 112 bytes in 4 blocks are definitely lost in loss record 55 of 90
+==5730==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x804CE8C: crear_conexion (comunicacion.c:524)
+==5730==    by 0x804CD5F: enviar_instruccion (comunicacion.c:500)
+==5730==    by 0x804B7C4: gossipear (poolMemory.c:887)
+==5730==    by 0x804B37F: lanzar_gossiping (poolMemory.c:790)
+==5730==    by 0x4098294: start_thread (pthread_create.c:333)
+==5730==    by 0x41960AD: clone (clone.S:114)
+==5730==
+==5730== 123 (16 direct, 107 indirect) bytes in 2 blocks are definitely lost in loss record 56 of 90
+==5730==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x804C6A1: servidor_comunicacion (comunicacion.c:312)
+==5730==    by 0x4098294: start_thread (pthread_create.c:333)
+==5730==    by 0x41960AD: clone (clone.S:114)
+==5730==
+==5730== 136 bytes in 1 blocks are possibly lost in loss record 57 of 90
+==5730==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5730==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5730==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5730==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5730==    by 0x8049984: main (poolMemory.c:31)
+==5730==
+==5730== 136 bytes in 1 blocks are possibly lost in loss record 58 of 90
+==5730==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5730==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5730==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5730==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5730==    by 0x804999C: main (poolMemory.c:32)
+==5730==
+==5730== 136 bytes in 1 blocks are possibly lost in loss record 59 of 90
+==5730==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5730==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5730==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5730==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5730==    by 0x80499B1: main (poolMemory.c:33)
+==5730==
+==5730== 136 bytes in 1 blocks are possibly lost in loss record 60 of 90
+==5730==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5730==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5730==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5730==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5730==    by 0x80499C6: main (poolMemory.c:34)
+==5730==
+==5730== 136 bytes in 1 blocks are possibly lost in loss record 61 of 90
+==5730==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5730==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5730==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5730==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5730==    by 0x8049A35: main (poolMemory.c:41)
+==5730==
+==5730== 236 (32 direct, 204 indirect) bytes in 4 blocks are definitely lost in loss record 64 of 90
+==5730==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5730==    by 0x804B6C3: gossipear (poolMemory.c:872)
+==5730==    by 0x804B37F: lanzar_gossiping (poolMemory.c:790)
+==5730==    by 0x4098294: start_thread (pthread_create.c:333)
+==5730==    by 0x41960AD: clone (clone.S:114)
+==5730==
+==5730== LEAK SUMMARY:
+==5730==    definitely lost: 227 bytes in 14 blocks
+==5730==    indirectly lost: 311 bytes in 30 blocks
+==5730==      possibly lost: 680 bytes in 5 blocks
+==5730==    still reachable: 68,830 bytes in 402 blocks
+==5730==         suppressed: 0 bytes in 0 blocks
+==5730== Reachable blocks (those to which a pointer was found) are not shown.
+==5730== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==5730==
+==5730== For counts of detected and suppressed errors, rerun with: -v
+==5730== ERROR SUMMARY: 10 errors from 10 contexts (suppressed: 0 from 0)
 
-FS
 
-==32321== Thread 13:
-==32321== Syscall param nanosleep(req) points to uninitialised byte(s)
-==32321==    at 0x416C3CA: ??? (syscall-template.S:84)
-==32321==    by 0x419C2C4: usleep (usleep.c:32)
-==32321==    by 0x804D489: TH_compactacion (lissandra.c:274)
-==32321==    by 0x40A5294: start_thread (pthread_create.c:333)
-==32321==    by 0x41A30AD: clone (clone.S:114)
-==32321==  Address 0xb060308 is on thread 13's stack
-==32321==  in frame #1, created by usleep (usleep.c:25)
-==32321==
-==32321== Conditional jump or move depends on uninitialised value(s)
-==32321==    at 0x402F48E: strcpy (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==32321==    by 0x804BC57: fs_read_buffer_to_registers (fileSystem.c:361)
-==32321==    by 0x804AB0D: fs_read (fileSystem.c:82)
-==32321==    by 0x804A254: getRegisters.8205 (compactacion.c:40)
-==32321==    by 0x40562C3: list_iterate (in /usr/lib/libcommons.so)
-==32321==    by 0x804A2BE: compac_get_tmp_registers (compactacion.c:42)
-==32321==    by 0x804D54D: TH_compactacion (lissandra.c:303)
-==32321==    by 0x40A5294: start_thread (pthread_create.c:333)
-==32321==    by 0x41A30AD: clone (clone.S:114)
-==32321==
+KERNEL
 
-
-ADD MEMORY 1 TO SC
-CREATE MARINOS EC 1 10000
-DESCRIBE MARINOS
-INSERT MARINOS 983 "Ballena"
-CREATE AVES SC 5 50000
-CREATE MAMIFEROS SHC 3 60000
-DESCRIBE
-INSERT MARINOS 33 "Pulpo"
-INSERT AVES 11 "Paloma"
-INSERT MAMIFEROS 2222 "Gato"
-INSERT MAMIFEROS 239 "Perro"
-INSERT MARINOS 22 "Delfin"
-INSERT AVES 11 "Halcon"
-SELECT AVES 11
-INSERT MARINOS 983 "Orca"
-DESCRIBE AVES
-INSERT MARINOS 310 "Calamar"
-INSERT AVES 1102 "Buho"
-SELECT MARINOS 310
-INSERT AVES 333 "Colibri"
-INSERT MAMIFEROS 2222 "Elefante"
-INSERT MAMIFEROS 349 "Jirafa"
-INSERT MARINOS 983 "Pez globo"
-INSERT AVES 6262 "Loro"
-INSERT AVES 888 "Pelicano"
-DESCRIBE MAMIFEROS
-INSERT MAMIFEROS 349 "Cebra"
-INSERT MAMIFEROS 721 "Caballo"
-INSERT AVES 11 "Pinguino"
-INSERT MAMIFEROS 721 "Oveja"
-SELECT MARINOS 983
-DESCRIBE MAMIFEROS
-INSERT MARINOS 983 "Tiburon"
-INSERT MARINOS 33 "Raya"
-SELECT AVES 11
-SELECT AVES 6262
-INSERT MAMIFEROS 272 "Vaca"
-SELECT MAMIFEROS 272
-DESCRIBE MAMIFEROS
-SELECT MARINOS 310
-INSERT MARINOS 983 "Pez globo"
-INSERT MAMIFEROS 209 "Hipopotamo"
-INSERT MARINOS 3103 "Delfin"
-INSERT MARINOS 3104 "Delfin"
-INSERT MAMIFEROS 239 "Burro"
-INSERT MAMIFEROS 21 "Caballo"
-SELECT AVES 11
-SELECT MARINOS 3105
-SELECT AVES 1102
-DESCRIBE AVES
-INSERT MARINOS 3105 "Delfin"
-SELECT MARINOS 33
-SELECT MAMIFEROS 239
-SELECT MARINOS 3103
-CREATE MARINOS SC 1 10000
-DESCRIBE MARINOS
-INSERT MARINOS 983 "Ballena"
-CREATE AVES EC 5 50000
-CREATE MAMIFEROS SHC 3 60000
-DESCRIBE AVES
-INSERT MARINOS hola "Delfin"
-DESCRIBE MAMIFEROS
-INSERT AVES 11 "Halcon"
-INSERT MARINOS 983 "Orca"
-DESCRIBE AVES
-INSERT MAMIFEROS 721 "Oveja"
-CREATE AVES SHC 2 35000
-INSERT MAMIFEROS 3119 "Jirafa"
-INSERT MARINOS 00 "Pez globo"
-CREATE POSTRES SHC 3 60000
-DESCRIBE POSTRES
-INSERT POSTRES 100 "Flan"
-CREATE FRUTAS SC 2 50000
-DESCRIBE FRUTAS
-INSERT FRUTAS 222 "Manzana"
-INSERT POSTRES 101 "Chocotorta"
-INSERT FRUTAS 34 "Banana"
-INSERT POSTRES 4000 "Tiramisu"
-CREATE BEBIDAS SC 6 10000
-DESCRIBE POSTRES
-INSERT FRUTAS 10245 "Pera"
-SELECT FRUTAS 34
-INSERT POSTRES 101 "Helado"
-SELECT POSTRES 101
-INSERT POSTRES 101 "Almendrado"
-INSERT FRUTAS 621 "Uva"
-DESCRIBE FRUTAS
-DESCRIBE BEBIDAS
-INSERT BEBIDAS 10 "Pepsi"
-INSERT BEBIDAS 11 "Coca Cola"
-SELECT BEBIDAS 11
-INSERT BEBIDAS 11 "Sprite"
-SELECT POSTRES 101
-INSERT POSTRES 80 "Bizcochuelo"
-INSERT BEBIDAS 7338 "Limonada"
-INSERT FRUTAS 621 "Melon"
-INSERT FRUTAS 34 "Manzana"
-SELECT BEBIDAS 11
-INSERT POSTRES 8927 "Budin de pan"
-INSERT FRUTAS 222 "Sandia"
-INSERT BEBIDAS 44 "Exprimido"
-INSERT BEBIDAS 7338 "Agua con gas"
-INSERT FRUTAS 222 "Manzana"
-DESCRIBE BEBIDAS
-INSERT FRUTAS 34 "Cereza"
-SELECT FRUTAS 34
-SELECT BEBIDAS 44
-INSERT FRUTAS 10245 "Frutilla"
-INSERT POSTRES 4000 "Gelatina"
-INSERT POSTRES 100 "Helado"
-INSERT POSTRES 101 "Almendrado"
-SELECT BEBIDAS 11
-CREATE PLATOS_PRINCIPALES SC 2 60000
-INSERT POSTRES 231 "Flan"
-DESCRIBE PLATOS_PRINCIPALES
-INSERT PLATOS_PRINCIPALES 271 "Milanesa"
-INSERT PLATOS_PRINCIPALES 32 "Omelette"
-INSERT POSTRES 80 "Tiramisu"
-SELECT FRUTAS 222
-SELECT POSTRES 231
-SELECT BEBIDAS 44
-SELECT POSTRES 80
-INSERT PLATOS_PRINCIPALES 54 "Hamburguesa"
-SELECT PLATOS_PRINCIPALES 271
-INSERT PLATOS_PRINCIPALES 271 "Pizza"
-INSERT BEBIDAS 10 "Fanta"
-INSERT PLATOS_PRINCIPALES 32 "Empanadas"
-INSERT POSTRES 8927 "Helado"
-INSERT POSTRES 100 "Chocotorta"
-INSERT BEBIDAS 11 "Mate"
-SELECT FRUTAS 10245
-SELECT FRUTAS 22
-INSERT POSTRES 100 "Helado"
-SELECT POSTRES 100
-INSERT POSTRES 101 "Muffin"
-SELECT PLATOS_PRINCIPALES 54
-SELECT BEBIDAS 10245
-SELECT POSTRES 101
-SELECT BEBIDAS 10
-SELECT POSTRES 8927
-SELECT PLATOS_PRINCIPALES 271
-CREATE COLORES SC 2 35000
-DESCRIBE COLORES
-INSERT COLORES 3119 "Rojo"
-INSERT COLORES 00 "Azul"
-INSERT COLORES 3119 "Amarillo"
-INSERT COLORES 89 "Verde"
-CREATE COSAS SC 9 35000
-DESCRIBE
-INSERT COSAS 38273 "Computadora"
-SELECT COLORES 00
-INSERT COSAS 889 "Mouse"
-INSERT COSAS 1 "Libro"
-INSERT COLORES 163 "Rojo"
-INSERT COSAS 332 "Vaso"
-SELECT COSAS 332
-INSERT COLORES 11 "Azul"
-INSERT COLORES 56278 "Naranja"
-INSERT COSAS 8291 "Cable"
-CREATE ANIMALES SC 5 65000
-INSERT COSAS 123 "Marcador"
-DESCRIBE
-INSERT ANIMALES 11 "Vaca"
-SELECT COSAS 123
-INSERT ANIMALES 318 "Gato"
-SELECT COLORES 163
-INSERT COLORES 8109 "Verde"
-INSERT COLORES 56278 "Plateado"
-INSERT COLORES 9 "Negro"
-SELECT ANIMALES 11
-SELECT COLORES 9
-INSERT COSAS 123 "Taza"
-DESCRIBE COSAS
-INSERT COSAS 332 "Vaso"
-INSERT ANIMALES 11 "Perro"
-SELECT ANIMALES 11
-INSERT COSAS 332 "Notebook"
-INSERT COSAS 332 "Lapicera"
-INSERT ANIMALES 11 "Oso"
-INSERT ANIMALES 319 "Cebra"
-INSERT COLORES 9 "Gris"
-INSERT COSAS 123 "Celular"
-SELECT COLORES 9
-INSERT ANIMALES 319 "Oso polar"
-INSERT ANIMALES 319 "Oso hormiguero"
-INSERT ANIMALES 901 "Paloma"
-SELECT COSAS 8291
-SELECT ANIMALES 319
-DESCRIBE ANIMALES
-INSERT COSAS 124 "Celular"
-SELECT COSAS 123
-SELECT COLORES 00
-SELECT COSAS 332
-INSERT COSAS 125 "Celular"
-SELECT ANIMALES 901
-SELECT COSAS 1
-SELECT COSAS 332
-CREATE COLORES SC 2 35000
-DESCRIBE COLORES
-INSERT COLORES 3119 "Rojo"
-INSERT COLORES 00 "Azul"
-INSERT COLORES 3119 "Amarillo"
-INSERT COLORES 89 "Verde"
-CREATE COSAS SC 9 35000
-DESCRIBE
-SELECT COLORES 89
-SELECT COLORES 00
-INSERT COSAS 38273 "Computadora"
-INSERT COSAS 889 "Mouse"
-INSERT COSAS 1 "Libro"
-SELECT COSAS 1
-INSERT COSAS 8291 "Cable"
-INSERT ANIXXXXXES 14 "Pato"
-INSERT COSAS 123 "Marcador"
-SELECT COSAS 123
-INSERT ANIMALES 11 "Vaca"
-INSERT ANIMALES 318 "Gato"
-INSERT COSAS 124 "Celular"
-SELECT COSAS 124
-INSERT COSAS 125 "Celular"
-CREATE PELICULAS SC 2 35000
-DESCRIBE PELICULAS
-INSERT PELICULAS 3128 "Terminator"
-INSERT PELICULAS 10 "Nemo"
-SERIES PELICULAS 3128
-INSERT PELICULAS 3128 "El rey leon"
-CREATE SERIES SC 6 65000
-DESCRIBE SERIES
-INSERT SERIES 89 "Lost"
-CREATE LIBROS SC 2 35000
-DESCRIBE
-INSERT PELICULAS 38273 "Monsters inc"
-SELECT SERIES 89
-SELECT PELICULAS 3128
-INSERT LIBROS 889 "Harry Potter"
-INSERT LIBROS 190 "Avatar"
-INSERT SERIES 163 "GoT"
-INSERT SERIES 332 "Lie to me"
-SELECT SERIES 163
-INSERT SERIES 163 "Doctor House"
-INSERT PELICULAS 56278 "UP"
-INSERT LIBROS 190 "Dracula"
-INSERT PELICULAS 123 "Marcador"
-INSERT PELICULAS 11 "Vaca"
-SELECT COSAS 123
-SELECT SERIES 163
-CREATE NOVELAS_ARGENTINAS SC 6 10000
-DESCRIBE
-INSERT NOVELAS_ARGENTINAS 9 "Patito feo"
-SELECT SERIES 89
-SELECT LIBROS 190
-SELECT SERIES 163
-INSERT PELICULAS 123 "Taza"
-INSERT PELICULAS 332 "Vaso"
-INSERT NOVELAS_ARGENTINAS 10 "Sos mi vida"
-INSERT PELICULAS 332 "Lapicera"
-INSERT PELICULAS 3128 "Big fish"
-SELECT NOVELAS_ARGENTINAS 10"
-INSERT PELICULAS 9 "Shrek"
-SELECT PELICULAS 9
-INSERT SERIES 163 "Friends"
-INSERT NOVELAS_ARGENTINAS 10 "Valientes"
-SELECT SERIES 163
-INSERT LIBROS 319 "La biblia"
-INSERT LIBROS 319 "Crepusculo"
-INSERT LIBROS 901 "El hobbit"
-SELECT PELICULAS 8291
-SELECT PELICULAS 3128
-SELECT NOVELAS_ARGENTINAS 10
-INSERT PELICULAS 124 "UP"
-SELECT PELICULAS 332
-INSERT LIBROS 18902 "El principito"
-INSERT NOVELAS_ARGENTINAS 10 "Floricienta"
-INSERT LIBROS 42229 "Heidi"
-SELECT NOVELAS_ARGENTINAS 10
-INSERT LIBROS 125 "Sinceramente"
-SELECT LIBROS 124
-SELECT LIBROS 125
-SELECT PELICULAS 9
-CREATE PELICULAS SC 10 10000
-INSERT PELICULAS 163 "Nemo"
-INSERT PELICULAS 10 "Toy Story"
-INSERT PELICULAS 1110 "Harry Potter"
-SELECT PELICULAS 10
-INSERT PELICULAS 13535 "Titanic"
-INSERT PELICULAS 922 "Ratatouille"
-INSERT PELICULAS 4829 "Aladdin"
-INSERT PELICULAS 2516 "Godzilla"
-SELECT PELICULAS 4829
-INSERT PELICULAS 3671 "Avatar"
-SELECT PELICULAS 163
+==5742==
+==5742== HEAP SUMMARY:
+==5742==     in use at exit: 84,894 bytes in 1,337 blocks
+==5742==   total heap usage: 22,321 allocs, 20,984 frees, 6,764,743 bytes allocated
+==5742==
+==5742== 8 bytes in 1 blocks are definitely lost in loss record 30 of 130
+==5742==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4047E01: list_create (in /usr/lib/libcommons.so)
+==5742==    by 0x8049FD9: configuracion_inicial (inicial.c:45)
+==5742==    by 0x804A1F2: main (kernel.c:26)
+==5742==
+==5742== 8 bytes in 1 blocks are definitely lost in loss record 31 of 130
+==5742==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x8049B1D: agregar_tablas_nuevas.8067 (describe.c:39)
+==5742==    by 0x4048148: list_iterate (in /usr/lib/libcommons.so)
+==5742==    by 0x8049BFA: describe_agregar_tablas_nuevas (describe.c:49)
+==5742==    by 0x8049A2D: realizarDescribeGeneral (describe.c:19)
+==5742==    by 0x804A989: TH_describe (kernel.c:218)
+==5742==    by 0x4098294: start_thread (pthread_create.c:333)
+==5742==    by 0x41960AD: clone (clone.S:114)
+==5742==
+==5742== 12 (8 direct, 4 indirect) bytes in 1 blocks are definitely lost in loss record 43 of 130
+==5742==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x804F28F: respuesta_error (comunicacion.c:1048)
+==5742==    by 0x8050706: parser_lql (parser.c:159)
+==5742==    by 0x804A3D4: retorno_consola (kernel.c:78)
+==5742==    by 0x8051BBF: leer_por_consola (parser.c:748)
+==5742==    by 0x4098294: start_thread (pthread_create.c:333)
+==5742==    by 0x41960AD: clone (clone.S:114)
+==5742==
+==5742== 24 bytes in 1 blocks are definitely lost in loss record 67 of 130
+==5742==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x804A3C1: retorno_consola (kernel.c:77)
+==5742==    by 0x8051BBF: leer_por_consola (parser.c:748)
+==5742==    by 0x4098294: start_thread (pthread_create.c:333)
+==5742==    by 0x41960AD: clone (clone.S:114)
+==5742==
+==5742== 44 bytes in 4 blocks are definitely lost in loss record 76 of 130
+==5742==    at 0x402E2CC: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x40470E7: string_append (in /usr/lib/libcommons.so)
+==5742==    by 0x4047A5E: _string_append_with_format_list (in /usr/lib/libcommons.so)
+==5742==    by 0x40471D3: string_from_vformat (in /usr/lib/libcommons.so)
+==5742==    by 0x4047171: string_from_format (in /usr/lib/libcommons.so)
+==5742==    by 0x8050C79: parser_lql (parser.c:267)
+==5742==    by 0x804A3D4: retorno_consola (kernel.c:78)
+==5742==    by 0x8051BBF: leer_por_consola (parser.c:748)
+==5742==    by 0x4098294: start_thread (pthread_create.c:333)
+==5742==    by 0x41960AD: clone (clone.S:114)
+==5742==
+==5742== 52 (16 direct, 36 indirect) bytes in 2 blocks are definitely lost in loss record 78 of 130
+==5742==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x8051150: crear_instruccion (parser.c:383)
+==5742==    by 0x80500AE: parser_lql (parser.c:48)
+==5742==    by 0x804A3D4: retorno_consola (kernel.c:78)
+==5742==    by 0x8051BBF: leer_por_consola (parser.c:748)
+==5742==    by 0x4098294: start_thread (pthread_create.c:333)
+==5742==    by 0x41960AD: clone (clone.S:114)
+==5742==
+==5742== 56 bytes in 2 blocks are definitely lost in loss record 83 of 130
+==5742==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x804D8E7: crear_conexion (comunicacion.c:524)
+==5742==    by 0x804D7BA: enviar_instruccion (comunicacion.c:500)
+==5742==    by 0x804B137: logicaSelect (logicaInstrucciones.c:149)
+==5742==    by 0x804A655: ejecutar (kernel.c:133)
+==5742==    by 0x4098294: start_thread (pthread_create.c:333)
+==5742==    by 0x41960AD: clone (clone.S:114)
+==5742==
+==5742== 136 bytes in 1 blocks are possibly lost in loss record 89 of 130
+==5742==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5742==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5742==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5742==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5742==    by 0x804A227: main (kernel.c:37)
+==5742==
+==5742== 136 bytes in 1 blocks are possibly lost in loss record 90 of 130
+==5742==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5742==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5742==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5742==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5742==    by 0x804A24B: main (kernel.c:40)
+==5742==
+==5742== 136 bytes in 1 blocks are possibly lost in loss record 91 of 130
+==5742==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5742==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5742==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5742==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5742==    by 0x804A26F: main (kernel.c:43)
+==5742==
+==5742== 136 bytes in 1 blocks are possibly lost in loss record 92 of 130
+==5742==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5742==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5742==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5742==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5742==    by 0x804A293: main (kernel.c:46)
+==5742==
+==5742== 136 bytes in 1 blocks are possibly lost in loss record 93 of 130
+==5742==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5742==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5742==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5742==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5742==    by 0x804A2BA: main (kernel.c:49)
+==5742==
+==5742== 136 bytes in 1 blocks are possibly lost in loss record 94 of 130
+==5742==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5742==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5742==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5742==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5742==    by 0x804A2DE: main (kernel.c:52)
+==5742==
+==5742== 136 bytes in 1 blocks are possibly lost in loss record 95 of 130
+==5742==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5742==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5742==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5742==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5742==    by 0x804A302: main (kernel.c:55)
+==5742==
+==5742== 136 bytes in 17 blocks are definitely lost in loss record 96 of 130
+==5742==    at 0x402C17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4047E01: list_create (in /usr/lib/libcommons.so)
+==5742==    by 0x804BDB8: calculoMetrics (metrics.c:16)
+==5742==    by 0x4098294: start_thread (pthread_create.c:333)
+==5742==    by 0x41960AD: clone (clone.S:114)
+==5742==
+==5742== 544 bytes in 4 blocks are possibly lost in loss record 105 of 130
+==5742==    at 0x402E0B8: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5742==    by 0x4011726: allocate_dtv (dl-tls.c:322)
+==5742==    by 0x401214B: _dl_allocate_tls (dl-tls.c:539)
+==5742==    by 0x4098CC3: allocate_stack (allocatestack.c:588)
+==5742==    by 0x4098CC3: pthread_create@@GLIBC_2.1 (pthread_create.c:539)
+==5742==    by 0x804A32F: main (kernel.c:61)
+==5742==
+==5742== LEAK SUMMARY:
+==5742==    definitely lost: 300 bytes in 29 blocks
+==5742==    indirectly lost: 40 bytes in 5 blocks
+==5742==      possibly lost: 1,496 bytes in 11 blocks
+==5742==    still reachable: 83,058 bytes in 1,292 blocks
+==5742==         suppressed: 0 bytes in 0 blocks
+==5742== Reachable blocks (those to which a pointer was found) are not shown.
+==5742== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==5742==
+==5742== For counts of detected and suppressed errors, rerun with: -v
+==5742== ERROR SUMMARY: 16 errors from 16 contexts (suppressed: 0 from 0)

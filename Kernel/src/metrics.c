@@ -74,9 +74,7 @@ void calculoMetrics(){
 			WRITE_LAT = 0;
 		}
 
-		if(MEM_LOAD->elements_count > 0){
-			list_clean_and_destroy_elements(MEM_LOAD, (void*)free);
-		}
+		list_destroy_and_destroy_elements(MEM_LOAD, (void*)free);
 
 		/*//PARA ORDENAR LA LISTA Y QUE QUEDE MAS LINDO, NO LE GUSTA EL BOOL*
 

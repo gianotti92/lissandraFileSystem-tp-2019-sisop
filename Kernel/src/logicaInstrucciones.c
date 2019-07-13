@@ -5,6 +5,7 @@ void logicaRun(Proceso * proceso){
 
 	if(proximainstruccionChar != NULL){
 		proceso->instruccionAProcesar = parser_lql(proximainstruccionChar, KERNEL);
+		free(proximainstruccionChar);
 		switch(proceso->instruccionAProcesar->instruccion){
 			case CREATE:;
 				logicaCreate(proceso);
@@ -39,10 +40,10 @@ void logicaRun(Proceso * proceso){
 				break;
 			case ERROR:;
 				log_error(LOG_ERROR, "Error en la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
-				free(proceso->instruccionAProcesar->instruccion_a_realizar);
-				free(proceso->instruccionAProcesar);
+				free_retorno(proceso->instruccionAProcesar);
 				break;
 			default:
+				free_retorno(proceso->instruccionAProcesar);
 				break;
 		}
 		proceso->numeroInstruccion += 1;
@@ -69,15 +70,20 @@ void logicaCreate(Proceso * proceso){
 			nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 			nuevoAcum->instruccion = inst;
 			nuevoAcum->id_memoria = memoria->idMemoria;
-			list_add(proceso->metricas, nuevoAcum);
+			pthread_mutex_lock(&mutex_metrics);
+			list_add(acum30sMetrics, nuevoAcum);
+			pthread_mutex_unlock(&mutex_metrics);
 			realizarDescribeGeneral();
 		}
 		print_instruccion_parseada(instruccionRespuesta);
-		list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 		eliminar_memoria(memoria);
 	}else{
 		log_error(LOG_ERROR, "No hay memorias asignadas a este criterio");
+		free(((Create*) proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
+		free((Create*) proceso->instruccionAProcesar->instruccion_a_realizar);
+		free(proceso->instruccionAProcesar);
 	}
+	list_destroy_and_destroy_elements(memoriasAsoc, (void*)eliminar_memoria);
 }
 
 void logicaAdd(Proceso * proceso){
@@ -111,7 +117,9 @@ void logicaAdd(Proceso * proceso){
 				nuevoAcum->tiempo = difftime(get_timestamp(), initial_time);
 				nuevoAcum->instruccion = JOURNAL;
 				nuevoAcum->id_memoria = memoria->idMemoria;
-				list_add(proceso->metricas, nuevoAcum);
+				pthread_mutex_lock(&mutex_metrics);
+				list_add(acum30sMetrics, nuevoAcum);
+				pthread_mutex_unlock(&mutex_metrics);
 			}
 			free_retorno(instruccionRespuesta);
 			aux++;
@@ -152,7 +160,9 @@ void logicaSelect(Proceso * proceso){
 				nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 				nuevoAcum->instruccion = inst;
 				nuevoAcum->id_memoria = mem->idMemoria;
-				list_add(proceso->metricas, nuevoAcum);
+				pthread_mutex_lock(&mutex_metrics);
+				list_add(acum30sMetrics, nuevoAcum);
+				pthread_mutex_unlock(&mutex_metrics);
 			}
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(mem);
@@ -197,7 +207,9 @@ void logicaInsert(Proceso *proceso){
 				nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 				nuevoAcum->instruccion = inst;
 				nuevoAcum->id_memoria = mem->idMemoria;
-				list_add(proceso->metricas, nuevoAcum);
+				pthread_mutex_lock(&mutex_metrics);
+				list_add(acum30sMetrics, nuevoAcum);
+				pthread_mutex_unlock(&mutex_metrics);
 			}
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(mem);
@@ -242,7 +254,9 @@ void logicaDrop(Proceso *proceso){
 				nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 				nuevoAcum->instruccion = inst;
 				nuevoAcum->id_memoria = mem->idMemoria;
-				list_add(proceso->metricas, nuevoAcum);
+				pthread_mutex_lock(&mutex_metrics);
+				list_add(acum30sMetrics, nuevoAcum);
+				pthread_mutex_unlock(&mutex_metrics);
 			}
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(mem);
@@ -284,7 +298,9 @@ void logicaJournal(Proceso *proceso){
 				nuevoAcum->tiempo = difftime(get_timestamp(), initial_time);
 				nuevoAcum->instruccion = proceso->instruccionAProcesar->instruccion;
 				nuevoAcum->id_memoria = memoria->idMemoria;
-				list_add(proceso->metricas, nuevoAcum);
+				pthread_mutex_lock(&mutex_metrics);
+				list_add(acum30sMetrics, nuevoAcum);
+				pthread_mutex_unlock(&mutex_metrics);
 			}
 			free_retorno(instruccionRespuesta);
 			aux++;
@@ -325,7 +341,9 @@ void logicaDescribe(Proceso *proceso){
 					nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 					nuevoAcum->instruccion = inst;
 					nuevoAcum->id_memoria = mem->idMemoria;
-					list_add(proceso->metricas, nuevoAcum);
+					pthread_mutex_lock(&mutex_metrics);
+					list_add(acum30sMetrics, nuevoAcum);
+					pthread_mutex_unlock(&mutex_metrics);
 				}
 				print_instruccion_parseada(instruccionRespuesta);
 				eliminar_memoria(mem);
@@ -345,7 +363,9 @@ void logicaDescribe(Proceso *proceso){
 			nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 			nuevoAcum->instruccion = inst;
 			nuevoAcum->id_memoria = 1;
-			list_add(proceso->metricas, nuevoAcum);
+			pthread_mutex_lock(&mutex_metrics);
+			list_add(acum30sMetrics, nuevoAcum);
+			pthread_mutex_unlock(&mutex_metrics);
 		}
 		print_instruccion_parseada(instruccionRespuesta);
 		return;
