@@ -147,6 +147,8 @@ void configuracion_inicial(){
 	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
 	instruccion_maxValue->instruccion = MAX_VALUE;
 	fd_disponibles = dictionary_create();
+	fd_desafectados = list_create();
+
 	Instruccion* respuesta = enviar_instruccion(IP_FS,PUERTO_FS, instruccion_maxValue, POOLMEMORY, T_VALUE);
 
 	if (respuesta->instruccion == RETORNO) {

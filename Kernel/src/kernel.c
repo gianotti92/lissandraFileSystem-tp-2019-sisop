@@ -30,6 +30,7 @@ int main(int argc, char* argv[])  {
 	iniciarEstructurasAsociadas();
 	
 	fd_disponibles = dictionary_create();
+	fd_desafectados = list_create();
 	
 	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, finalizarProceso, calcularMetrics, T_confMonitor, T_describe;
 

@@ -31,6 +31,7 @@ t_log * LOG_ERROR_SV;
 t_log * LOG_OUTPUT_SV;
 char* PATH_CONFIG;
 t_dictionary *fd_disponibles;
+t_list *fd_desafectados;
 void configure_logger(void);
 void exit_gracefully(int error);
 char *consistencia2string(Consistencias consistencia);
@@ -44,6 +45,7 @@ char *get_local_ip(void);
 Memoria *duplicar_memoria(Memoria *memoria);
 Retorno_Describe *duplicar_describe(Retorno_Describe *describe);
 t_list * list_duplicate_all(t_list *lista, void*(*duplicador)(void*), pthread_mutex_t mutex);
+
 /**
 * @NAME: elimina_memoria()
 * @DESC: para eliminar las memorias de una lista de gossip

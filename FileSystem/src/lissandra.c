@@ -24,6 +24,7 @@ int main(int argc, char* argv[]) {
 
 	configure_logger();
 	fd_disponibles = dictionary_create();
+	fd_desafectados = list_create();
 	pthread_mutex_init(&memtableMutex,NULL);
 	pthread_mutex_init(&tableMetadataMutex,NULL);
 
