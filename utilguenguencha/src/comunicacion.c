@@ -498,8 +498,8 @@ bool recibir_buffer(int aux1, Instruccion *instruccion, Tipo_Comunicacion tipo_c
 
 Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion, Procesos proceso_del_que_envio, Tipo_Comunicacion tipo_comu) {
 	Connection *conn = crear_conexion(ip, puerto);
+	t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
 	if(conn != NULL){
-		t_paquete * paquete = crear_paquete(tipo_comu, proceso_del_que_envio, instruccion);
 		pthread_mutex_lock(&conn->mutex);
 		if (enviar_paquete(paquete, conn->fd)) {
 			eliminar_paquete(paquete);
@@ -509,12 +509,11 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 			return respuesta;
 		}else{
 			fsync(conn->fd);
-			eliminar_paquete(paquete);
 			pthread_mutex_unlock(&conn->mutex);
 			desafectar_conn(ip, puerto);
 		}
 	}
-
+	eliminar_paquete(paquete);
 	return respuesta_error(CONNECTION_ERROR);
 }
 
