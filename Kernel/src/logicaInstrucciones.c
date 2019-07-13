@@ -49,7 +49,7 @@ void logicaRun(Proceso * proceso){
 		proceso->numeroInstruccion += 1;
 		proceso->quantumProcesado += 1;
 	}else{
-		log_info(LOG_DEBUG, "Termine de ejecutar el script %s, %d lineas terminadas", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
+		log_info(LOG_INFO, "Termine de ejecutar el script %s, %d lineas terminadas", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
 		free(((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 		free(proceso->instruccion->instruccion_a_realizar);
 		free(proceso->instruccion);
