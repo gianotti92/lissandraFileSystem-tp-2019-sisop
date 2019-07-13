@@ -33,7 +33,6 @@ typedef struct{
 	Instruccion* instruccionAProcesar;
 	int quantumProcesado;
 	int numeroInstruccion;
-	t_list *metricas;
 	bool fin_proceso;
 }Proceso;
 

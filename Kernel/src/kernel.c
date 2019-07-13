@@ -71,7 +71,6 @@ void retorno_consola(char* leido) {
 		pthread_mutex_lock(&mutex_disp);
 		list_iterate(lista_disp, (void*)mostrar_memoria);
 		pthread_mutex_unlock(&mutex_disp);
-		free(leido);
 		return;
 	}
 	Instruccion * instruccion = parser_lql(leido, KERNEL);
@@ -81,7 +80,6 @@ void retorno_consola(char* leido) {
 		proceso->instruccionAProcesar = NULL;
 		proceso->numeroInstruccion = 0;
 		proceso->quantumProcesado = 0;
-		proceso->metricas = list_create();
 		encolar(estadoNew, proceso);
 		sem_post(&semaforoNewToReady);
 	} else {
@@ -228,15 +226,6 @@ void finalizar_procesos(void){
 	while(true){
 		sem_wait(&semaforoFinalizar);
 		Proceso * proceso = desencolar(estadoExit);
-		if(proceso != NULL){
-			void agregar_metrics(AcumMetrics *metrics){
-				pthread_mutex_lock(&mutex_metrics);
-				list_add(acum30sMetrics, metrics);
-				pthread_mutex_unlock(&mutex_metrics);
-			}
-			list_iterate(proceso->metricas, (void*)agregar_metrics);
-			list_destroy(proceso->metricas);
-			free(proceso);
-		}
+		free(proceso);
 	}
 }

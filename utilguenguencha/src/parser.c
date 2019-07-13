@@ -15,11 +15,10 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 
 	char * palabra = malloc(strlen(consulta) +1);
 	strcpy(palabra, consulta);
-	free(consulta);
-	consulta = string_from_format("%s %ju", palabra, (uintmax_t) echo_time);
+	char * palabra2 = string_from_format("%s %ju", palabra, (uintmax_t) echo_time);
 	free(palabra);
-	char** consulta_separada = string_split(consulta, " ");
-	free(consulta);
+	char** consulta_separada = string_split(palabra2, " ");
+	free(palabra2);
 
 	int length = cantidad_elementos(consulta_separada) - 1;
 
@@ -270,7 +269,7 @@ Instruccion* parser_lql(char* consulta, Procesos procesoOrigen) {
 				free(palabra1);
 				return respuesta_error(BAD_REQUEST);
 		} else {
-
+			free(palabra1);
 			// es ADD MEMORY
 			Add * nuevoAddMemory = malloc(sizeof(Add));
 

@@ -68,6 +68,7 @@ void describe_eliminar_tabla(char*nombre_tabla,Consistencias cs){
 	bool removecondition(Table_Metadata* eliminar){
 		if(!strcmp(nombre_tabla,eliminar->tablename) && eliminar->consistencia == cs) {
 			free(eliminar->tablename);
+			free(eliminar);
 			return true;
 		}
 		return false;
