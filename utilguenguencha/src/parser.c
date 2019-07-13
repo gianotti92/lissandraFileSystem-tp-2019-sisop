@@ -742,12 +742,14 @@ void leer_por_consola(void (*f)(char*)) {
 	char* leido;
 
 	leido = readline(">>");
-	add_history(leido);
 
 	while (!string_equals_ignore_case(leido, "EXIT")) {
-		f(leido);
+		if(!string_equals_ignore_case(leido, "\n")){
+			add_history(leido);
+			f(leido);
+		}
+		free(leido);
 		leido = readline("\n>>");
-		add_history(leido);
 	}
 
 	free(leido);

@@ -74,9 +74,9 @@ void retorno_consola(char* leido) {
 		free(leido);
 		return;
 	}
-	Proceso * proceso = malloc(sizeof(Proceso));
 	Instruccion * instruccion = parser_lql(leido, KERNEL);
 	if (instruccion->instruccion != ERROR) {
+		Proceso * proceso = malloc(sizeof(Proceso));
 		proceso->instruccion = instruccion;
 		proceso->instruccionAProcesar = NULL;
 		proceso->numeroInstruccion = 0;
@@ -84,6 +84,8 @@ void retorno_consola(char* leido) {
 		proceso->metricas = list_create();
 		encolar(estadoNew, proceso);
 		sem_post(&semaforoNewToReady);
+	} else {
+		free_retorno(instruccion);
 	}
 }
 
