@@ -94,6 +94,10 @@ void loadCurrentTableMetadata(void){
 				char*filename=malloc(strlen(global_conf.directorio_tablas)+strlen(dir->d_name)+1+12+1);
 				sprintf(filename,"%s%s/Metadata.txt",global_conf.directorio_tablas,dir->d_name);
 				t_config* conf = config_create(filename);
+				if(conf == NULL){
+					free(filename);
+					continue;
+				}
 				struct tableMetadataItem *item = malloc(sizeof(struct tableMetadataItem));
 				pthread_rwlock_init(&item->lock,NULL);
 				item->endFlag=0;

@@ -82,7 +82,11 @@ int getNumLastFile(char* prefix,char* extension,char* path) {
 
 struct tableMetadataItem* get_table_metadata(char* tabla){
 	bool criterioTablename(struct tableMetadataItem* t){
-		return !strcmp(tabla,t->tableName);
+		if(t != NULL && t->tableName != NULL){
+			return !strcmp(tabla,t->tableName);
+		}else{
+			return false;
+		}
 	}
 	pthread_mutex_lock(&tableMetadataMutex);
 	struct tableMetadataItem* found = list_find(global_table_metadata,(void*)criterioTablename);

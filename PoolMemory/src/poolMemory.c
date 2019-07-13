@@ -21,8 +21,8 @@ int main(int argc, char* argv[]) {
 	configuracion_inicial();
 	inicializar_memoria();
 
-	print_guenguencha();
-	printf("SOY MEMORIA: %d \n", NUMERO_MEMORIA);
+	print_guenguencha("POOLMEMORY");
+	printf("MEMORIA: %d \n", NUMERO_MEMORIA);
 
 	L_MEMORIAS = list_create();
 	pthread_t consolaPoolMemory, gossiping, journaling, servidorPM, T_confMonitor;

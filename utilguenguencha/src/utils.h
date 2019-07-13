@@ -38,7 +38,7 @@ char *consistencia2string(Consistencias consistencia);
 int string2consistencia(char* consistencia);
 int monitorNode(char * node,int mode,int(*callback)(void));
 void eliminar_y_cerrar_fd_abiertos(int * fd);
-void print_guenguencha(void);
+void print_guenguencha(char* quien_soy);
 char LOCAL_IP[16];
 void handler(int s);
 char *get_local_ip(void);

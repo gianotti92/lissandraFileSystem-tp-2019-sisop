@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
 	initMemtable();
 	initTableMetadata();
 
-	print_guenguencha();
+	print_guenguencha("FILESYSTEM");
 
 	/*
 		** Creacion de Hilos **

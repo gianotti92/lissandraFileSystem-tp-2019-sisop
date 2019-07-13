@@ -24,7 +24,7 @@ int main(int argc, char* argv[])  {
 
 	configure_logger();
 	configuracion_inicial();
-	print_guenguencha();
+	print_guenguencha("  KERNEL  ");
 
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
