@@ -5,16 +5,26 @@ void *TH_dump(void* p);
 void *TH_server(void * p);
 void TH_consola(char* leido);
 
-int main(void) {
+int main(int argc, char* argv[]) {
 	/*
 		** Inicializaciones **
 	*/
-	print_guenguencha();
 	pthread_t T_consola,T_server,T_confMonitor,T_dump;
 	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump;
 
+	if (argc == 1) {
+		PATH_CONFIG = "config.cfg";
+	} else if (argc == 2) {
+		PATH_CONFIG = argv[1];
+	} else {
+		log_error(LOG_ERROR,"Solo se acepta un argumento (PATH CONFIG) o ninguno para tomar config.cfg.");
+		exit(EXIT_FAILURE);
+	}
+
+
 	configure_logger();
 	fd_disponibles = dictionary_create();
+	fd_desafectados = list_create();
 	pthread_mutex_init(&memtableMutex,NULL);
 	pthread_mutex_init(&tableMetadataMutex,NULL);
 
@@ -40,6 +50,8 @@ int main(void) {
 	// Memtable & Table Metadata
 	initMemtable();
 	initTableMetadata();
+
+	print_guenguencha();
 
 	/*
 		** Creacion de Hilos **
@@ -145,9 +157,9 @@ void TH_consola(char* leido){
 void *TH_confMonitor(void * p){
 
 	int confMonitor_cb(void){
-		t_config* conf = config_create("config.cfg");
+		t_config* conf = config_create(PATH_CONFIG);
 		if(conf == NULL) {
-			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
+			log_error(LOG_ERROR,"Archivo de configuracion: %s no encontrado", PATH_CONFIG);
 			return 1;
 		}
 		printf("conf: %p",conf);

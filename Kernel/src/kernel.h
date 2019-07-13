@@ -94,6 +94,9 @@ void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistenci
 void finalizar_procesos(void);
 AcumuladorMemoria* dameAcumulador(int id_memoria, t_list* lista_acumuladores);
 char* leer_linea(char* path, int linea);
+void quitarSiExiste(t_list * list, Memoria *m);
+int posicion_memoria_en(Memoria *mem1, t_list* lista);
+void desasignar_bajas(t_list* lista_vieja);
 
 
 // Variables del proceso

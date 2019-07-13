@@ -8,6 +8,7 @@ typedef struct {
 	pthread_mutex_t mutex;
 }Connection;
 
+
 /**
 * @NAME: iniciar_servidor
 * @DESC: Es la funcion que inicia los parametros para recibir en localhost:puerto
@@ -208,6 +209,28 @@ Connection *get_conn(char* ip, char* puerto);
 * @DESC: pone el fd en el diccionario y devuelve un puntero al mismo
 */
 Connection *update_conn(char *ip, char *puerto, Connection *conn);
+/**
+* @NAME: desafectar_conn()
+* @DESC: desafecta una conececcion del listado de disponibles
+*/
+void desafectar_conn(char* ip, char* puerto);
+
+void desafectar_conn(char* ip, char* puerto){
+	char *key = string_new();
+	string_append(&key, ip);
+	string_append(&key, puerto);
+
+	pthread_mutex_lock(&mutex_diccionario_fd);
+	Connection* conn_old = dictionary_remove(fd_disponibles, key);
+	pthread_mutex_unlock(&mutex_diccionario_fd);
+
+	list_add(fd_desafectados, conn_old);
+
+	free(key);
+
+}
+
+
 
 Connection *get_conn(char *ip, char *puerto){
 	char *key = string_new();
@@ -490,6 +513,9 @@ Instruccion *enviar_instruccion(char* ip, char* puerto, Instruccion *instruccion
 			pthread_mutex_unlock(&conn->mutex);
 		}
 	}
+
+	desafectar_conn(ip, puerto);
+
 	return respuesta_error(CONNECTION_ERROR);
 }
 

@@ -81,11 +81,36 @@ void lanzar_gossiping(){
 				pthread_mutex_destroy(&mutexito);
 				lista_disp = nuevas_disp;
 				pthread_mutex_unlock(&mutex_disp);
+
+				desasignar_bajas(lista_memorias_disponibles_vieja);
+
 				list_destroy_and_destroy_elements(lista_memorias_disponibles_vieja, (void*)eliminar_memoria);
 			}
 		}
 		free_retorno(resp);
 	}
+}
+
+void desasignar_bajas(t_list* lista_vieja){
+
+	int posicion = (lista_vieja->elements_count -1);
+	Memoria* mem;
+	int posicion_disp;
+
+	while (posicion >= 0) {
+
+		mem = list_get(lista_vieja, posicion);
+		posicion_disp = posicion_memoria_en(mem, lista_disp);
+
+		if (posicion_disp<0){
+			quitarSiExiste(lista_ec, mem);
+			quitarSiExiste(lista_sc, mem);
+			quitarSiExiste(lista_shc, mem);
+		}
+
+		posicion--;
+	}
+
 }
 
 Memoria *get_memoria(int idMemoria, Consistencias consistencia){
@@ -120,6 +145,21 @@ bool existe_memoria_en(Memoria *mem1, t_list* lista){
 		return false;
 }
 
+int posicion_memoria_en(Memoria *mem1, t_list* lista){
+		int aux = (lista->elements_count -1);
+		Memoria * mem2;
+
+		while(aux >= 0){
+			mem2 = list_get(lista, aux);
+
+	       	if(strcmp(mem1->ip, mem2->ip) == 0 && strcmp(mem1->puerto, mem2->puerto) == 0){
+               	return aux;
+	       	}
+	       	aux --;
+		}
+		return -1;
+}
+
 void mostrarId(Memoria * memoria){
 	printf("%d ", memoria->idMemoria);
 }
@@ -128,6 +168,14 @@ void agregarSiNoExiste(t_list * list, Memoria *m){
 		if(!existe_memoria_en(m, list)){
 			Memoria * mem = duplicar_memoria(m);
 			list_add(list, mem);
+       }
+}
+
+void quitarSiExiste(t_list * list, Memoria *m){
+		int posicion = posicion_memoria_en(m, list);
+		if(posicion >= 0){
+			Memoria * mem = list_remove(list, posicion);
+			eliminar_memoria(mem);
        }
 }
 

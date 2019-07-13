@@ -31,7 +31,7 @@ t_list* L_MEMORIAS;
 t_list* L_SEEDS;
 
 
-pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias, mutexListaMemorias;
+pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias, mutexListaGossip;
 sem_t semJournal;
 
 //  estructuras
@@ -48,7 +48,7 @@ typedef struct{
 
 
 // Funciones del proceso
-void configuracion_inicial(char*);
+void configuracion_inicial();
 void retorno_consola(char* leido);
 void inicializar_memoria(void);
 Instruccion* atender_consulta (Instruccion*);
@@ -84,6 +84,8 @@ void lanzar_gossiping(void);
 void gossipear(Memoria *mem);
 void add_memory_if_not_exists(Memoria *mem);
 bool existe_memoria(t_list *lista, Memoria *mem1);
+void sacar_memoria(Memoria *mem);
+int posicion_de_memoria(t_list *lista, Memoria *mem);
 void *TH_confMonitor(void * p);
 void marcar_ultimo_uso(int id_pagina);
 int marco_por_LRU(void);

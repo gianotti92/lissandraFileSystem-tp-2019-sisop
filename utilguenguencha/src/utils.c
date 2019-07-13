@@ -20,8 +20,10 @@ void exit_gracefully(int exit_code){
 	dictionary_destroy_and_destroy_elements(fd_disponibles, (void*)free);
 	log_destroy(LOG_INFO);
 	log_destroy(LOG_ERROR);
+	log_destroy(LOG_ERROR_SV);
 	log_destroy(LOG_DEBUG);
 	log_destroy(LOG_OUTPUT);
+	log_destroy(LOG_OUTPUT_SV);
 	exit(exit_code);
 }
 
@@ -153,4 +155,27 @@ void eliminar_memoria(Memoria * memoria){
 
 void mostrar_memoria(Memoria * memoria){
 	log_debug(LOG_DEBUG, "Memoria; %d, ip: %s, puerto: %s", memoria->idMemoria, memoria->ip, memoria->puerto);
+}
+
+char* config_get_string_value_check(t_config* config, char *key){
+	char * value = config_get_string_value(config, key);
+
+	if (value == NULL){
+		log_error(LOG_ERROR,"No se encontro %s en %s.", key, PATH_CONFIG);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	return value;
+}
+
+int config_get_int_value_check(t_config* config, char *key){
+
+	char * value = config_get_string_value(config, key);
+
+	if (value == NULL){
+		log_error(LOG_ERROR,"No se encontro %s en %s.", key, PATH_CONFIG);
+		exit_gracefully(EXIT_FAILURE);
+	}
+
+	return atoi(value);
 }

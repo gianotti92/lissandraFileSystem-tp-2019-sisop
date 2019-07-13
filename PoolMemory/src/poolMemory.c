@@ -2,23 +2,28 @@
 
 int main(int argc, char* argv[]) {
 
-	if (argc != 2) {
-		printf("SOLO HAY QUE INGRESAR UN ARGUMENTO (PATH DEL CONFIG), chinguenguencha!");
-		exit(EXIT_FAILURE);
-	}
-
 	pthread_mutex_init(&mutexMarcos, NULL);
 	pthread_mutex_init(&mutexSegmentos, NULL);
 	pthread_mutex_init(&mutexMemorias, NULL);
+	pthread_mutex_init(&mutexListaGossip, NULL);
 	sem_init(&semJournal, 0, 2);
 
-	print_guenguencha();
+	if (argc == 1) {
+		PATH_CONFIG = "config.cfg";
+	} else if (argc == 2) {
+		PATH_CONFIG = argv[1];
+	} else {
+		log_error(LOG_ERROR,"Solo se acepta un argumento (PATH CONFIG) o ninguno para tomar config.cfg.");
+		exit(EXIT_FAILURE);
+	}
 
 	configure_logger();
-	configuracion_inicial(argv[1]);
+	configuracion_inicial();
 	inicializar_memoria();
 
-	pthread_mutex_init(&mutexListaMemorias, NULL);
+	print_guenguencha();
+	printf("SOY MEMORIA: %d \n", NUMERO_MEMORIA);
+
 	L_MEMORIAS = list_create();
 	pthread_t consolaPoolMemory, gossiping, journaling, servidorPM, T_confMonitor;
 	void *TR_confMonitor;
@@ -58,63 +63,92 @@ int main(int argc, char* argv[]) {
 
 }
 
-void configuracion_inicial(char* path_config){
+void configuracion_inicial(){
 	t_config* CONFIG;
-	CONFIG = config_create(path_config);
-	usleep(10*1000);
+	CONFIG = config_create(PATH_CONFIG);
+
 	if (!CONFIG) {
-		free(path_config);
-		printf("Memoria: Archivo de configuracion no encontrado. \n");
+		free(PATH_CONFIG);
+		log_error(LOG_ERROR,"Archivo de configuracion no encontrado.");
 		exit_gracefully(EXIT_FAILURE);
 	}
-	char* config_puerto_escucha = config_get_string_value(CONFIG,"PUERTO_DE_ESCUCHA");
+
+	//PUERTO_DE_ESCUCHA
+	char* config_puerto_escucha = config_get_string_value_check(CONFIG,"PUERTO_DE_ESCUCHA");
 	PUERTO_DE_ESCUCHA = malloc(strlen(config_puerto_escucha) + 1);
 	strcpy(PUERTO_DE_ESCUCHA, config_puerto_escucha);
-	char* config_ip_fs = config_get_string_value(CONFIG,"IP_FS");
+
+	//IP_FS
+	char* config_ip_fs = config_get_string_value_check(CONFIG,"IP_FS");
 	IP_FS = malloc(strlen(config_ip_fs)+1);
 	strcpy(IP_FS, config_ip_fs);
-	char* config_puerto_fs = config_get_string_value(CONFIG,"PUERTO_FS");
+
+	//PUERTO_FS
+	char* config_puerto_fs = config_get_string_value_check(CONFIG,"PUERTO_FS");
 	PUERTO_FS = malloc(strlen(config_puerto_fs) + 1);
 	strcpy(PUERTO_FS, config_puerto_fs);
-	SIZE_MEM = config_get_int_value(CONFIG,"SIZE_MEM");
-	char** config_ip_seeds = config_get_array_value(CONFIG,"IP_SEEDS");
-	int i = 0;
 
-	while(config_ip_seeds[i]!= NULL){
-		IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
-		IP_SEEDS[i] = string_duplicate(config_ip_seeds[i]);
-		free(config_ip_seeds[i]);
-		i++;
+	//SIZE_MEM
+	SIZE_MEM = config_get_int_value_check(CONFIG, "SIZE_MEM");
+
+	//IP_SEEDS
+	char** config_ip_seeds = config_get_array_value(CONFIG,"IP_SEEDS");
+	int i_ip = 0;
+
+	while(config_ip_seeds[i_ip]!= NULL){
+		IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i_ip+1));
+		IP_SEEDS[i_ip] = string_duplicate(config_ip_seeds[i_ip]);
+		free(config_ip_seeds[i_ip]);
+		i_ip++;
 	}
 	free(config_ip_seeds);
-	IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i+1));
-	IP_SEEDS[i] = NULL;
+	IP_SEEDS = realloc(IP_SEEDS, sizeof(char*) * (i_ip+1));
+	IP_SEEDS[i_ip] = NULL;
 
-
+	//PUERTOS_SEEDS
 	char** config_puertos_seeds = config_get_array_value(CONFIG,"PUERTOS_SEEDS");
-	i = 0;
-	while(config_puertos_seeds[i]!= NULL){
-		PUERTOS_SEEDS= realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
-		PUERTOS_SEEDS[i] = string_duplicate(config_puertos_seeds[i]);
-		free(config_puertos_seeds[i]);
-		i++;
+	int i_pu = 0;
+	while(config_puertos_seeds[i_pu]!= NULL){
+		PUERTOS_SEEDS= realloc(PUERTOS_SEEDS, sizeof(char*) * (i_pu+1));
+		PUERTOS_SEEDS[i_pu] = string_duplicate(config_puertos_seeds[i_pu]);
+		free(config_puertos_seeds[i_pu]);
+		i_pu++;
 	}
 	free(config_puertos_seeds);
-	PUERTOS_SEEDS = realloc(PUERTOS_SEEDS, sizeof(char*) * (i+1));
-	PUERTOS_SEEDS[i] = NULL;
+	PUERTOS_SEEDS = realloc(PUERTOS_SEEDS, sizeof(char*) * (i_pu+1));
+	PUERTOS_SEEDS[i_pu] = NULL;
 
-	RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
-	RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
-	RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
-	RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
-	NUMERO_MEMORIA = config_get_int_value(CONFIG,"NUMERO_MEMORIA");
+	if (i_ip > i_pu){
+		log_error(LOG_ERROR,"Hay mas IP_SEEDS que PUERTOS_SEEDS en %s.", PATH_CONFIG);
+		exit_gracefully(EXIT_FAILURE);
+	} else if(i_ip < i_pu) {
+		log_error(LOG_ERROR,"Hay mas PUERTOS_SEEDS que IP_SEEDS en %s.", PATH_CONFIG);
+		exit_gracefully(EXIT_FAILURE);
+	}
 
-	printf("SOY MEMORIA: %d\n", NUMERO_MEMORIA);
+	//RETARDO_MEM
+	RETARDO_MEM = config_get_int_value_check(CONFIG,"RETARDO_MEM");
+
+	//RETARDO_FS
+	RETARDO_FS = config_get_int_value_check(CONFIG,"RETARDO_FS");
+
+	//RETARDO_JURNAL
+	RETARDO_JOURNAL = config_get_int_value_check(CONFIG,"RETARDO_JOURNAL");
+
+	//RETARDO_GOSSIPING
+	RETARDO_GOSSIPING = config_get_int_value_check(CONFIG,"RETARDO_GOSSIPING");
+
+	//NUMERO_MEMORIA
+	NUMERO_MEMORIA = config_get_int_value_check(CONFIG,"NUMERO_MEMORIA");
 
 	config_destroy(CONFIG);
+
+	//MAX_VALUE de FS
 	Instruccion* instruccion_maxValue = malloc(sizeof(Instruccion));
 	instruccion_maxValue->instruccion = MAX_VALUE;
 	fd_disponibles = dictionary_create();
+	fd_desafectados = list_create();
+
 	Instruccion* respuesta = enviar_instruccion(IP_FS,PUERTO_FS, instruccion_maxValue, POOLMEMORY, T_VALUE);
 
 	if (respuesta->instruccion == RETORNO) {
@@ -149,6 +183,7 @@ void retorno_consola(char* leido){
 		list_iterate(disponibles, (void*)mostrar_memoria);
 		list_destroy_and_destroy_elements(disponibles, (void*)eliminar_memoria);
 		free(leido);
+
 		return;
 	}
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
@@ -249,6 +284,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 			if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
 				//la memoria esta full, lanzo journal
+				log_info(LOG_INFO, "MEM %d FULL.", NUMERO_MEMORIA);
 				t_timestamp timestamp = get_timestamp();
 				lanzar_journal(timestamp);
 			}
@@ -392,7 +428,11 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 		case GOSSIP:;
 			Gossip *gossip = instruccion_parseada->instruccion_a_realizar;
+
+			pthread_mutex_lock(&mutexListaGossip);
 			list_iterate(gossip->lista_memorias, (void*)add_memory_if_not_exists);
+			pthread_mutex_unlock(&mutexListaGossip);
+
 			list_destroy_and_destroy_elements(gossip->lista_memorias, (void*)eliminar_memoria);
 			free(instruccion_parseada->instruccion_a_realizar);
 			free(instruccion_parseada);
@@ -402,6 +442,7 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			retorno->tipo_retorno = RETORNO_GOSSIP;
 			Gossip * gossip_ret = malloc(sizeof(Gossip));
 			gossip_ret->lista_memorias = filtrar_memorias_a_enviar();
+
 			retorno->retorno = gossip_ret;
 			instruccion_respuesta->instruccion_a_realizar = retorno;
 			break;
@@ -700,6 +741,8 @@ void print_pagina(void* pagina){
 
 void lanzar_gossiping(void){
 	int posicion = 0;
+
+	pthread_mutex_lock(&mutexListaGossip);
 	while (IP_SEEDS[posicion] != NULL && PUERTOS_SEEDS[posicion] != NULL){
 		char* ip = IP_SEEDS[posicion];
 		char* puerto = PUERTOS_SEEDS[posicion];
@@ -716,6 +759,7 @@ void lanzar_gossiping(void){
 	}
 	free(IP_SEEDS);
 	free(PUERTOS_SEEDS);
+
 	Memoria * memoria = malloc(sizeof(Memoria));
 	char* local_ip = get_local_ip();
 	memoria->ip = malloc(strlen(local_ip)+1);
@@ -723,101 +767,200 @@ void lanzar_gossiping(void){
 	memoria->puerto = malloc(strlen(PUERTO_DE_ESCUCHA)+1);
 	strcpy(memoria->puerto, PUERTO_DE_ESCUCHA);
 	memoria->idMemoria = NUMERO_MEMORIA;
-	pthread_mutex_lock(&mutexListaMemorias);
 	list_add(L_MEMORIAS, memoria);
-	pthread_mutex_unlock(&mutexListaMemorias);
+	pthread_mutex_unlock(&mutexListaGossip);
+	int aux;
+	Memoria *m, *mem;
+
 	while(true){
 		usleep(RETARDO_GOSSIPING*1000);
-		t_list *a_gossipear = filtrar_memorias_gossipear();
-		list_iterate(a_gossipear, (void*)gossipear);
-		list_destroy_and_destroy_elements(a_gossipear, (void*)eliminar_memoria);
+
+		aux = 0;
+
+		int cantidad = L_MEMORIAS->elements_count;
+		m = list_get(L_MEMORIAS, aux);
+
+		if(m != NULL) {
+			mem = duplicar_memoria(m);
+		} else {
+			mem = NULL;
+		}
+
+		while(L_MEMORIAS->elements_count == cantidad && mem != NULL){
+			gossipear(mem);
+			aux++;
+			eliminar_memoria(mem);
+
+			m = list_get(L_MEMORIAS, aux);
+
+			if(m != NULL) {
+				mem = duplicar_memoria(m);
+			} else {
+				mem = NULL;
+			}
+
+		}
+
+		if (mem != NULL){
+			eliminar_memoria(mem);
+		}
+
 	}
 }
 
 t_list* filtrar_memorias_gossipear(void){
 	int aux = 0;
 	t_list *lista_filtrada = list_create();
-	pthread_mutex_lock(&mutexListaMemorias);
-	Memoria *m1 = list_get(L_MEMORIAS, aux);
+
+	t_list *copia_memorias = list_duplicate_all(L_MEMORIAS, (void*)duplicar_memoria, mutexListaGossip);
+
+	Memoria *m1 = list_get(copia_memorias, aux);
+
 	bool filtrar(Memoria *m2){
 		return strcmp(m1->ip, m2->ip) == 0 && strcmp(m1->puerto, m2->puerto) == 0;
 	}
+
 	while(m1 != NULL){
-		if(list_count_satisfying(L_MEMORIAS, (void*)filtrar) > 1){
-			if(m1->idMemoria != -1){
+		if (!(strcmp(m1->ip, get_local_ip()) == 0 && strcmp(m1->puerto, PUERTO_DE_ESCUCHA) == 0)) {
+			if(list_count_satisfying(copia_memorias, (void*)filtrar) > 1){
+				if(m1->idMemoria != -1){
+					list_add(lista_filtrada, duplicar_memoria(m1));
+				}
+			}else{
 				list_add(lista_filtrada, duplicar_memoria(m1));
 			}
-		}else{
-			list_add(lista_filtrada, duplicar_memoria(m1));
 		}
-
 		aux++;
-		m1 = list_get(L_MEMORIAS, aux);
+		m1 = list_get(copia_memorias, aux);
 	}
-	pthread_mutex_unlock(&mutexListaMemorias);
+
+	list_destroy_and_destroy_elements(copia_memorias, (void*)eliminar_memoria);
 	return lista_filtrada;
 }
 
 t_list *filtrar_memorias_a_enviar(void){
-	int aux = 0;
+
+
+	t_list *copia_memorias = list_duplicate_all(L_MEMORIAS, (void*)duplicar_memoria, mutexListaGossip);
+
+	int aux = (copia_memorias->elements_count - 1);
 	t_list *lista_filtrada = list_create();
-	pthread_mutex_lock(&mutexListaMemorias);
-	Memoria *m1 = list_get(L_MEMORIAS, aux);
+	Memoria *m1;
+
 	bool filtrar(Memoria *m2){
 		return strcmp(m1->ip, m2->ip) == 0 && strcmp(m1->puerto, m2->puerto) == 0;
 	}
-	while(m1 != NULL){
-		if(list_count_satisfying(L_MEMORIAS, (void*)filtrar) > 0){
-			if(m1->idMemoria != -1){
-				list_add(lista_filtrada, duplicar_memoria(m1));
-			}
+
+	while (aux >= 0) {
+		m1 = list_get(copia_memorias, aux);
+
+		if(m1->idMemoria != -1){
+			list_add(lista_filtrada, duplicar_memoria(m1));
 		}
-		aux++;
-		m1 = list_get(L_MEMORIAS, aux);
+
+		aux--;
+
 	}
-	pthread_mutex_unlock(&mutexListaMemorias);
+
+	list_destroy_and_destroy_elements(copia_memorias, (void*)eliminar_memoria);
 	return lista_filtrada;
 }
 
 void gossipear(Memoria *mem){
+
 	if(mem->idMemoria != NUMERO_MEMORIA){
 		Instruccion *inst  = malloc(sizeof(Instruccion));
 		Gossip * gossip = malloc(sizeof(Gossip));
-		gossip->lista_memorias = filtrar_memorias_a_enviar();
+
+		gossip->lista_memorias = list_create();
+		Memoria * memoria = malloc(sizeof(Memoria));
+		char* local_ip = get_local_ip();
+		memoria->ip = malloc(strlen(local_ip)+1);
+		strcpy(memoria->ip, local_ip);
+		memoria->puerto = malloc(strlen(PUERTO_DE_ESCUCHA)+1);
+		strcpy(memoria->puerto, PUERTO_DE_ESCUCHA);
+		memoria->idMemoria = NUMERO_MEMORIA;
+		list_add(gossip->lista_memorias, memoria);
+
 		inst->instruccion = GOSSIP;
 		inst->instruccion_a_realizar = gossip;
 		Instruccion *res = enviar_instruccion(mem->ip, mem->puerto, inst, POOLMEMORY, T_GOSSIPING);
+
 		if(res->instruccion == RETORNO){
 			Retorno_Generico *ret = res->instruccion_a_realizar;
 			if(ret->tipo_retorno == RETORNO_GOSSIP){
 				Gossip *gossip = ret->retorno;
 				t_list *lista_retorno = gossip->lista_memorias;
+				pthread_mutex_lock(&mutexListaGossip);
 				list_iterate(lista_retorno, (void*)add_memory_if_not_exists);
+				pthread_mutex_unlock(&mutexListaGossip);
 			}
+		} else {
+			//la memoria no contesto un retorno, la damos de baja del gossip
+			sacar_memoria(mem);
 		}
 		free_retorno(res);
 	}
+
 }
 
 void add_memory_if_not_exists(Memoria *mem){
-	pthread_mutex_lock(&mutexListaMemorias);
-	if(!existe_memoria(L_MEMORIAS, mem)){
-		list_add(L_MEMORIAS, duplicar_memoria(mem));
+	if(mem != NULL){
+		if(!existe_memoria(L_MEMORIAS, mem)){
+			list_add(L_MEMORIAS, duplicar_memoria(mem));
+		}
 	}
-	pthread_mutex_unlock(&mutexListaMemorias);
 }
 
 bool existe_memoria(t_list *lista, Memoria *mem1){
-	int posicion_en_lista = 0;
-	Memoria *mem2 = list_get(lista, posicion_en_lista);
-	while(mem2 != NULL){
-		if(strcmp(mem1->ip, mem2->ip) == 0 && strcmp(mem1->puerto, mem2->puerto) == 0 && mem1->idMemoria == mem2->idMemoria) {
-			return true;
+	if(mem1 != NULL){
+
+		Memoria *mem2;
+		int posicion_en_lista = (lista->elements_count -1);
+
+		while (posicion_en_lista >= 0) {
+			mem2 = list_get(lista, posicion_en_lista);
+
+			if(strcmp(mem1->ip, mem2->ip) == 0 && strcmp(mem1->puerto, mem2->puerto) == 0 && mem1->idMemoria == mem2->idMemoria) {
+				return true;
+			}
+
+			posicion_en_lista--;
+
 		}
-		posicion_en_lista ++;
-		mem2 = list_get(lista, posicion_en_lista);
 	}
 	return false;
+}
+
+void sacar_memoria(Memoria *mem){
+
+	int posicion = posicion_de_memoria(L_MEMORIAS, mem);
+
+	if(posicion >= 0){
+		Memoria* mem_eliminar = list_remove(L_MEMORIAS, posicion);
+		eliminar_memoria(mem_eliminar);
+	}
+}
+
+int posicion_de_memoria(t_list *lista, Memoria *mem){
+
+	int posicion = lista->elements_count -1;
+	Memoria* mem_comparar;
+
+	while (posicion >= 0){
+		mem_comparar = list_get(lista, posicion);
+
+		if (mem->idMemoria != -1
+			&& strcmp(mem->ip, mem_comparar->ip) == 0
+			&& strcmp(mem->puerto, mem_comparar->puerto) == 0){
+
+			return posicion;
+		}
+
+		posicion--;
+	}
+
+	return -1;
 }
 
 void* f_journaling (void) {
@@ -953,24 +1096,23 @@ bool memoria_full(void){
 void *TH_confMonitor(void * p){
 
 	int confMonitor_cb(void){
-		t_config* CONFIG = config_create("config.cfg");
-		if(CONFIG == NULL) {
-			log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
+		t_config* conf = config_create(PATH_CONFIG);
+		if(conf == NULL) {
+			log_error(LOG_ERROR,"Archivo de configuracion: %s no encontrado", PATH_CONFIG);
 			return 1;
 		}
 
-		RETARDO_MEM = config_get_int_value(CONFIG,"RETARDO_MEM");
-		RETARDO_FS = config_get_int_value(CONFIG,"RETARDO_FS");
-		RETARDO_JOURNAL = config_get_int_value(CONFIG,"RETARDO_JOURNAL");
-		RETARDO_GOSSIPING = config_get_int_value(CONFIG,"RETARDO_GOSSIPING");
+		RETARDO_MEM = config_get_int_value_check(conf,"RETARDO_MEM");
+		RETARDO_FS = config_get_int_value_check(conf,"RETARDO_FS");
+		RETARDO_JOURNAL = config_get_int_value_check(conf,"RETARDO_JOURNAL");
+		RETARDO_GOSSIPING = config_get_int_value_check(conf,"RETARDO_GOSSIPING");
 
-
-		log_info(LOG_ERROR,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
-		config_destroy(CONFIG);
+		log_info(LOG_INFO,"Se ha actualizado el archivo de configuracion: RETARDO_MEM: %d, RETARDO_FS: %d, RETARDO_JOURNAL: %d, RETARDO_GOSSIPING: %d", RETARDO_MEM, RETARDO_FS, RETARDO_JOURNAL, RETARDO_GOSSIPING);
+		config_destroy(conf);
 		return 0;
 	}
 
-	int retMon = monitorNode("config.cfg", IN_MODIFY, &confMonitor_cb);
+	int retMon = monitorNode(PATH_CONFIG, IN_MODIFY, &confMonitor_cb);
 	if(retMon!=0){
 		return (void*)1;
 	}

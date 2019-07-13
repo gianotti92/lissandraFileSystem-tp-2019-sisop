@@ -14,7 +14,7 @@ struct tableRegister createTableRegister(t_key key,char* value,t_timestamp times
 */
 void global_conf_load(t_config* conf){
 	// Directorios
-	char * p_m = config_get_string_value(conf,"PUNTO_MONTAJE");
+	char * p_m = config_get_string_value_check(conf,"PUNTO_MONTAJE");
 	global_conf.directorio_tablas = malloc(strlen(p_m)+8+1);
 	sprintf(global_conf.directorio_tablas,"%s/Tables/",p_m);
 	global_conf.directorio_bloques = malloc(strlen(p_m)+9+1);
@@ -22,19 +22,19 @@ void global_conf_load(t_config* conf){
 	global_conf.directorio_metadata = malloc(strlen(p_m)+10+1);
 	sprintf(global_conf.directorio_metadata,"%s/Metadata/",p_m);
 	// Puerto escucha
-	char * p_e = config_get_string_value(conf,"PUERTO_ESCUCHA");
+	char * p_e = config_get_string_value_check(conf,"PUERTO_ESCUCHA");
 	global_conf.puerto=malloc(strlen(p_e)+1);
 	strcpy(global_conf.puerto,p_e);
 	// Retardo
-	global_conf.retardo = config_get_int_value(conf,"RETARDO");
+	global_conf.retardo = config_get_int_value_check(conf,"RETARDO");
 	// Value
-	global_conf.max_value_size = config_get_int_value(conf,"MAX_VALUE_SIZE");
+	global_conf.max_value_size = config_get_int_value_check(conf,"MAX_VALUE_SIZE");
 	// Dump
-	global_conf.tiempo_dump = config_get_int_value(conf,"TIEMPO_DUMP");
+	global_conf.tiempo_dump = config_get_int_value_check(conf,"TIEMPO_DUMP");
 }
 void global_conf_update(t_config* conf){
-	global_conf.retardo = config_get_int_value(conf,"RETARDO");
-	global_conf.tiempo_dump = config_get_int_value(conf,"TIEMPO_DUMP");
+	global_conf.retardo = config_get_int_value_check(conf,"RETARDO");
+	global_conf.tiempo_dump = config_get_int_value_check(conf,"TIEMPO_DUMP");
 }
 void global_conf_destroy(void){
 	free(global_conf.directorio_tablas);
