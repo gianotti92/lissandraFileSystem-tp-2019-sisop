@@ -24,7 +24,6 @@ int main(int argc, char* argv[])  {
 
 	configure_logger();
 	configuracion_inicial();
-	print_guenguencha("  KERNEL  ");
 
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
@@ -32,8 +31,8 @@ int main(int argc, char* argv[])  {
 	fd_disponibles = dictionary_create();
 	fd_desafectados = list_create();
 	
-	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, finalizarProceso, calcularMetrics, T_confMonitor, T_describe;
-
+	pthread_t memoriasDisponibles, pasarNewToReady, finalizarProceso, calcularMetrics, T_confMonitor, T_describe;
+	
 	pthread_create(&finalizarProceso, NULL, (void*) finalizar_procesos, NULL);
 	pthread_detach(finalizarProceso);
 
@@ -45,9 +44,6 @@ int main(int argc, char* argv[])  {
 
 	pthread_create(&T_confMonitor, NULL, TH_confMonitor, NULL);
 	pthread_detach(T_confMonitor);
-
-	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
-	pthread_detach(consolaKernel);
 
 	pthread_create(&pasarNewToReady, NULL, (void*) newToReady, NULL);
 	pthread_detach(pasarNewToReady);
@@ -63,7 +59,9 @@ int main(int argc, char* argv[])  {
 		pthread_detach(multiProcesamientoKernell);
 		cantMultiprocesamiento++;
 	}
-	for(;;);
+
+	print_guenguencha("  KERNEL  ");
+	leer_por_consola(retorno_consola);
 }
 
 void retorno_consola(char* leido) {
