@@ -26,6 +26,7 @@ int main(int argc, char* argv[]) {
 
 	L_MEMORIAS = list_create();
 	pthread_t consolaPoolMemory, gossiping, journaling, servidorPM, T_confMonitor;
+	
 	void *TR_confMonitor;
 
 	pthread_create(&T_confMonitor,NULL,TH_confMonitor,NULL); 										//se encarga de mantener actualizados los valores del config
@@ -50,7 +51,7 @@ int main(int argc, char* argv[]) {
 		log_error(LOG_ERROR,"Error con el thread de monitoreo de configuracion: %d",(int)TR_confMonitor);
 	}
 
-	list_destroy(L_MARCOS); //entender el list_destroy_and_destroy_elements()
+	list_destroy(L_MARCOS); 
 	list_destroy(L_MEMORIAS);
 
 	pthread_mutex_destroy(&mutexMarcos);
