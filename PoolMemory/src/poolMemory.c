@@ -8,6 +8,8 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_init(&mutexListaGossip, NULL);
 	sem_init(&semJournal, 0, 2);
 
+	configure_logger();
+
 	if (argc == 1) {
 		PATH_CONFIG = "config.cfg";
 	} else if (argc == 2) {
@@ -17,7 +19,6 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	configure_logger();
 	configuracion_inicial();
 	inicializar_memoria();
 
