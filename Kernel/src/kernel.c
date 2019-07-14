@@ -25,7 +25,6 @@ int main(int argc, char* argv[])  {
 	}
 
 	configuracion_inicial();
-	print_guenguencha("  KERNEL  ");
 
 	iniciarEstados();
 	iniciarEstructurasAsociadas();
@@ -33,8 +32,8 @@ int main(int argc, char* argv[])  {
 	fd_disponibles = dictionary_create();
 	fd_desafectados = list_create();
 	
-	pthread_t consolaKernel, memoriasDisponibles, pasarNewToReady, finalizarProceso, calcularMetrics, T_confMonitor, T_describe;
-
+	pthread_t memoriasDisponibles, pasarNewToReady, finalizarProceso, calcularMetrics, T_confMonitor, T_describe;
+	
 	pthread_create(&finalizarProceso, NULL, (void*) finalizar_procesos, NULL);
 	pthread_detach(finalizarProceso);
 
@@ -46,9 +45,6 @@ int main(int argc, char* argv[])  {
 
 	pthread_create(&T_confMonitor, NULL, TH_confMonitor, NULL);
 	pthread_detach(T_confMonitor);
-
-	pthread_create(&consolaKernel, NULL, (void*) leer_por_consola, retorno_consola);
-	pthread_detach(consolaKernel);
 
 	pthread_create(&pasarNewToReady, NULL, (void*) newToReady, NULL);
 	pthread_detach(pasarNewToReady);
@@ -64,7 +60,9 @@ int main(int argc, char* argv[])  {
 		pthread_detach(multiProcesamientoKernell);
 		cantMultiprocesamiento++;
 	}
-	for(;;);
+
+	print_guenguencha("  KERNEL  ");
+	leer_por_consola(retorno_consola);
 }
 
 void retorno_consola(char* leido) {
@@ -104,13 +102,13 @@ void ejecutar() {
 		switch (proceso->instruccion->instruccion) {
 			case RUN:;
 				proceso->fin_proceso = false;
-				log_info(LOG_DEBUG, "Ejecuto el script %s desde la linea %d ", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
+				log_info(LOG_INFO, "Ejecuto el script %s desde la linea %d ", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
 				while(proceso->quantumProcesado <= QUANTUM && !proceso->fin_proceso){
 					usleep(RETARDO*1000);
 					logicaRun(proceso);
 				}
 				if(!proceso->fin_proceso){
-					log_info(LOG_DEBUG, "Corto de hacer el proceso %s, en la linea %d", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
+					log_info(LOG_INFO, "Corto de hacer el proceso %s, en la linea %d", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
 					proceso->quantumProcesado = 0;
 					encolar(estadoReady, proceso);
 					sem_post(&semaforoSePuedePlanificar);

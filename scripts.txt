@@ -5,6 +5,10 @@ run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts
 run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/misc_1.lql
 run /home/utnso/workspace/tp-2019-1c-Lo-Compilaste-todo-Chinguenguencha-/scripts/misc_2.lql
 
+ADD MEMORY 1 TO SC
+ADD MEMORY 2 TO EC
+ADD MEMORY 3 TO SHC
+
 ENTREGA:
 run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/animales.lql
 run /home/utnso/workspace/1C2019-Scripts-lql-entrega/scripts/cities_countries.lql

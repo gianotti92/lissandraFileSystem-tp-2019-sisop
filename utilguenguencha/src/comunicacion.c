@@ -1,7 +1,10 @@
 #include "comunicacion.h"
 #include<pthread.h>
+#include <time.h>
 
 pthread_mutex_t mutex_diccionario_fd; // Lock para estructura de diccionario
+
+Procesos proceso_servidor;
 
 typedef struct {
 	int fd;
@@ -214,6 +217,11 @@ Connection *update_conn(char *ip, char *puerto, Connection *conn);
 * @DESC: desafecta una conececcion del listado de disponibles
 */
 void desafectar_conn(char* ip, char* puerto);
+/**
+* @NAME: escucha()
+* @DESC: hilo que atiende los llamados de un fd mientras esta comunicacion este viva
+*/
+void escucha(int *valor);
 
 void desafectar_conn(char* ip, char* puerto){
 	char *key = string_new();
@@ -263,12 +271,9 @@ Connection *update_conn(char *ip, char *puerto, Connection *new_conn){
 
 void servidor_comunicacion(Comunicacion *comunicacion){
 	fd_set fd_set_master, fd_set_temporal;
-	struct timeval tv;
-	tv.tv_sec = 5;
-    tv.tv_usec = 0;
 	int aux1, fd_max, server_socket;
 	server_socket = iniciar_servidor(comunicacion->puerto_servidor);
-	Procesos proceso_servidor = comunicacion->proceso;
+	proceso_servidor = comunicacion->proceso;
 	free(comunicacion->puerto_servidor);
 	free(comunicacion);
 	FD_ZERO(&fd_set_master);
@@ -277,8 +282,8 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 	for (;;) {
 		FD_ZERO(&fd_set_temporal);
 		fd_set_temporal = fd_set_master;
-		if (select(fd_max + 1, &fd_set_temporal, NULL, NULL, &tv) == -1) {
-			log_error(LOG_ERROR,"Timeout en select");
+		if (select(fd_max + 1, &fd_set_temporal, NULL, NULL, NULL) == -1) {
+			log_error(LOG_ERROR,"Error en el select");
 			continue;
 		}
 		int fin = fd_max;
@@ -287,11 +292,9 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 				if (aux1 == server_socket) {
 					struct sockaddr_in client_address;
 					size_t tamanio_client_address = sizeof(client_address);
-					int socket_cliente = accept(server_socket,
-							(struct sockaddr *) &client_address,
-							&tamanio_client_address);
+					int socket_cliente = accept(server_socket, (struct sockaddr *) &client_address, &tamanio_client_address);
 					if (socket_cliente < 0) {
-						log_error(LOG_ERROR, "Error levantando un socket");
+						log_error(LOG_ERROR, "Error levantando un socket para cliente");
 						continue;
 					}
 					FD_SET(socket_cliente, &fd_set_master);
@@ -299,40 +302,54 @@ void servidor_comunicacion(Comunicacion *comunicacion){
 						fd_max = socket_cliente;
 					}
 				} else {
-					Tipo_Comunicacion tipo_comu;
-					if ((recv(aux1, &tipo_comu, sizeof(Tipo_Comunicacion), MSG_WAITALL)) <= 0) {
-						liberar_conexion(aux1);
-						FD_CLR(aux1, &fd_set_master);
-					} else {
-						Procesos proceso_que_envia;
-						if ((recv(aux1, &proceso_que_envia, sizeof(Procesos), MSG_WAITALL)) <= 0) {
-							liberar_conexion(aux1);
-							FD_CLR(aux1, &fd_set_master);
-						}else if(validar_sender(proceso_que_envia, proceso_servidor, tipo_comu)){
-							Instruccion *instruccion = malloc(sizeof(Instruccion));
-							if ((recv(aux1, &instruccion->instruccion, sizeof(Instruction_set), MSG_WAITALL))<= 0) {
-								free(instruccion);
-								liberar_conexion(aux1);
-								FD_CLR(aux1, &fd_set_master);
-							}
-							if (recibir_buffer(aux1, instruccion, tipo_comu)) {
-								fsync(aux1);
-								retornarControl(instruccion, aux1);
-							} else {
-								fsync(aux1);
-								free(instruccion);
-							}
-						}else{
-							liberar_conexion(aux1);
-							FD_CLR(aux1, &fd_set_master);
-						}
-					}
+					FD_CLR(aux1, &fd_set_master);
+					pthread_t hilo_escucha;
+					int *valor = malloc(sizeof(int));
+					*valor = aux1;
+					pthread_create(&hilo_escucha, NULL, (void*)escucha, valor);
+					pthread_detach(hilo_escucha);
 				}
-			}
+			}			
 		}
 	}
 }
 
+void escucha(int *valor){
+	int aux1 = *valor;
+	free(valor);
+	for(;;){
+		Tipo_Comunicacion tipo_comu;
+		if ((recv(aux1, &tipo_comu, sizeof(Tipo_Comunicacion), MSG_WAITALL)) <= 0) {
+			liberar_conexion(aux1);
+			break;
+		} else {
+			Procesos proceso_que_envia;
+			if ((recv(aux1, &proceso_que_envia, sizeof(Procesos), MSG_WAITALL)) <= 0) {
+				liberar_conexion(aux1);
+				break;
+			}else if(validar_sender(proceso_que_envia, proceso_servidor, tipo_comu)){
+				Instruccion *instruccion = malloc(sizeof(Instruccion));
+				if ((recv(aux1, &instruccion->instruccion, sizeof(Instruction_set), MSG_WAITALL))<= 0) {
+					free(instruccion);
+					liberar_conexion(aux1);
+					break;
+				}
+				if (recibir_buffer(aux1, instruccion, tipo_comu)) {
+					fsync(aux1);
+					retornarControl(instruccion, aux1);
+					
+				} else {
+					fsync(aux1);
+					free(instruccion);
+					break;
+				}
+			}else{
+				liberar_conexion(aux1);
+				break;
+			}
+		}
+	}
+}
 
 int iniciar_servidor(char* puerto_servidor) {
 	struct addrinfo hints, *res;
