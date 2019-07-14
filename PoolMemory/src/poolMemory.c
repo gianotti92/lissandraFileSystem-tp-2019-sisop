@@ -1046,7 +1046,6 @@ int seleccionar_marco(void){
 		while(pagina_en_uso(marco)){
 			posicion++;
 			marco = list_get(L_MARCOS, posicion);
-
 			if(marco < 0){
 				return -1;
 			}
@@ -1059,7 +1058,8 @@ int seleccionar_marco(void){
 	} else {
 
 		int id_pagina = marco_por_LRU(); //algoritmo para reemplazar paginas
-		if (id_pagina < 0){
+
+		if (id_pagina >= 0){
 			eliminar_referencia(id_pagina);
 			return id_pagina;
 		}
