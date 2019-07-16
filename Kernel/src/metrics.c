@@ -19,43 +19,45 @@ void calculoMetrics(){
 		int elemento = (acum30sMetrics->elements_count -1);
 
 		while (elemento >= 0){
+
 			AcumMetrics* acumMetrics = list_remove(acum30sMetrics, elemento);
 
-			acumuladorMemoria = (AcumuladorMemoria*) dameAcumulador(acumMetrics->id_memoria, contador_por_memoria);
+			if (acumMetrics->id_memoria != -1){
+				acumuladorMemoria = (AcumuladorMemoria*) dameAcumulador(acumMetrics->id_memoria, contador_por_memoria);
 
-			if(acumuladorMemoria == NULL){
-				acumuladorMemoria = malloc(sizeof(AcumuladorMemoria));
-				acumuladorMemoria->id_memoria = acumMetrics->id_memoria;
-				acumuladorMemoria->cantidad_instrucciones = 0;
-				acumuladorMemoria->cantidad_ins_sel = 0;
+				if(acumuladorMemoria == NULL){
+					acumuladorMemoria = malloc(sizeof(AcumuladorMemoria));
+					acumuladorMemoria->id_memoria = acumMetrics->id_memoria;
+					acumuladorMemoria->cantidad_instrucciones = 0;
+					acumuladorMemoria->cantidad_ins_sel = 0;
 
-				list_add(contador_por_memoria, acumuladorMemoria);
+					list_add(contador_por_memoria, acumuladorMemoria);
+				}
+
+
+				switch(acumMetrics->instruccion){
+				case SELECT:;
+					contadorSelect ++;
+					tiempoTotalSelect += acumMetrics->tiempo;
+					contadorSelectInsert++;
+					acumuladorMemoria->cantidad_ins_sel++;
+					acumuladorMemoria->cantidad_instrucciones++;
+					break;
+				case INSERT:;
+					contadorInsert++;
+					tiempoTotalInsert += acumMetrics->tiempo;
+					contadorSelectInsert++;
+					acumuladorMemoria->cantidad_ins_sel++;
+					acumuladorMemoria->cantidad_instrucciones++;
+					break;
+				default:;
+					acumuladorMemoria->cantidad_instrucciones++;
+					break;
+				}
+				free(acumMetrics);
 			}
 
-
-			switch(acumMetrics->instruccion){
-			case SELECT:;
-				contadorSelect ++;
-				tiempoTotalSelect += acumMetrics->tiempo;
-				contadorSelectInsert++;
-				acumuladorMemoria->cantidad_ins_sel++;
-				acumuladorMemoria->cantidad_instrucciones++;
-				break;
-			case INSERT:;
-				contadorInsert++;
-				tiempoTotalInsert += acumMetrics->tiempo;
-				contadorSelectInsert++;
-				acumuladorMemoria->cantidad_ins_sel++;
-				acumuladorMemoria->cantidad_instrucciones++;
-				break;
-			default:;
-				acumuladorMemoria->cantidad_instrucciones++;
-				break;
-			}
-
-		free(acumMetrics);
 		elemento--;
-
 		}
 
 		READS = contadorSelect;

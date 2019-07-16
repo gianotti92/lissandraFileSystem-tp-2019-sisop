@@ -250,7 +250,7 @@ void inicializar_memoria(void){
 
 		char* palabra = "\0";
 		memcpy(desplazamiento, palabra, MAX_VAL);
-		desplazamiento += MAX_VAL;				//lugar de value
+		desplazamiento += MAX_VAL;				    //lugar de value
 
 		*(t_flag*) desplazamiento = 0;
 		desplazamiento += sizeof(t_flag);			//lugar de modificado
@@ -265,6 +265,11 @@ void inicializar_memoria(void){
 
 	pthread_mutex_unlock(&mutexMarcos);
 	pthread_mutex_unlock(&mutexSegmentos);
+
+	if (L_MARCOS->elements_count==0) {
+		log_error(LOG_ERROR, "Memoria %d: La paginacion obtuvo 0 paginas.", NUMERO_MEMORIA);
+		exit_gracefully(BAD_MEMORY);
+	}
 
 	
 	log_info(LOG_INFO, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
