@@ -123,6 +123,7 @@ void logicaAdd(Proceso * proceso){
 			}
 			free_retorno(instruccionRespuesta);
 			aux++;
+			memoria = list_get(lista_shc, aux);
 		}
 		pthread_mutex_unlock(&mutex_shc);
 	}
@@ -384,7 +385,7 @@ void logicaDescribe(Proceso *proceso){
 			AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
 			nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 			nuevoAcum->instruccion = inst;
-			nuevoAcum->id_memoria = 1;
+			nuevoAcum->id_memoria = -1;
 			pthread_mutex_lock(&mutex_metrics);
 			list_add(acum30sMetrics, nuevoAcum);
 			pthread_mutex_unlock(&mutex_metrics);

@@ -50,7 +50,7 @@ void asignar_memoria_a_consistencia(Memoria * memoria, Consistencias consistenci
 
 void lanzar_gossiping(){
 	Memoria * memoriaPrincipal = malloc(sizeof(Memoria));
-	memoriaPrincipal->idMemoria = 1;
+	memoriaPrincipal->idMemoria = -1;
 	memoriaPrincipal->puerto = malloc(strlen(PUERTO_MEMORIA_PPAL) + 1);
 	strcpy(memoriaPrincipal->puerto, PUERTO_MEMORIA_PPAL);
 	memoriaPrincipal->ip = malloc(strlen(IP_MEMORIA_PPAL) + 1);
