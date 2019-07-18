@@ -12,6 +12,8 @@ int main(int argc, char* argv[]) {
 	pthread_t T_consola,T_server,T_confMonitor,T_dump;
 	void *TR_consola,*TR_server,*TR_confMonitor,*TR_dump;
 
+	configure_logger();
+
 	if (argc == 1) {
 		PATH_CONFIG = "config.cfg";
 	} else if (argc == 2) {
@@ -22,16 +24,16 @@ int main(int argc, char* argv[]) {
 	}
 
 
-	configure_logger();
+
 	fd_disponibles = dictionary_create();
 	fd_desafectados = list_create();
 	pthread_mutex_init(&memtableMutex,NULL);
 	pthread_mutex_init(&tableMetadataMutex,NULL);
 
 	// Cargo la config inicial
-	t_config* conf = config_create("config.cfg");
+	t_config* conf = config_create(PATH_CONFIG);
 	if(conf == NULL) {
-		log_error(LOG_ERROR,"Archivo de configuracion: config.cfg no encontrado");
+		log_error(LOG_ERROR,"Archivo de configuracion: %s no encontrado", PATH_CONFIG);
 		pthread_mutex_destroy(&memtableMutex);
 		pthread_mutex_destroy(&tableMetadataMutex);
 		exit_gracefully(EXIT_FAILURE);
@@ -171,7 +173,7 @@ void *TH_confMonitor(void * p){
 		return 0;
 	}
 
-	int retMon = monitorNode("config.cfg",IN_MODIFY,&confMonitor_cb);
+	int retMon = monitorNode(PATH_CONFIG,IN_MODIFY,&confMonitor_cb);
 	if(retMon!=0){
 		return (void*)1;
 	}

@@ -13,6 +13,8 @@ int main(int argc, char* argv[])  {
 	sem_init(&semaforoNewToReady, 0, 0);
 	sem_init(&semaforoFinalizar, 0, 0);
 
+	configure_logger();
+
 	if (argc == 1) {
 		PATH_CONFIG = "config.cfg";
 	} else if (argc == 2) {
@@ -22,7 +24,6 @@ int main(int argc, char* argv[])  {
 		exit(EXIT_FAILURE);
 	}
 
-	configure_logger();
 	configuracion_inicial();
 
 	iniciarEstados();

@@ -8,6 +8,8 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_init(&mutexListaGossip, NULL);
 	sem_init(&semJournal, 0, 2);
 
+	configure_logger();
+
 	if (argc == 1) {
 		PATH_CONFIG = "config.cfg";
 	} else if (argc == 2) {
@@ -17,7 +19,6 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	configure_logger();
 	configuracion_inicial();
 	inicializar_memoria();
 
@@ -249,7 +250,7 @@ void inicializar_memoria(void){
 
 		char* palabra = "\0";
 		memcpy(desplazamiento, palabra, MAX_VAL);
-		desplazamiento += MAX_VAL;				//lugar de value
+		desplazamiento += MAX_VAL;				    //lugar de value
 
 		*(t_flag*) desplazamiento = 0;
 		desplazamiento += sizeof(t_flag);			//lugar de modificado
@@ -264,6 +265,11 @@ void inicializar_memoria(void){
 
 	pthread_mutex_unlock(&mutexMarcos);
 	pthread_mutex_unlock(&mutexSegmentos);
+
+	if (L_MARCOS->elements_count==0) {
+		log_error(LOG_ERROR, "Memoria %d: La paginacion obtuvo 0 paginas.", NUMERO_MEMORIA);
+		exit_gracefully(BAD_MEMORY);
+	}
 
 	
 	log_info(LOG_INFO, "Memoria incializada de %i bytes con %i paginas de %i bytes cada una.",SIZE_MEM,L_MARCOS->elements_count, tamanio_pagina);
@@ -1045,7 +1051,6 @@ int seleccionar_marco(void){
 		while(pagina_en_uso(marco)){
 			posicion++;
 			marco = list_get(L_MARCOS, posicion);
-
 			if(marco < 0){
 				return -1;
 			}
@@ -1058,7 +1063,8 @@ int seleccionar_marco(void){
 	} else {
 
 		int id_pagina = marco_por_LRU(); //algoritmo para reemplazar paginas
-		if (id_pagina < 0){
+
+		if (id_pagina >= 0){
 			eliminar_referencia(id_pagina);
 			return id_pagina;
 		}

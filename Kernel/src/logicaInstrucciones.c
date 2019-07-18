@@ -114,7 +114,7 @@ void logicaAdd(Proceso * proceso){
 			instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
 			if(instruccionRespuesta->instruccion != ERROR){
 				AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
-				nuevoAcum->tiempo = difftime(get_timestamp(), initial_time);
+				nuevoAcum->tiempo = (get_timestamp() - initial_time);
 				nuevoAcum->instruccion = JOURNAL;
 				nuevoAcum->id_memoria = memoria->idMemoria;
 				pthread_mutex_lock(&mutex_metrics);
@@ -123,11 +123,13 @@ void logicaAdd(Proceso * proceso){
 			}
 			free_retorno(instruccionRespuesta);
 			aux++;
+			memoria = list_get(lista_shc, aux);
 		}
 		pthread_mutex_unlock(&mutex_shc);
 	}
 	asignar_memoria_a_consistencia(memoria, ((Add*)proceso->instruccionAProcesar->instruccion_a_realizar)->consistencia);
 	eliminar_memoria(memoria);
+	log_info(LOG_OUTPUT,"Operacion completada correctamente.");
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
 	free(proceso->instruccionAProcesar);
 }
@@ -137,10 +139,15 @@ void logicaSelect(Proceso * proceso){
 	if(consistencia != NOT_FOUND){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
 		Memoria * mem = NULL;
+		int random;
 		if(memoriasAsoc->elements_count > 0){
 			switch(consistencia){
-				case SC || EC :;
-					int random = rand() % memoriasAsoc->elements_count;
+				case SC :;
+					random = rand() % memoriasAsoc->elements_count;
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					break;
+				case EC :;
+					random = rand() % memoriasAsoc->elements_count;
 					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 					break;
 
@@ -185,10 +192,15 @@ void logicaInsert(Proceso *proceso){
 	if(consistencia != NOT_FOUND){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
 		Memoria * mem = NULL;
+		int random;
 		if(memoriasAsoc->elements_count > 0){
 			switch(consistencia){
-				case SC || EC :;
-					int random = rand() % memoriasAsoc->elements_count;
+				case SC :;
+					random = rand() % memoriasAsoc->elements_count;
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					break;
+				case EC :;
+					random = rand() % memoriasAsoc->elements_count;
 					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 					break;
 				default:;
@@ -232,10 +244,15 @@ void logicaDrop(Proceso *proceso){
 	if(consistencia != NOT_FOUND){
 		t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
 		Memoria * mem = NULL;
+		int random;
 		if(memoriasAsoc->elements_count > 0){
 			switch(consistencia){
-				case SC || EC :;
-					int random = rand() % memoriasAsoc->elements_count;
+				case SC:;;
+					random = rand() % memoriasAsoc->elements_count;
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					break;
+				case EC :;
+					random = rand() % memoriasAsoc->elements_count;
 					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 					break;
 				default:;
@@ -295,7 +312,7 @@ void logicaJournal(Proceso *proceso){
 			instruccionRespuesta = enviar_instruccion(memoria->ip, memoria->puerto, instruccion, KERNEL, T_INSTRUCCION);
 			if(instruccionRespuesta->instruccion != ERROR){
 				AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
-				nuevoAcum->tiempo = difftime(get_timestamp(), initial_time);
+				nuevoAcum->tiempo = (get_timestamp() - initial_time);
 				nuevoAcum->instruccion = proceso->instruccionAProcesar->instruccion;
 				nuevoAcum->id_memoria = memoria->idMemoria;
 				pthread_mutex_lock(&mutex_metrics);
@@ -304,6 +321,7 @@ void logicaJournal(Proceso *proceso){
 			}
 			free_retorno(instruccionRespuesta);
 			aux++;
+			memoria = list_get(lista, aux);
 		}
 		pthread_mutex_unlock(&mutex);
 		list_destroy_and_destroy_elements(lista, (void*)eliminar_memoria);
@@ -319,10 +337,15 @@ void logicaDescribe(Proceso *proceso){
 		Memoria * mem = NULL;
 		if(consistencia != NOT_FOUND){
 			t_list *memoriasAsoc = dame_lista_de_consistencia(consistencia);
+			int random;
 			if(memoriasAsoc->elements_count > 0){
 				switch(consistencia){
-					case SC || EC :;
-						int random = rand() % memoriasAsoc->elements_count;
+					case SC:;
+						random = rand() % memoriasAsoc->elements_count;
+						mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+						break;
+					case EC :;
+						random = rand() % memoriasAsoc->elements_count;
 						mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
 						break;
 					default:;
@@ -362,7 +385,7 @@ void logicaDescribe(Proceso *proceso){
 			AcumMetrics *nuevoAcum = malloc(sizeof(AcumMetrics));
 			nuevoAcum->tiempo = difftime(get_timestamp(), metrics_tiempo);
 			nuevoAcum->instruccion = inst;
-			nuevoAcum->id_memoria = 1;
+			nuevoAcum->id_memoria = -1;
 			pthread_mutex_lock(&mutex_metrics);
 			list_add(acum30sMetrics, nuevoAcum);
 			pthread_mutex_unlock(&mutex_metrics);
