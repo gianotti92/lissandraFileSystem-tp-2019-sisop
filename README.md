@@ -78,6 +78,7 @@ _A continuacion se eliminarán los directorios creados por deployments previos._
 
 ## Ejecutando las pruebas ⚙️
 [Enunciado pruebas](https://docs.google.com/document/d/1m_V2AXpfo8SpeOr330Rwj3uKIe-GHJ3VNfO38FNNc6Q/edit#)
+
 [Repositorio pruebas](https://github.com/sisoputnfrba/1C2019-Scripts-lql-entrega)
 
 ### Prueba Base
