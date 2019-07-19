@@ -74,6 +74,12 @@ void logicaCreate(Proceso * proceso){
 			list_add(acum30sMetrics, nuevoAcum);
 			pthread_mutex_unlock(&mutex_metrics);
 			realizarDescribeGeneral();
+		}else{
+			if(proceso->instruccion->instruccion == RUN){
+				log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+			}else{
+				log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
+			}
 		}
 		print_instruccion_parseada(instruccionRespuesta);
 		eliminar_memoria(memoria);
@@ -120,6 +126,12 @@ void logicaAdd(Proceso * proceso){
 				pthread_mutex_lock(&mutex_metrics);
 				list_add(acum30sMetrics, nuevoAcum);
 				pthread_mutex_unlock(&mutex_metrics);
+			}else{
+				if(proceso->instruccion->instruccion == RUN){
+					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+				}else{
+					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
+				}
 			}
 			free_retorno(instruccionRespuesta);
 			aux++;
@@ -170,6 +182,12 @@ void logicaSelect(Proceso * proceso){
 				pthread_mutex_lock(&mutex_metrics);
 				list_add(acum30sMetrics, nuevoAcum);
 				pthread_mutex_unlock(&mutex_metrics);
+			}else{
+				if(proceso->instruccion->instruccion == RUN){
+					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+				}else{
+					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
+				}
 			}
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(mem);
@@ -222,6 +240,12 @@ void logicaInsert(Proceso *proceso){
 				pthread_mutex_lock(&mutex_metrics);
 				list_add(acum30sMetrics, nuevoAcum);
 				pthread_mutex_unlock(&mutex_metrics);
+			}else{
+				if(proceso->instruccion->instruccion == RUN){
+					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+				}else{
+					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
+				}
 			}
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(mem);
@@ -274,6 +298,12 @@ void logicaDrop(Proceso *proceso){
 				pthread_mutex_lock(&mutex_metrics);
 				list_add(acum30sMetrics, nuevoAcum);
 				pthread_mutex_unlock(&mutex_metrics);
+			}else{
+				if(proceso->instruccion->instruccion == RUN){
+					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+				}else{
+					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
+				}
 			}
 			print_instruccion_parseada(instruccionRespuesta);
 			eliminar_memoria(mem);
@@ -318,6 +348,12 @@ void logicaJournal(Proceso *proceso){
 				pthread_mutex_lock(&mutex_metrics);
 				list_add(acum30sMetrics, nuevoAcum);
 				pthread_mutex_unlock(&mutex_metrics);
+			}else{
+				if(proceso->instruccion->instruccion == RUN){
+					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+				}else{
+					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
+				}
 			}
 			free_retorno(instruccionRespuesta);
 			aux++;
@@ -367,6 +403,12 @@ void logicaDescribe(Proceso *proceso){
 					pthread_mutex_lock(&mutex_metrics);
 					list_add(acum30sMetrics, nuevoAcum);
 					pthread_mutex_unlock(&mutex_metrics);
+				}else{
+					if(proceso->instruccion->instruccion == RUN){
+						log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+					}else{
+						log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
+					}
 				}
 				print_instruccion_parseada(instruccionRespuesta);
 				eliminar_memoria(mem);
@@ -389,6 +431,12 @@ void logicaDescribe(Proceso *proceso){
 			pthread_mutex_lock(&mutex_metrics);
 			list_add(acum30sMetrics, nuevoAcum);
 			pthread_mutex_unlock(&mutex_metrics);
+		}else{
+			if(proceso->instruccion->instruccion == RUN){
+					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+				}else{
+					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
+				}
 		}
 		print_instruccion_parseada(instruccionRespuesta);
 		return;
