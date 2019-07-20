@@ -53,8 +53,9 @@ void actualizar_configuracion(t_config* conf) {
 	SEGUNDOS_METRICS = config_get_int_value_check(conf, "TIEMPO_METRICS");
 	PREGUNTAR_POR_MEMORIAS = config_get_int_value_check(conf, "TIEMPO_PREGUNTAR_MEMORIA");
 	TIEMPO_DESCRIBE = config_get_int_value_check(conf, "TIEMPO_DESCRIBE");
+	QUANTUM = config_get_int_value_check(conf, "QUANTUM");
 
-	log_info(LOG_INFO,"Se ha actualizado el archivo de configuracion: SEGUNDOS_METRICS: %d, PREGUNTAR_POR_MEMORIAS: %d, TIEMPO_DESCRIBE: %d", SEGUNDOS_METRICS, PREGUNTAR_POR_MEMORIAS, TIEMPO_DESCRIBE);
+	log_info(LOG_INFO,"Se ha actualizado el archivo de configuracion: SEGUNDOS_METRICS: %d, PREGUNTAR_POR_MEMORIAS: %d, TIEMPO_DESCRIBE: %d, QUANTUM: %d", SEGUNDOS_METRICS, PREGUNTAR_POR_MEMORIAS, TIEMPO_DESCRIBE, QUANTUM);
 
 }
 

@@ -113,6 +113,10 @@ void ejecutar() {
 					encolar(estadoReady, proceso);
 					sem_post(&semaforoSePuedePlanificar);
 				}else{
+					log_info(LOG_INFO, "Termine de ejecutar el script %s, %d lineas terminadas", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
+					free(((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+					free(proceso->instruccion->instruccion_a_realizar);
+					free(proceso->instruccion);
 					encolar(estadoExit, proceso);
 					sem_post(&semaforoFinalizar);
 				}

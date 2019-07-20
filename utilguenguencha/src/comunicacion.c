@@ -3,6 +3,7 @@
 #include <time.h>
 
 pthread_mutex_t mutex_diccionario_fd; // Lock para estructura de diccionario
+pthread_mutex_t mutex_escucha;
 
 Procesos proceso_servidor;
 
@@ -270,6 +271,7 @@ Connection *update_conn(char *ip, char *puerto, Connection *new_conn){
 }
 
 void servidor_comunicacion(Comunicacion *comunicacion){
+	pthread_mutex_init(&mutex_escucha,NULL);
 	fd_set fd_set_master, fd_set_temporal;
 	int aux1, fd_max, server_socket;
 	server_socket = iniciar_servidor(comunicacion->puerto_servidor);
@@ -336,7 +338,9 @@ void escucha(int *valor){
 				}
 				if (recibir_buffer(aux1, instruccion, tipo_comu)) {
 					fsync(aux1);
+					pthread_mutex_lock(&mutex_escucha);
 					retornarControl(instruccion, aux1);
+					pthread_mutex_unlock(&mutex_escucha);
 					
 				} else {
 					fsync(aux1);

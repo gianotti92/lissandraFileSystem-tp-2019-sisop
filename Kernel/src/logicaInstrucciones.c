@@ -38,10 +38,13 @@ void logicaRun(Proceso * proceso){
 			case ADD:;
 				logicaAdd(proceso);
 				break;
+
 			case ERROR:;
 				log_error(LOG_ERROR, "Error en la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 				free_retorno(proceso->instruccionAProcesar);
+				proceso->fin_proceso = true;
 				break;
+
 			default:
 				free_retorno(proceso->instruccionAProcesar);
 				break;
@@ -49,10 +52,6 @@ void logicaRun(Proceso * proceso){
 		proceso->numeroInstruccion += 1;
 		proceso->quantumProcesado += 1;
 	}else{
-		log_info(LOG_INFO, "Termine de ejecutar el script %s, %d lineas terminadas", ((Run*)proceso->instruccion->instruccion_a_realizar)->path, (proceso->numeroInstruccion));
-		free(((Run*)proceso->instruccion->instruccion_a_realizar)->path);
-		free(proceso->instruccion->instruccion_a_realizar);
-		free(proceso->instruccion);
 		proceso->fin_proceso = true;
 	}
 }
@@ -77,6 +76,7 @@ void logicaCreate(Proceso * proceso){
 		}else{
 			if(proceso->instruccion->instruccion == RUN){
 				log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+				proceso->fin_proceso = true;
 			}else{
 				log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
 			}
@@ -98,6 +98,7 @@ void logicaAdd(Proceso * proceso){
 		free(proceso->instruccionAProcesar->instruccion_a_realizar);
 		free(proceso->instruccionAProcesar);
 		log_error(LOG_DEBUG, "No corresponde a un id de memoria válido, las validas son:");
+		proceso->fin_proceso = true;
 		pthread_mutex_lock(&mutex_disp);
 		list_iterate(lista_disp, (void*)mostrar_memoria);
 		pthread_mutex_unlock(&mutex_disp);
@@ -129,6 +130,7 @@ void logicaAdd(Proceso * proceso){
 			}else{
 				if(proceso->instruccion->instruccion == RUN){
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+					proceso->fin_proceso = true;
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
 				}
@@ -185,6 +187,7 @@ void logicaSelect(Proceso * proceso){
 			}else{
 				if(proceso->instruccion->instruccion == RUN){
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
+					proceso->fin_proceso = true;
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
 				}
@@ -199,6 +202,7 @@ void logicaSelect(Proceso * proceso){
 	}else{
 		log_error(LOG_ERROR, "Esa tabla no existe");
 	}
+	proceso->fin_proceso = true;
 	free(((Select*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
 	free(proceso->instruccionAProcesar);
@@ -242,6 +246,7 @@ void logicaInsert(Proceso *proceso){
 				pthread_mutex_unlock(&mutex_metrics);
 			}else{
 				if(proceso->instruccion->instruccion == RUN){
+					proceso->fin_proceso = true;
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
@@ -256,6 +261,7 @@ void logicaInsert(Proceso *proceso){
 	}else{
 		log_error(LOG_ERROR, "La tabla no existe");
 	}
+	proceso->fin_proceso = true;
 	free(((Insert*) proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 	free(((Insert*) proceso->instruccionAProcesar->instruccion_a_realizar)->value);
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
@@ -300,6 +306,7 @@ void logicaDrop(Proceso *proceso){
 				pthread_mutex_unlock(&mutex_metrics);
 			}else{
 				if(proceso->instruccion->instruccion == RUN){
+					proceso->fin_proceso = true;
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
@@ -314,6 +321,7 @@ void logicaDrop(Proceso *proceso){
 	}else{
 		log_error(LOG_ERROR, "La tabla no existe");
 	}
+	proceso->fin_proceso = true;
 	free(((Drop*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
 	free(proceso->instruccionAProcesar);
@@ -350,6 +358,7 @@ void logicaJournal(Proceso *proceso){
 				pthread_mutex_unlock(&mutex_metrics);
 			}else{
 				if(proceso->instruccion->instruccion == RUN){
+					proceso->fin_proceso = true;
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
@@ -405,6 +414,7 @@ void logicaDescribe(Proceso *proceso){
 					pthread_mutex_unlock(&mutex_metrics);
 				}else{
 					if(proceso->instruccion->instruccion == RUN){
+						proceso->fin_proceso = true;
 						log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 					}else{
 						log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
@@ -433,6 +443,7 @@ void logicaDescribe(Proceso *proceso){
 			pthread_mutex_unlock(&mutex_metrics);
 		}else{
 			if(proceso->instruccion->instruccion == RUN){
+					proceso->fin_proceso = true;
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
@@ -441,6 +452,7 @@ void logicaDescribe(Proceso *proceso){
 		print_instruccion_parseada(instruccionRespuesta);
 		return;
 	}
+	proceso->fin_proceso = true;
 	free(((Describe*)proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
 	free(proceso->instruccionAProcesar);
@@ -450,7 +462,6 @@ void logicaMetrics(Proceso * proceso){
 	loguear_metrics(LOG_OUTPUT);
 	free(proceso->instruccionAProcesar->instruccion_a_realizar);
 	free(proceso->instruccionAProcesar);
-
 }
 
 Consistencias obtenerConsistencia(char * nombreTabla){
