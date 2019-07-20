@@ -23,8 +23,8 @@ int NUMERO_MEMORIA;
 int MAX_VAL;
 
 void* MEMORIA_PRINCIPAL; //puntero a malloc gigante
-int PAGINAS_MODIFICADAS; //contador de paginas modificadas, para simplificar el memory_full
-int PAGINAS_USADAS;		 //contador de paginas en uso
+//int PAGINAS_MODIFICADAS; //contador de paginas modificadas, para simplificar el memory_full
+//int PAGINAS_USADAS;		 //contador de paginas en uso
 t_list* L_MARCOS;		 //lista de "marcos" de la memoria
 t_list* L_SEGMENTOS;	 //lista de segmentos, cada segmento tiene su lista de paginas
 t_list* L_MEMORIAS;
@@ -32,7 +32,7 @@ t_list* L_SEEDS;
 
 
 pthread_mutex_t mutexMarcos, mutexSegmentos, mutexMemorias, mutexListaGossip;
-sem_t semJournal;
+pthread_rwlock_t lock_journal;
 
 //  estructuras
 typedef struct{
@@ -92,5 +92,8 @@ int marco_por_LRU(void);
 void eliminar_referencia(int id_pagina);
 t_list* filtrar_memorias_gossipear(void);
 t_list *filtrar_memorias_a_enviar(void);
+int count_paginas_modificadas(void);
+int count_paginas_usadas(void);
+void print_memory(void);
 
 #endif

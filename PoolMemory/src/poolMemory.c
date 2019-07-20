@@ -6,7 +6,7 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_init(&mutexSegmentos, NULL);
 	pthread_mutex_init(&mutexMemorias, NULL);
 	pthread_mutex_init(&mutexListaGossip, NULL);
-	sem_init(&semJournal, 0, 2);
+	pthread_rwlock_init(&lock_journal,NULL);
 
 	configure_logger();
 
@@ -58,8 +58,7 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_destroy(&mutexMarcos);
 	pthread_mutex_destroy(&mutexSegmentos);
 	pthread_mutex_destroy(&mutexMemorias);
-	sem_destroy(&semJournal);
-
+	pthread_rwlock_destroy(&lock_journal);
 
 	free(MEMORIA_PRINCIPAL);
 
@@ -207,8 +206,6 @@ void inicializar_memoria(void){
 	pthread_mutex_lock(&mutexSegmentos);
 
 	MEMORIA_PRINCIPAL = malloc(SIZE_MEM); //resevo memoria para paginar
-	PAGINAS_USADAS = 0; //contador de paginas en uso
-	PAGINAS_MODIFICADAS = 0; //contador de paginas para saber si estoy full
 
 	if (MEMORIA_PRINCIPAL == NULL){
 		log_error(LOG_ERROR, "Memoria: No se pudo malloquear la memoria principal.");
@@ -217,7 +214,7 @@ void inicializar_memoria(void){
 		exit_gracefully(EXIT_FAILURE);
 	}
 
-	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VAL + sizeof(bool); //calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF
+	int tamanio_pagina = sizeof(uint16_t) + sizeof(uint32_t) +  MAX_VAL + sizeof(bool); //calculo tamanio de cada pagina KEY-TIMESTAMP-VALUE-MODIF-USO
 
 	L_MARCOS = list_create(); //creo la tabla maestra de paginas, es una t_list global
 
@@ -280,19 +277,21 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 		usleep(RETARDO_MEM*1000);
 
-		sem_wait(&semJournal);
-
 		Instruccion* instruccion_respuesta;
 
 		switch	(instruccion_parseada->instruccion){
 		case SELECT:;
 
-			if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
+			//print_memory();
+
+			if(L_MARCOS->elements_count == count_paginas_modificadas()){
 				//la memoria esta full, lanzo journal
 				log_info(LOG_INFO, "MEM %d FULL.", NUMERO_MEMORIA);
 				t_timestamp timestamp = get_timestamp();
 				lanzar_journal(timestamp);
 			}
+
+			pthread_rwlock_rdlock(&lock_journal);
 
 			pthread_mutex_lock(&mutexSegmentos);
 
@@ -356,17 +355,23 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				free(instruccion_select);
 				free(instruccion_parseada);
 
-			}
+			}	
 			free(nombre_tabla_select);
+			pthread_rwlock_unlock(&lock_journal);
 			break;
 
 		case INSERT:;
 
-			if(L_MARCOS->elements_count == PAGINAS_MODIFICADAS){
+			//print_memory();
+
+			if(L_MARCOS->elements_count == count_paginas_modificadas()){
 				//la memoria esta full, lanzo journal
+				log_info(LOG_INFO, "MEM %d FULL.", NUMERO_MEMORIA);
 				t_timestamp timestamp = get_timestamp();
 				lanzar_journal(timestamp);
 			}
+
+			pthread_rwlock_rdlock(&lock_journal);
 
 			Insert* instruccion_insert = (Insert*) instruccion_parseada->instruccion_a_realizar;
 
@@ -398,9 +403,13 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			free(nombre_tabla_insert);
 			free(value_insert);
 
+			pthread_rwlock_unlock(&lock_journal);
 			break;
 
 		case DROP:;
+
+			pthread_rwlock_rdlock(&lock_journal);
+
 			Drop* instruccion_drop = (Drop*) instruccion_parseada->instruccion_a_realizar;
 
 			char* nombre_tabla_drop = malloc(strlen(instruccion_drop->nombre_tabla)+1);
@@ -412,6 +421,8 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			usleep(RETARDO_FS*1000);
 
 			free(nombre_tabla_drop);
+
+			pthread_rwlock_unlock(&lock_journal);
 
 			break;
 
@@ -459,7 +470,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 				usleep(RETARDO_FS*1000);
 				break;
 		}
-		sem_post(&semJournal);
 
 		return instruccion_respuesta;
 }
@@ -470,9 +480,6 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 	pthread_mutex_lock(&mutexSegmentos);
 
 	Segmento* segmento = buscar_segmento(nombre_tabla);
-	bool pagina_nueva = false;
-
-
 	if(segmento == NULL){
 		//no tenemos el segmento, creo uno
 		segmento = crear_segmento(nombre_tabla);
@@ -480,7 +487,6 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 		if(segmento == NULL){
 			return -1;
 		}
-
 	}
 
 	pthread_mutex_unlock(&mutexSegmentos);
@@ -494,7 +500,6 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 		if(id_pagina < 0){
 			return -2; // no hay paginas, la memoria esta FULL
 		}
-		pagina_nueva = true;
 
 		agregar_pagina_en_segmento(segmento, id_pagina);
 	}
@@ -507,12 +512,39 @@ int insertar_en_memoria(char* nombre_tabla, t_key key, char* value, t_timestamp 
 	set_modificado_pagina(pagina, modificado);
 
 	marcar_ultimo_uso(id_pagina);
-
-	if (pagina_nueva && modificado && (PAGINAS_MODIFICADAS < L_MARCOS->elements_count)){
-		PAGINAS_MODIFICADAS++;
-	}
-
 	return 1;
+}
+
+int count_paginas_modificadas(void){
+	int cant=0;
+	void conta_modificadas(Marco* marco){
+		if(*get_modificado_pagina(marco->pagina)){
+			cant++;
+		}
+	}
+	list_iterate(L_MARCOS,(void*)conta_modificadas);
+	return cant;
+}
+
+int count_paginas_usadas(void){
+	int cant=0;
+	void conta_usadas(Marco* marco){
+		if(marco->en_uso){
+			cant++;
+		}
+	}
+	list_iterate(L_MARCOS,(void*)conta_usadas);
+	return cant;	
+}
+
+void print_memory(void){
+	printf("____DUMP MEMORIA\n");
+	int i=0;
+	void print(Marco* marco){
+		printf("____Marco %d, bit_uso: %d, bit_modificado: %d\n",i,marco->en_uso,*get_modificado_pagina(marco->pagina));
+		i++;
+	}
+	list_iterate(L_MARCOS,(void*)print);
 }
 
 void* get_pagina(int id_pagina){
@@ -546,7 +578,7 @@ void eliminar_de_memoria(char* nombre_tabla){
 
 			if(marco_liberar != NULL){
 				marco_liberar->en_uso = false;
-				PAGINAS_USADAS--;
+				//PAGINAS_USADAS--;
 			}
 
 			pthread_mutex_unlock(&mutexMarcos);
@@ -980,7 +1012,8 @@ void* f_journaling (void) {
 
 int lanzar_journal(t_timestamp timestamp_journal){
 
-	sem_wait(&semJournal);
+	//print_memory();
+	pthread_rwlock_wrlock(&lock_journal);
 
 	int posicion_segmento = (L_SEGMENTOS->elements_count -1);
 	int posicion_pagina;
@@ -995,7 +1028,6 @@ int lanzar_journal(t_timestamp timestamp_journal){
 		segmento = list_get(L_SEGMENTOS, posicion_segmento);
 		paginas = segmento->paginas;
 		posicion_pagina = (paginas->elements_count -1);
-
 
 		while (posicion_pagina >= 0){
 			id_pagina = (int) list_get(paginas, posicion_pagina);
@@ -1019,12 +1051,17 @@ int lanzar_journal(t_timestamp timestamp_journal){
 				instruccion_insert->value = malloc(strlen(value) + 1);
 				strcpy(instruccion_insert->value, value);
 				instruccion_insert->timestamp = timestamp_journal;
+
+				//usleep(RETARDO_FS*1000);
 				Instruccion* instruccion_respuesta = enviar_instruccion(IP_FS, PUERTO_FS, instruccion, POOLMEMORY, T_INSTRUCCION);
-				usleep(RETARDO_FS*1000);
+				if(instruccion_respuesta->instruccion == ERROR) {
+					log_info(LOG_ERROR,"JOURNAL ERROR");
+				}
+
 				free_retorno(instruccion_respuesta);
 				marco = list_get(L_MARCOS, id_pagina);
 				marco->en_uso = false;
-				PAGINAS_MODIFICADAS--;
+				set_modificado_pagina(pagina,false);
 			}
 
 			posicion_pagina--;
@@ -1032,34 +1069,33 @@ int lanzar_journal(t_timestamp timestamp_journal){
 		eliminar_de_memoria(segmento->nombre);
 		posicion_segmento--;
 	}
-
-	sem_post(&semJournal);
+	pthread_rwlock_unlock(&lock_journal);
 	return 1;
 }
 
 int seleccionar_marco(void){
 
-	if(L_MARCOS->elements_count > PAGINAS_USADAS){
+	if(L_MARCOS->elements_count > count_paginas_usadas()){
 		// hay paginas vacias
 		int posicion = 0;
-		Marco* marco = list_get(L_MARCOS, posicion);
+		Marco* marco;
 
-		if(marco < 0){
+		while((marco = list_get(L_MARCOS, posicion))!=NULL){
+			if(!pagina_en_uso(marco)){
+				break;
+			} else {
+				marco = NULL;
+			}
+			posicion++;
+		}
+
+		if(marco == NULL){
 			return -1;
 		}
 
-		while(pagina_en_uso(marco)){
-			posicion++;
-			marco = list_get(L_MARCOS, posicion);
-			if(marco < 0){
-				return -1;
-			}
-		}
-
 		marco->en_uso = true;
-		PAGINAS_USADAS++;
-
 		return posicion;
+
 	} else {
 
 		int id_pagina = marco_por_LRU(); //algoritmo para reemplazar paginas
@@ -1069,8 +1105,7 @@ int seleccionar_marco(void){
 			return id_pagina;
 		}
 
-		printf("No hay mas memoria chinguenguencha!");
-		log_info(LOG_INFO,"Memoria - LRU no selecciono una memoria.");
+		log_info(LOG_ERROR,"Memoria - LRU no selecciono una memoria.");
 		return -1;
 	}
 }
@@ -1140,20 +1175,29 @@ int marco_por_LRU(void){
 	int id_seleccionado;
 
 	marco_seleccionado = list_get(L_MARCOS, posicion);
+
+	while(*get_modificado_pagina(marco_seleccionado->pagina)){
+		posicion--;
+		marco_seleccionado = list_get(L_MARCOS, posicion);
+		if(marco_seleccionado == NULL){
+			return -1;
+		}
+	}
+
 	id_seleccionado = posicion;
 	posicion--;
 
-		while (posicion >= 0){
+	while (posicion >= 0){
 
-			marco = list_get(L_MARCOS, posicion);
+		marco = list_get(L_MARCOS, posicion);
 
-			if(marco->ultimo_uso < marco_seleccionado->ultimo_uso){
-				marco_seleccionado = marco;
-				id_seleccionado = posicion;
-			}
-
-			posicion--;
+		if(marco->ultimo_uso < marco_seleccionado->ultimo_uso && !*get_modificado_pagina(marco->pagina)){
+			marco_seleccionado = marco;
+			id_seleccionado = posicion;
 		}
+
+		posicion--;
+	}
 
 	return id_seleccionado;
 }

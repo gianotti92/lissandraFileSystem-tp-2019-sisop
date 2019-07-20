@@ -218,8 +218,7 @@ void logicaInsert(Proceso *proceso){
 		if(memoriasAsoc->elements_count > 0){
 			switch(consistencia){
 				case SC :;
-					random = rand() % memoriasAsoc->elements_count;
-					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,random));
+					mem = duplicar_memoria((Memoria*)list_get(memoriasAsoc,0));
 					break;
 				case EC :;
 					random = rand() % memoriasAsoc->elements_count;

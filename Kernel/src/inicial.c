@@ -39,6 +39,9 @@ void configuracion_inicial(void) {
 	//TIEMPO_DESCRIBE
 	TIEMPO_DESCRIBE = config_get_int_value_check(CONFIG, "TIEMPO_DESCRIBE");
 
+	//RETARDO
+	RETARDO = config_get_int_value_check(CONFIG, "RETARDO");
+
 	config_destroy(CONFIG);
 
 	acum30sMetrics = list_create();
@@ -54,8 +57,9 @@ void actualizar_configuracion(t_config* conf) {
 	PREGUNTAR_POR_MEMORIAS = config_get_int_value_check(conf, "TIEMPO_PREGUNTAR_MEMORIA");
 	TIEMPO_DESCRIBE = config_get_int_value_check(conf, "TIEMPO_DESCRIBE");
 	QUANTUM = config_get_int_value_check(conf, "QUANTUM");
+	RETARDO = config_get_int_value_check(conf, "RETARDO");
 
-	log_info(LOG_INFO,"Se ha actualizado el archivo de configuracion: SEGUNDOS_METRICS: %d, PREGUNTAR_POR_MEMORIAS: %d, TIEMPO_DESCRIBE: %d, QUANTUM: %d", SEGUNDOS_METRICS, PREGUNTAR_POR_MEMORIAS, TIEMPO_DESCRIBE, QUANTUM);
+	log_info(LOG_INFO,"Se ha actualizado el archivo de configuracion: SEGUNDOS_METRICS: %d, PREGUNTAR_POR_MEMORIAS: %d, TIEMPO_DESCRIBE: %d, QUANTUM: %d, RETARDO: %d", SEGUNDOS_METRICS, PREGUNTAR_POR_MEMORIAS, TIEMPO_DESCRIBE, QUANTUM, RETARDO);
 
 }
 
