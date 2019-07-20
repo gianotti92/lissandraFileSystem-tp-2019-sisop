@@ -19,6 +19,7 @@
 #include <commons/string.h>
 #include <math.h>
 #include <time.h>
+#include <sys/time.h>
 #include <sys/mman.h>
 #include "comunicacion.h"
 #include "utils.h"
@@ -137,7 +138,7 @@ void leer_por_consola(void (*f) (char*));
 * @NAME: get_timestamp
 * @DESC: Devuelve el timestamp del sistema.
 */
-uintmax_t get_timestamp();
+t_timestamp get_timestamp();
 
 /**
 * @NAME: free_retorno

@@ -755,20 +755,15 @@ void leer_por_consola(void (*f)(char*)) {
 	exit_gracefully(EXIT_SUCCESS);
 }
 
-uintmax_t get_timestamp() {
+t_timestamp get_timestamp() {
+	struct timeval time;
 
-	time_t echo_time;
-	echo_time = time(NULL);
+	gettimeofday(&time,NULL);
 
-	if (echo_time == ((time_t) -1)) {
-		log_error(LOG_ERROR_SV, "Fallo al obtener la hora en parser.c:get_timestamp().");
-
-		return -1;
-	}
-
-	return echo_time;
+	return (time.tv_sec * 1000 + time.tv_usec/1000);
 
 }
+
 void free_consulta_separada(int length,char** consulta_separada){
 	for(int i=0;i<=length;i++){
 		free(consulta_separada[i]);
