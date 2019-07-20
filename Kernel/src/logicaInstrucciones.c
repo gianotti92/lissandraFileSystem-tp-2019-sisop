@@ -76,7 +76,9 @@ void logicaCreate(Proceso * proceso){
 		}else{
 			if(proceso->instruccion->instruccion == RUN){
 				log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
-				proceso->fin_proceso = true;
+				if(((Error*)proceso->instruccion->instruccion_a_realizar)->error==MISSING_TABLE){
+					proceso->fin_proceso = true;
+				}
 			}else{
 				log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
 			}
@@ -84,6 +86,7 @@ void logicaCreate(Proceso * proceso){
 		print_instruccion_parseada(instruccionRespuesta);
 		eliminar_memoria(memoria);
 	}else{
+		proceso->fin_proceso = true;
 		log_error(LOG_ERROR, "No hay memorias asignadas a este criterio");
 		free(((Create*) proceso->instruccionAProcesar->instruccion_a_realizar)->nombre_tabla);
 		free((Create*) proceso->instruccionAProcesar->instruccion_a_realizar);
@@ -187,7 +190,9 @@ void logicaSelect(Proceso * proceso){
 			}else{
 				if(proceso->instruccion->instruccion == RUN){
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
-					proceso->fin_proceso = true;
+					if(((Error*)proceso->instruccion->instruccion_a_realizar)->error==MISSING_TABLE){
+						proceso->fin_proceso = true;
+					}
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
 				}
@@ -245,7 +250,9 @@ void logicaInsert(Proceso *proceso){
 				pthread_mutex_unlock(&mutex_metrics);
 			}else{
 				if(proceso->instruccion->instruccion == RUN){
-					proceso->fin_proceso = true;
+					if(((Error*)proceso->instruccion->instruccion_a_realizar)->error==MISSING_TABLE){
+						proceso->fin_proceso = true;
+					}
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
@@ -305,7 +312,9 @@ void logicaDrop(Proceso *proceso){
 				pthread_mutex_unlock(&mutex_metrics);
 			}else{
 				if(proceso->instruccion->instruccion == RUN){
-					proceso->fin_proceso = true;
+					if(((Error*)proceso->instruccion->instruccion_a_realizar)->error==MISSING_TABLE){
+						proceso->fin_proceso = true;
+					}
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
@@ -357,7 +366,6 @@ void logicaJournal(Proceso *proceso){
 				pthread_mutex_unlock(&mutex_metrics);
 			}else{
 				if(proceso->instruccion->instruccion == RUN){
-					proceso->fin_proceso = true;
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
@@ -413,7 +421,9 @@ void logicaDescribe(Proceso *proceso){
 					pthread_mutex_unlock(&mutex_metrics);
 				}else{
 					if(proceso->instruccion->instruccion == RUN){
-						proceso->fin_proceso = true;
+						if(((Error*)proceso->instruccion->instruccion_a_realizar)->error==MISSING_TABLE){
+							proceso->fin_proceso = true;
+						}
 						log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 					}else{
 						log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");
@@ -442,7 +452,9 @@ void logicaDescribe(Proceso *proceso){
 			pthread_mutex_unlock(&mutex_metrics);
 		}else{
 			if(proceso->instruccion->instruccion == RUN){
-					proceso->fin_proceso = true;
+					if(((Error*)proceso->instruccion->instruccion_a_realizar)->error==MISSING_TABLE){
+						proceso->fin_proceso = true;
+					}
 					log_error(LOG_ERROR, "Error ejecutando la linea: %d del script %s", (proceso->numeroInstruccion + 1), ((Run*)proceso->instruccion->instruccion_a_realizar)->path);
 				}else{
 					log_error(LOG_ERROR, "Error ejecutando el comando ingresado por consola");

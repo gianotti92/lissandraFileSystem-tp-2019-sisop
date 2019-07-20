@@ -94,6 +94,6 @@ t_list* filtrar_memorias_gossipear(void);
 t_list *filtrar_memorias_a_enviar(void);
 int count_paginas_modificadas(void);
 int count_paginas_usadas(void);
-void print_memory(void);
+void print_memory(t_log * LOGGER);
 
 #endif

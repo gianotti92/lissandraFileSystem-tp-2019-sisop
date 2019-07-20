@@ -185,6 +185,10 @@ void retorno_consola(char* leido){
 		list_destroy_and_destroy_elements(disponibles, (void*)eliminar_memoria);
 		return;
 	}
+	if(strcmp(leido, "print_memory") == 0){
+		print_memory(LOG_DEBUG);
+		return;
+	}
 	Instruccion* instruccion_parseada = parser_lql(leido, POOLMEMORY);
 	Instruccion* respuesta = atender_consulta(instruccion_parseada);
 
@@ -198,6 +202,7 @@ void retornarControl(Instruccion *instruccion, int cliente){
 	log_instruccion_parseada(respuesta);
 	Instruccion * resultado = responder(cliente, respuesta);
 	free_retorno(resultado);
+	print_memory(LOG_INFO);
 }
 
 void inicializar_memoria(void){
@@ -281,9 +286,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 
 		switch	(instruccion_parseada->instruccion){
 		case SELECT:;
-
-			//print_memory();
-
 			if(L_MARCOS->elements_count == count_paginas_modificadas()){
 				//la memoria esta full, lanzo journal
 				log_info(LOG_INFO, "MEM %d FULL.", NUMERO_MEMORIA);
@@ -361,9 +363,6 @@ Instruccion* atender_consulta (Instruccion* instruccion_parseada){
 			break;
 
 		case INSERT:;
-
-			//print_memory();
-
 			if(L_MARCOS->elements_count == count_paginas_modificadas()){
 				//la memoria esta full, lanzo journal
 				log_info(LOG_INFO, "MEM %d FULL.", NUMERO_MEMORIA);
@@ -537,11 +536,11 @@ int count_paginas_usadas(void){
 	return cant;	
 }
 
-void print_memory(void){
-	printf("____DUMP MEMORIA\n");
+void print_memory(t_log* LOGGER){
+	log_info(LOGGER,"DUMP MEMORIA");
 	int i=0;
 	void print(Marco* marco){
-		printf("____Marco %d, bit_uso: %d, bit_modificado: %d\n",i,marco->en_uso,*get_modificado_pagina(marco->pagina));
+		log_info(LOGGER,"__Marco %d, bit_uso: %d, bit_modificado: %d__",i,marco->en_uso,*get_modificado_pagina(marco->pagina));
 		i++;
 	}
 	list_iterate(L_MARCOS,(void*)print);
